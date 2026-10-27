@@ -479,7 +479,7 @@ export const HomeTab: React.FC = () => {
                   margin: '0 0 14px',
                 }}
               >
-                Unipath Premium: Lộ trình & Tư vấn 1-1
+                Unipath Premium: Lộ trình & Trợ lý AI VIP
               </h2>
               <Button
                 variant="onGradient"

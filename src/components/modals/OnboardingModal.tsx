@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { ChevronRight, Sparkles, Compass, Target, Bot } from 'lucide-react';
 import { Button } from '../common/UI';
 
 interface OnboardingModalProps {
@@ -9,23 +10,47 @@ interface OnboardingModalProps {
 const SLIDES = [
   {
     title: 'Khám phá tính cách RIASEC',
-    desc: 'Thấu hiểu sở thích, tiềm năng và thiên hướng nghề nghiệp qua bài trắc nghiệm 12 câu tiêu chuẩn.',
+    desc: 'Thấu hiểu sở thích, tiềm năng và thiên hướng nghề nghiệp qua bài khảo sát 12 câu tiêu chuẩn quốc tế.',
     img: '/images/onboarding_1.png',
+    badge: 'BÀI KHẢO SÁT CHUẨN HOA KỲ',
+    icon: <Compass size={18} />,
+    tags: ['12 câu hỏi ngắn', '5 phút hoàn thành', 'Biểu đồ Radar RIASEC'],
   },
   {
-    title: 'Gợi ý thông minh AI Matching',
-    desc: 'Thuật toán tự động đối soát điểm thi THPT và ngân sách học phí với 30 trường đại học hàng đầu 3 miền.',
+    title: 'Dự đoán trúng tuyển AI Matching',
+    desc: 'Thuật toán thông minh đối soát điểm thi THPT và học phí với 30 trường đại học hàng đầu 3 miền.',
     img: '/images/onboarding_2.png',
+    badge: 'THUẬT TOÁN ĐỐI SOÁT 30 TRƯỜNG',
+    icon: <Target size={18} />,
+    tags: ['Điểm chuẩn 2022-2024', 'An toàn - Vừa sức - Thử thách', 'Tối ưu ngân sách'],
   },
   {
-    title: 'Đồng hành cùng chuyên gia',
-    desc: 'Chiến lược phát triển 3 năm THPT và kết nối tư vấn 1-1 trực tiếp cùng ban tuyển sinh các trường.',
+    title: 'Trợ lý AI Hướng nghiệp 24/7',
+    desc: 'Trò chuyện cùng Trợ lý AI Unipath bất cứ lúc nào để giải đáp mọi thắc mắc về tuyển sinh và chọn ngành.',
     img: '/images/onboarding_3.png',
+    badge: 'TRỢ LÝ AI THÔNG MINH 24/7',
+    icon: <Bot size={18} />,
+    tags: ['Giải đáp tức thì', 'Cá nhân hóa nguyện vọng', 'Miễn phí trải nghiệm'],
   },
 ];
 
 export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onFinish }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Lock background scroll when onboarding is visible
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -45,91 +70,251 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onFini
         position: 'fixed',
         inset: 0,
         zIndex: 2000,
-        backgroundColor: '#FFFFFF',
+        background: 'linear-gradient(180deg, #F0F5FF 0%, #FFFFFF 45%, #F8FAFC 100%)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '24px 20px 32px',
+        padding: '20px 20px 28px',
         maxWidth: '520px',
         margin: '0 auto',
+        overflowY: 'auto',
+        overscrollBehavior: 'contain',
+        WebkitOverflowScrolling: 'touch',
       }}
     >
-      {/* Top Bar with Skip button */}
-      <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end' }}>
+      {/* 1. Top Bar */}
+      <div
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '16px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <img
+            src="/images/logo_unipath.png"
+            alt="Unipath Logo"
+            style={{ width: '28px', height: '28px', borderRadius: '8px', objectFit: 'contain' }}
+            onError={(e) => {
+              (e.target as HTMLElement).style.display = 'none';
+            }}
+          />
+          <span style={{ fontSize: '16px', fontWeight: 900, color: '#1E3A8A', letterSpacing: '-0.3px' }}>
+            Unipath
+          </span>
+          <span
+            style={{
+              fontSize: '11px',
+              fontWeight: 800,
+              color: '#2563EB',
+              backgroundColor: '#EFF6FF',
+              padding: '2px 8px',
+              borderRadius: '10px',
+              border: '1px solid #DBEAFE',
+            }}
+          >
+            {currentSlide + 1} / {SLIDES.length}
+          </span>
+        </div>
+
         <button
           onClick={onFinish}
           style={{
-            border: 'none',
-            backgroundColor: 'transparent',
+            backgroundColor: 'rgba(255,255,255,0.85)',
             color: '#64748B',
-            fontSize: '14px',
-            fontWeight: 600,
+            fontSize: '13px',
+            fontWeight: 700,
             cursor: 'pointer',
-            padding: '6px 12px',
+            padding: '6px 14px',
+            borderRadius: '14px',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+            border: '1px solid #E2E8F0',
           }}
         >
           Bỏ qua
         </button>
       </div>
 
-      {/* Slide Illustration */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', width: '100%' }}>
+      {/* 2. Slide Main Card with Full Bleed Illustration */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          width: '100%',
+          maxWidth: '380px',
+        }}
+      >
+        {/* Illustration Container (FULL FRAME 100%) */}
         <div
           style={{
-            width: '240px',
-            height: '240px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '28px',
+            width: '100%',
+            height: '260px',
+            borderRadius: '28px',
+            overflow: 'hidden',
+            position: 'relative',
+            boxShadow: '0 16px 36px rgba(37,99,235,0.16), 0 2px 10px rgba(0,0,0,0.04)',
+            border: '2px solid rgba(255,255,255,0.9)',
+            backgroundColor: '#0F172A',
+            marginBottom: '22px',
           }}
         >
           <img
             src={slide.img}
             alt={slide.title}
-            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              display: 'block',
+              transition: 'opacity 0.4s ease',
+            }}
             onError={(e) => {
-              (e.target as HTMLElement).style.display = 'none';
+              (e.target as HTMLImageElement).src = '/images/career_header.png';
             }}
           />
+
+          {/* Bottom Gradient & Badge */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(180deg, transparent 35%, rgba(15,23,42,0.7) 100%)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'flex-end',
+              padding: '16px',
+            }}
+          >
+            <div
+              style={{
+                alignSelf: 'center',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                backgroundColor: 'rgba(255,255,255,0.95)',
+                backdropFilter: 'blur(8px)',
+                color: '#1D4ED8',
+                fontSize: '11px',
+                fontWeight: 800,
+                padding: '5px 12px',
+                borderRadius: '14px',
+                letterSpacing: '0.4px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.18)',
+              }}
+            >
+              {slide.icon}
+              <span>{slide.badge}</span>
+            </div>
+          </div>
         </div>
 
-        {/* Title & Desc */}
-        <h2 style={{ margin: '0 0 10px', fontSize: '22px', fontWeight: 800, color: '#0F172A', lineHeight: 1.3 }}>
+        {/* Title */}
+        <h2
+          style={{
+            margin: '0 0 8px',
+            fontSize: '22px',
+            fontWeight: 900,
+            color: '#0F172A',
+            lineHeight: 1.3,
+            letterSpacing: '-0.3px',
+          }}
+        >
           {slide.title}
         </h2>
-        <p style={{ margin: 0, fontSize: '14px', color: '#64748B', maxWidth: '320px', lineHeight: 1.5 }}>
+
+        {/* Description */}
+        <p
+          style={{
+            margin: '0 0 16px',
+            fontSize: '14px',
+            color: '#64748B',
+            lineHeight: 1.5,
+            padding: '0 8px',
+          }}
+        >
           {slide.desc}
         </p>
-      </div>
 
-      {/* Bottom Controls: Dots + Button */}
-      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
-        {/* Dots */}
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {SLIDES.map((_, idx) => (
-            <div
+        {/* Feature Tags / Pills */}
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            gap: '8px',
+            marginBottom: '8px',
+          }}
+        >
+          {slide.tags.map((tag, idx) => (
+            <span
               key={idx}
               style={{
-                width: currentSlide === idx ? '24px' : '8px',
+                backgroundColor: '#EFF6FF',
+                color: '#2563EB',
+                fontSize: '12px',
+                fontWeight: 700,
+                padding: '4px 10px',
+                borderRadius: '12px',
+                border: '1px solid #DBEAFE',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <Sparkles size={12} />
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* 3. Bottom Controls */}
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '380px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '18px',
+        }}
+      >
+        {/* Pagination Dots */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {SLIDES.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentSlide(idx)}
+              style={{
+                width: currentSlide === idx ? '28px' : '8px',
                 height: '8px',
                 borderRadius: '4px',
+                border: 'none',
                 backgroundColor: currentSlide === idx ? '#2563EB' : '#CBD5E1',
                 transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                padding: 0,
               }}
+              aria-label={`Slide ${idx + 1}`}
             />
           ))}
         </div>
 
-        {/* Next / Start Button */}
+        {/* Action Button */}
         <Button
           variant="primary"
           size="L"
           fullWidth
           onClick={handleNext}
+          icon={<ChevronRight size={18} />}
         >
-          {currentSlide === SLIDES.length - 1 ? 'Bắt đầu ngay →' : 'Tiếp tục →'}
+          {currentSlide === SLIDES.length - 1 ? 'Khám phá Unipath ngay 🚀' : 'Tiếp tục →'}
         </Button>
       </div>
     </div>

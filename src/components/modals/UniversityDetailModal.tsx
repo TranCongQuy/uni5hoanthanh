@@ -4,7 +4,7 @@ import {
   Heart,
   Scale,
   MapPin,
-  Calendar,
+  Bot,
   Send,
   Star,
   CheckCircle2,
@@ -23,7 +23,7 @@ export const UniversityDetailModal: React.FC = () => {
     toggleFavorite,
     compareIds,
     toggleCompare,
-    openBookConsultation,
+    openChatBot,
     openApplyDemo,
     profile,
   } = useApp();
@@ -500,15 +500,16 @@ export const UniversityDetailModal: React.FC = () => {
           }}
         >
           <Button
-            variant="danger"
+            variant="tonal"
             size="L"
             style={{ flex: 1 }}
-            icon={<Calendar size={18} />}
+            icon={<Bot size={18} />}
             onClick={() => {
-              openBookConsultation(uni);
+              closeUniDetail();
+              openChatBot();
             }}
           >
-            Tư vấn ngay
+            Hỏi AI về trường
           </Button>
 
           <Button

@@ -4,7 +4,6 @@ import {
   Settings,
   Crown,
   CheckCircle2,
-  Calendar,
   Heart,
   ChevronRight,
   LogOut,
@@ -23,7 +22,6 @@ export const ProfileTab: React.FC = () => {
     isGuest,
     user,
     profile,
-    bookings,
     favoriteIds,
     toggleFavorite,
     hollandResult,
@@ -317,7 +315,7 @@ export const ProfileTab: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', position: 'relative', zIndex: 2 }}>
             {[
               'Bộ đề & Tài liệu ôn thi ĐGNL độc quyền',
-              'Tư vấn 1-1 trực tiếp cùng chuyên gia tuyển sinh',
+              'Trợ lý AI hướng nghiệp 24/7 phân tích chuyên sâu',
               'Phân tích cơ hội đỗ AI không giới hạn số trường',
               'Giao diện siêu tốc, không quảng cáo làm phiền',
             ].map((text, idx) => (
@@ -614,68 +612,7 @@ export const ProfileTab: React.FC = () => {
         )}
       </div>
 
-      {/* 6. My Consultation Appointments */}
-      <div style={{ marginBottom: '24px' }}>
-        <h4 style={{ margin: '0 0 12px', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-          Lịch tư vấn 1-1 của bạn ({bookings.length})
-        </h4>
-
-        {bookings.length === 0 ? (
-          <div
-            style={{
-              padding: '20px',
-              backgroundColor: '#FFFFFF',
-              borderRadius: '20px',
-              textAlign: 'center',
-              border: '1px dashed #CBD5E1',
-            }}
-          >
-            <Calendar size={28} color="#CBD5E1" style={{ margin: '0 auto 8px' }} />
-            <p style={{ margin: 0, fontSize: '13px', color: '#64748B' }}>
-              Bạn chưa có lịch hẹn tư vấn nào.
-            </p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {bookings.map((b) => (
-              <div
-                key={b.id}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '18px',
-                  padding: '14px',
-                  border: '1px solid #E2E8F0',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span
-                    style={{
-                      backgroundColor: '#ECFDF5',
-                      color: '#059669',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      padding: '2px 8px',
-                      borderRadius: '8px',
-                    }}
-                  >
-                    Đã xác nhận lịch
-                  </span>
-                  <span style={{ fontSize: '12px', color: '#64748B' }}>{b.dateTime}</span>
-                </div>
-                <div style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>
-                  Tư vấn tuyển sinh trường {b.uniCode}
-                </div>
-                <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
-                  Ngành quan tâm: {b.major}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 7. Action Menu Links */}
+      {/* 6. Action Menu Links */}
       <div
         style={{
           backgroundColor: '#FFFFFF',

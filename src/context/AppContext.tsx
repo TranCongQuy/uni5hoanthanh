@@ -5,7 +5,6 @@ import type {
   University,
   UserProfile,
 } from '../types';
-import { getUniversityById } from '../data/MockData';
 
 interface HollandResult {
   primaryCode: HollandCode;
@@ -236,7 +235,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isBookConsultationOpen, setIsBookConsultationOpen] = useState(false);
-  const [consultationTargetUni, setConsultationTargetUni] = useState<University | null>(null);
+  const [consultationTargetUni] = useState<University | null>(null);
   const [isApplyDemoOpen, setIsApplyDemoOpen] = useState(false);
   const [applyDemoTargetUni, setApplyDemoTargetUni] = useState<University | null>(null);
 
@@ -533,11 +532,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const openAuthModal = () => setIsAuthModalOpen(true);
   const closeAuthModal = () => setIsAuthModalOpen(false);
 
-  const openBookConsultation = (uni?: University) => {
-    setConsultationTargetUni(uni || (selectedUniIdForDetail ? getUniversityById(selectedUniIdForDetail) || null : null));
-    setIsBookConsultationOpen(true);
+  const openBookConsultation = () => {
+    setIsChatBotOpen(true);
   };
-  const closeBookConsultation = () => setIsBookConsultationOpen(false);
+  const closeBookConsultation = () => {
+    setIsBookConsultationOpen(false);
+  };
 
   const openApplyDemo = (uni: University) => {
     setApplyDemoTargetUni(uni);

@@ -275,7 +275,7 @@ export const SettingsModal: React.FC = () => {
                 { title: '1. Khám phá bản thân với RIASEC', desc: 'Làm bài trắc nghiệm 12 câu để tìm ra mã tính cách và nhóm ngành tương thích nhất.' },
                 { title: '2. Phân tích trúng tuyển AI Matching', desc: 'Kéo thang điểm thi THPT dự kiến và ngân sách học phí để xem danh sách trường An toàn, Vừa sức và Thách thức.' },
                 { title: '3. So sánh trường và Lưu yêu thích', desc: 'Bấm biểu tượng so sánh để đối chiếu tối đa 3 trường cùng lúc trên màn hình.' },
-                { title: '4. Kết nối trực tiếp với Chuyên gia', desc: 'Trò chuyện cùng AI Assistant hoặc đặt lịch tư vấn 1-1 miễn phí với đại diện tuyển sinh các trường.' },
+                { title: '4. Trợ lý AI Hướng nghiệp 24/7', desc: 'Trò chuyện cùng Trợ lý AI Unipath 24/7 để được giải đáp mọi thắc mắc về điểm chuẩn, học phí và chọn trường.' },
               ].map((step, idx) => (
                 <div key={idx} style={{ padding: '12px 14px', backgroundColor: '#F8FAFC', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
                   <div style={{ fontSize: '14px', fontWeight: 800, color: '#2563EB', marginBottom: '4px' }}>{step.title}</div>

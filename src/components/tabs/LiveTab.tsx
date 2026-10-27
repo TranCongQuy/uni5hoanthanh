@@ -18,7 +18,7 @@ interface LiveChatMessage {
 }
 
 export const LiveTab: React.FC = () => {
-  const { openUniDetail, openBookConsultation, showToast } = useApp();
+  const { openUniDetail, showToast } = useApp();
 
   // Countdown timer state
   const [timeLeft, setTimeLeft] = useState({
@@ -774,9 +774,12 @@ export const LiveTab: React.FC = () => {
         variant="danger"
         size="L"
         fullWidth
-        onClick={() => openBookConsultation()}
+        onClick={() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          showToast('Bạn đang xem phiên trực tiếp EduFair 2026!');
+        }}
       >
-        Tham gia ngày hội ngay →
+        Lên đầu trang xem phiên Live trực tiếp ↑
       </Button>
 
       <AppFooter text="Sự kiện trực tuyến chính thức Unipath EduFair 2026." />

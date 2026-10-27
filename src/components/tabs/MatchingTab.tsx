@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Edit2,
-  Calendar,
+  Bot,
   Sparkles,
   ArrowRight,
   HelpCircle,
@@ -17,7 +17,7 @@ export const MatchingTab: React.FC = () => {
     profile,
     hollandResult,
     openUniDetail,
-    openBookConsultation,
+    openChatBot,
     setActiveTab,
   } = useApp();
 
@@ -596,13 +596,13 @@ export const MatchingTab: React.FC = () => {
       </div>
 
       <Button
-        variant="danger"
+        variant="primary"
         size="L"
         fullWidth
-        icon={<Calendar size={18} />}
-        onClick={() => openBookConsultation()}
+        icon={<Bot size={18} />}
+        onClick={() => openChatBot()}
       >
-        Đặt lịch tư vấn 1-1 với chuyên gia tuyển sinh
+        Trò chuyện cùng Trợ lý AI để chọn trường chuẩn →
       </Button>
 
       <AppFooter text="Thuật toán Matching được phát triển độc quyền bởi Unipath." />

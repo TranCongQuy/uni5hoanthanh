@@ -157,3 +157,11 @@ html, body {
     transform: translateY(-5px) rotate(3deg);
   }
 }
+
+/* Prevent modal background scroll bleed on iOS Safari & Android Chrome */
+body.modal-open, html.modal-open {
+  overflow: hidden !important;
+  touch-action: none !important;
+  height: 100% !important;
+  overscroll-behavior: none !important;
+}
