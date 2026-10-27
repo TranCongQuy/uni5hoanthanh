@@ -142,30 +142,63 @@ export const QuizTab: React.FC = () => {
   if (mode === 'intro') {
     return (
       <div style={{ padding: '20px 20px 104px', display: 'flex', flexDirection: 'column' }}>
-        {/* Top Illustration Box 240dp */}
+        {/* Top Illustration Banner 240dp - Full Frame Cover */}
         <div
           style={{
             height: '240px',
             borderRadius: '28px',
-            background: 'linear-gradient(135deg, #DBEAFE 0%, #EFF6FF 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
             position: 'relative',
             overflow: 'hidden',
-            border: '1px solid #BFDBFE',
-            boxShadow: '0 8px 24px rgba(37,99,235,0.08)',
+            boxShadow: '0 8px 24px rgba(37,99,235,0.12)',
             marginBottom: '24px',
+            backgroundColor: '#0F172A',
           }}
         >
+          {/* KHUNG ẢNH FULL BORDER-TO-BORDER VỪA KHÍT 100% */}
           <img
             src="/images/quiz_intro_art.png"
-            alt="Holland Quiz"
-            style={{ width: '220px', height: '180px', objectFit: 'contain' }}
+            alt="Holland RIASEC Quiz"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              display: 'block',
+            }}
             onError={(e) => {
-              (e.target as HTMLElement).style.display = 'none';
+              (e.target as HTMLImageElement).src = '/images/career_header.png';
             }}
           />
+
+          {/* Gradient Overlay & Badge */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(15,23,42,0.55) 100%)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'flex-end',
+              padding: '18px 20px',
+            }}
+          >
+            <div
+              style={{
+                alignSelf: 'flex-start',
+                backgroundColor: 'rgba(255,255,255,0.92)',
+                backdropFilter: 'blur(6px)',
+                color: '#2563EB',
+                fontSize: '11px',
+                fontWeight: 800,
+                padding: '4px 10px',
+                borderRadius: '10px',
+                letterSpacing: '0.5px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              }}
+            >
+              HOLLAND RIASEC TEST • CHUẨN HOA KỲ
+            </div>
+          </div>
         </div>
 
         {/* Title & Desc */}

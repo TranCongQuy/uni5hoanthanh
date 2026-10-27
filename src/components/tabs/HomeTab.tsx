@@ -270,16 +270,17 @@ export const HomeTab: React.FC = () => {
               position: 'absolute',
               inset: 0,
               background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 55%, #06B6D4 100%)',
-              padding: '22px 20px',
+              padding: '20px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              gap: '12px',
               opacity: currentSlide === 0 ? 1 : 0,
               pointerEvents: currentSlide === 0 ? 'auto' : 'none',
               transition: 'opacity 0.6s ease',
             }}
           >
-            <div style={{ maxWidth: '60%', zIndex: 2 }}>
+            <div style={{ flex: 1, minWidth: 0, zIndex: 2 }}>
               <div
                 style={{
                   display: 'inline-block',
@@ -298,7 +299,7 @@ export const HomeTab: React.FC = () => {
               </div>
               <h2
                 style={{
-                  fontSize: '18px',
+                  fontSize: '17px',
                   fontWeight: 800,
                   color: '#FFFFFF',
                   lineHeight: 1.3,
@@ -315,25 +316,32 @@ export const HomeTab: React.FC = () => {
                 Làm bài test →
               </Button>
             </div>
+
+            {/* KHUNG ẢNH FULL VỪA KHÍT 100% */}
             <div
               style={{
-                width: '40%',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
+                width: '130px',
+                height: '115px',
+                borderRadius: '18px',
+                overflow: 'hidden',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                border: '2px solid rgba(255,255,255,0.3)',
+                flexShrink: 0,
+                position: 'relative',
+                backgroundColor: 'rgba(255,255,255,0.1)',
               }}
             >
               <img
                 src="/images/home_hero_art.png"
                 alt="AI hướng nghiệp"
                 style={{
-                  width: '130px',
-                  height: '130px',
-                  objectFit: 'contain',
-                  filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.2))',
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  display: 'block',
                 }}
                 onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
+                  (e.target as HTMLImageElement).src = '/images/career_header.png';
                 }}
               />
             </div>
@@ -437,16 +445,17 @@ export const HomeTab: React.FC = () => {
               position: 'absolute',
               inset: 0,
               background: 'linear-gradient(135deg, #B45309 0%, #D97706 50%, #F59E0B 100%)',
-              padding: '22px 20px',
+              padding: '20px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              gap: '12px',
               opacity: currentSlide === 2 ? 1 : 0,
               pointerEvents: currentSlide === 2 ? 'auto' : 'none',
               transition: 'opacity 0.6s ease',
             }}
           >
-            <div style={{ maxWidth: '65%', zIndex: 2 }}>
+            <div style={{ flex: 1, minWidth: 0, zIndex: 2 }}>
               <div
                 style={{
                   display: 'inline-block',
@@ -463,7 +472,7 @@ export const HomeTab: React.FC = () => {
               </div>
               <h2
                 style={{
-                  fontSize: '18px',
+                  fontSize: '17px',
                   fontWeight: 800,
                   color: '#FFFFFF',
                   lineHeight: 1.3,
@@ -480,24 +489,32 @@ export const HomeTab: React.FC = () => {
                 Xem chi tiết →
               </Button>
             </div>
+
+            {/* KHUNG ẢNH FULL VỪA KHÍT 100% */}
             <div
               style={{
-                width: '35%',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
+                width: '130px',
+                height: '115px',
+                borderRadius: '18px',
+                overflow: 'hidden',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                border: '2px solid rgba(255,255,255,0.3)',
+                flexShrink: 0,
+                position: 'relative',
+                backgroundColor: 'rgba(255,255,255,0.1)',
               }}
             >
               <img
                 src="/images/slide_premium.png"
                 alt="Premium"
                 style={{
-                  width: '120px',
-                  height: '110px',
-                  objectFit: 'contain',
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  display: 'block',
                 }}
                 onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
+                  (e.target as HTMLImageElement).src = '/images/banner_edufair.png';
                 }}
               />
             </div>
