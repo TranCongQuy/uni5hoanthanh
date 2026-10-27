@@ -557,19 +557,21 @@ export const UniversityDetailModal: React.FC = () => {
           </div>
         </div>
 
-        {/* Fixed Bottom Action Buttons */}
+        {/* Fixed Bottom Action Buttons - Always on top with zIndex 60 */}
         <div
           style={{
             position: 'absolute',
             bottom: 0,
             left: 0,
             right: 0,
-            padding: '14px 20px',
+            padding: '12px 20px',
+            paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))',
             backgroundColor: '#FFFFFF',
             borderTop: '1px solid #F1F5F9',
             display: 'flex',
             gap: '10px',
-            boxShadow: '0 -4px 16px rgba(0,0,0,0.06)',
+            boxShadow: '0 -4px 16px rgba(0,0,0,0.08)',
+            zIndex: 60,
           }}
         >
           <Button

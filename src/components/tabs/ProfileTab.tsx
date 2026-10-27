@@ -938,56 +938,6 @@ export const ProfileTab: React.FC = () => {
         </div>
       )}
 
-      {/* 6. Official Credits & Copyright Card */}
-      <div
-        style={{
-          margin: '0 20px 16px',
-          padding: '16px',
-          backgroundColor: '#FFFFFF',
-          borderRadius: '20px',
-          border: '1.5px solid #E2E8F0',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-          <img
-            src="/images/logo_unipath.png"
-            alt="Logo"
-            style={{ width: '22px', height: '22px', objectFit: 'contain' }}
-            onError={(e) => {
-              (e.target as HTMLElement).style.display = 'none';
-            }}
-          />
-          <span style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>
-            Hệ Sinh Thái Tuyển Sinh Unipath 2.0
-          </span>
-          <span
-            style={{
-              fontSize: '10px',
-              fontWeight: 800,
-              color: '#2563EB',
-              backgroundColor: '#EFF6FF',
-              padding: '2px 6px',
-              borderRadius: '6px',
-            }}
-          >
-            Mobile First
-          </span>
-        </div>
-        <p style={{ margin: '0 0 10px', fontSize: '12px', color: '#64748B', lineHeight: 1.4 }}>
-          Đồng hành cùng học sinh THPT và quý phụ huynh trên hành trình chọn ngành, chọn trường và kiến tạo tương lai nghề nghiệp vững chắc.
-        </p>
-        <div style={{ fontSize: '12px', color: '#1E293B', fontWeight: 700, marginBottom: '6px' }}>
-          Phát triển bởi <strong style={{ color: '#2563EB' }}>Trần Công Quý</strong> & bản quyền thuộc nhóm <strong>UP5</strong>:
-        </div>
-        <div style={{ fontSize: '11px', color: '#475569', lineHeight: 1.6, paddingLeft: '8px', borderLeft: '2px solid #BFDBFE' }}>
-          • Trần Công Quý (Trưởng nhóm & Kỹ sư phát triển)<br />
-          • Trần Thị Nhung • Dương Đình Phát<br />
-          • Nguyễn Thị Lý Trà My • Thái Thị Nga<br />
-          <strong style={{ color: '#1D4ED8' }}>Trường Đại học Phú Xuân (PXU)</strong>
-        </div>
-      </div>
-
       <AppFooter text="Đồng hành cùng học sinh THPT và quý phụ huynh trên hành trình chọn ngành, chọn trường và kiến tạo tương lai nghề nghiệp vững chắc." />
     </div>
   );

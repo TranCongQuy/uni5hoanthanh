@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { UNIVERSITIES, getUniversitiesByRegion } from '../../data/MockData';
-import { Button, UniversityAvatar, ImageSafe, AppFooter, EmptyState } from '../common/UI';
+import { UniversityAvatar, ImageSafe, AppFooter, EmptyState } from '../common/UI';
 
 export const HomeTab: React.FC = () => {
   const {
@@ -278,12 +278,13 @@ export const HomeTab: React.FC = () => {
         </div>
       </header>
 
-      {/* 2. Hero Slider 200dp */}
-      <div style={{ padding: '16px 20px 8px' }}>
+      {/* 2. Hero Slider 200dp - Mobile-First Optimized */}
+      <div style={{ padding: '14px 20px 8px' }}>
         <div
           style={{
             position: 'relative',
-            height: '200px',
+            height: '210px',
+            minHeight: '210px',
             borderRadius: '24px',
             overflow: 'hidden',
             boxShadow: '0 8px 24px rgba(37,99,235,0.18)',
@@ -295,7 +296,7 @@ export const HomeTab: React.FC = () => {
               position: 'absolute',
               inset: 0,
               background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 55%, #06B6D4 100%)',
-              padding: '20px',
+              padding: '16px 18px 24px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -312,24 +313,25 @@ export const HomeTab: React.FC = () => {
                   backgroundColor: 'rgba(255,255,255,0.22)',
                   backdropFilter: 'blur(4px)',
                   color: '#FFFFFF',
-                  padding: '4px 10px',
-                  borderRadius: '12px',
-                  fontSize: '11px',
+                  padding: '3px 8px',
+                  borderRadius: '10px',
+                  fontSize: '10.5px',
                   fontWeight: 800,
-                  letterSpacing: '0.5px',
-                  marginBottom: '8px',
+                  letterSpacing: '0.4px',
+                  marginBottom: '6px',
                 }}
               >
-                ✨ AI HƯỚNG NGHIỆP ĐỘT PHÁ 2026
+                ✨ AI HƯỚNG NGHIỆP 2026
               </div>
               <h2
                 style={{
-                  fontSize: '16px',
+                  fontSize: '15.5px',
                   fontWeight: 900,
                   color: '#FFFFFF',
-                  lineHeight: 1.3,
+                  lineHeight: 1.25,
                   margin: '0 0 4px',
                   textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                  letterSpacing: '-0.2px',
                 }}
               >
                 Khám phá Ngành học Chuẩn Tương lai cùng AI
@@ -337,35 +339,52 @@ export const HomeTab: React.FC = () => {
               <p
                 style={{
                   margin: '0 0 10px',
-                  fontSize: '12px',
+                  fontSize: '11.5px',
                   color: '#E0F2FE',
                   lineHeight: 1.3,
                   fontWeight: 500,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                 }}
               >
-                Thuật toán Holland • Đối soát 30 trường Đại học
+                Thuật toán Holland • 30 trường Đại học
               </p>
-              <Button
-                variant="onGradient"
-                size="M"
+              <button
                 onClick={() => setActiveTab(1)}
+                style={{
+                  height: '34px',
+                  padding: '0 16px',
+                  borderRadius: '17px',
+                  backgroundColor: '#FFFFFF',
+                  color: '#1D4ED8',
+                  border: 'none',
+                  fontWeight: 800,
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
               >
-                Bắt đầu làm bài test →
-              </Button>
+                <span>Bắt đầu làm bài test</span>
+                <span>→</span>
+              </button>
             </div>
 
-            {/* KHUNG ẢNH FULL VỪA KHÍT 100% */}
+            {/* KHUNG ẢNH GỌN GÀNG CHO ĐIỆN THOẠI */}
             <div
               style={{
-                width: '130px',
-                height: '115px',
-                borderRadius: '18px',
+                width: '105px',
+                height: '98px',
+                borderRadius: '16px',
                 overflow: 'hidden',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
-                border: '2px solid rgba(255,255,255,0.3)',
+                boxShadow: '0 8px 20px rgba(0,0,0,0.25)',
+                border: '2px solid rgba(255,255,255,0.4)',
                 flexShrink: 0,
                 position: 'relative',
-                backgroundColor: 'rgba(255,255,255,0.1)',
+                backgroundColor: 'rgba(255,255,255,0.12)',
               }}
             >
               <img
@@ -390,7 +409,7 @@ export const HomeTab: React.FC = () => {
               position: 'absolute',
               inset: 0,
               background: 'linear-gradient(135deg, #7C3AED 0%, #4F46E5 60%, #06B6D4 100%)',
-              padding: '20px',
+              padding: '16px 18px 24px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -408,11 +427,11 @@ export const HomeTab: React.FC = () => {
                   gap: '6px',
                   backgroundColor: '#EF4444',
                   color: '#FFFFFF',
-                  padding: '4px 10px',
-                  borderRadius: '12px',
-                  fontSize: '11px',
+                  padding: '3px 8px',
+                  borderRadius: '10px',
+                  fontSize: '10.5px',
                   fontWeight: 800,
-                  marginBottom: '8px',
+                  marginBottom: '6px',
                   boxShadow: '0 2px 8px rgba(239,68,68,0.4)',
                 }}
               >
@@ -425,52 +444,70 @@ export const HomeTab: React.FC = () => {
                     animation: 'pulse 1s infinite',
                   }}
                 />
-                🔴 TRỰC TIẾP HÔM NAY • EDUFAIR 2026
+                🔴 TRỰC TIẾP HÔM NAY
               </div>
               <h2
                 style={{
-                  fontSize: '16px',
+                  fontSize: '15.5px',
                   fontWeight: 900,
                   color: '#FFFFFF',
-                  lineHeight: 1.3,
+                  lineHeight: 1.25,
                   margin: '0 0 4px',
                   textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                  letterSpacing: '-0.2px',
                 }}
               >
-                Virtual EduFair: Giao lưu & Đối thoại 30 Trường ĐH
+                Virtual EduFair: Giao lưu 30 Trường ĐH
               </h2>
               <p
                 style={{
                   margin: '0 0 10px',
-                  fontSize: '12px',
+                  fontSize: '11.5px',
                   color: '#EDE9FE',
                   lineHeight: 1.3,
                   fontWeight: 500,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                 }}
               >
-                Tư vấn tuyển sinh trực tiếp • Cơ hội nhận học bổng 50%
+                Tư vấn trực tiếp • Học bổng 50%
               </p>
-              <Button
-                variant="onGradient"
-                size="M"
+              <button
                 onClick={() => setActiveTab(3)}
+                style={{
+                  height: '34px',
+                  padding: '0 16px',
+                  borderRadius: '17px',
+                  backgroundColor: '#FFFFFF',
+                  color: '#6D28D9',
+                  border: 'none',
+                  fontWeight: 800,
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
               >
-                Tham gia phòng Live ngay →
-              </Button>
+                <span>Tham gia Live ngay</span>
+                <span>→</span>
+              </button>
             </div>
 
-            {/* KHUNG ẢNH DEMO VỪA KHÍT - BẠN CHỈ CẦN THAY ĐƯỜNG DẪN ẢNH VÀO SRC DƯỚI ĐÂY */}
+            {/* KHUNG ẢNH GỌN GÀNG CHO ĐIỆN THOẠI */}
             <div
               style={{
-                width: '130px',
-                height: '115px',
-                borderRadius: '18px',
+                width: '105px',
+                height: '98px',
+                borderRadius: '16px',
                 overflow: 'hidden',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
-                border: '2px solid rgba(255,255,255,0.3)',
+                boxShadow: '0 8px 20px rgba(0,0,0,0.25)',
+                border: '2px solid rgba(255,255,255,0.4)',
                 flexShrink: 0,
                 position: 'relative',
-                backgroundColor: 'rgba(255,255,255,0.1)',
+                backgroundColor: 'rgba(255,255,255,0.12)',
               }}
             >
               <img
@@ -495,7 +532,7 @@ export const HomeTab: React.FC = () => {
               position: 'absolute',
               inset: 0,
               background: 'linear-gradient(135deg, #78350F 0%, #B45309 40%, #D97706 75%, #F59E0B 100%)',
-              padding: '20px',
+              padding: '16px 18px 24px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -513,60 +550,78 @@ export const HomeTab: React.FC = () => {
                   gap: '6px',
                   background: 'linear-gradient(90deg, #EF4444 0%, #F97316 50%, #EAB308 100%)',
                   color: '#FFFFFF',
-                  padding: '4px 10px',
-                  borderRadius: '12px',
-                  fontSize: '11px',
+                  padding: '3px 8px',
+                  borderRadius: '10px',
+                  fontSize: '10.5px',
                   fontWeight: 900,
                   letterSpacing: '0.4px',
                   boxShadow: '0 0 14px rgba(249,115,22,0.7)',
-                  marginBottom: '8px',
+                  marginBottom: '6px',
                   animation: 'pulse 1.5s infinite',
                 }}
               >
                 <span>🔥</span>
-                <span>ĐẶC QUYỀN VIP -50% HÔM NAY</span>
+                <span>GIẢM -50% HÔM NAY</span>
                 <span>🔥</span>
               </div>
               <h2
                 style={{
-                  fontSize: '16px',
+                  fontSize: '15.5px',
                   fontWeight: 900,
                   color: '#FFFFFF',
-                  lineHeight: 1.3,
+                  lineHeight: 1.25,
                   margin: '0 0 4px',
                   textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                  letterSpacing: '-0.2px',
                 }}
               >
-                Unipath Premium: Cố vấn AI 24/7 & Lộ trình THPT
+                Unipath VIP: Cố vấn AI & Lộ trình THPT
               </h2>
               <p
                 style={{
                   margin: '0 0 10px',
-                  fontSize: '12px',
+                  fontSize: '11.5px',
                   color: '#FEF3C7',
                   lineHeight: 1.3,
                   fontWeight: 500,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                 }}
               >
-                Đồng hành 3 năm THPT • Tăng tỷ lệ đỗ Nguyện vọng 1
+                Đồng hành 3 năm • Cam kết NV1
               </p>
-              <Button
-                variant="onGradient"
-                size="M"
+              <button
                 onClick={() => setActiveTab(4)}
+                style={{
+                  height: '34px',
+                  padding: '0 16px',
+                  borderRadius: '17px',
+                  backgroundColor: '#FFFFFF',
+                  color: '#B45309',
+                  border: 'none',
+                  fontWeight: 800,
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
               >
-                Kích hoạt Gói VIP ngay →
-              </Button>
+                <span>Kích hoạt Gói VIP</span>
+                <span>→</span>
+              </button>
             </div>
 
-            {/* KHUNG ẢNH FULL VỪA KHÍT 100% KHÔNG BỊ CẮT CHỮ */}
+            {/* KHUNG ẢNH FULL VỪA KHÍT 100% CHO ĐIỆN THOẠI */}
             <div
               style={{
-                width: '130px',
-                height: '115px',
-                borderRadius: '18px',
+                width: '105px',
+                height: '98px',
+                borderRadius: '16px',
                 overflow: 'hidden',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.3), 0 0 12px rgba(245,158,11,0.4)',
+                boxShadow: '0 8px 20px rgba(0,0,0,0.3), 0 0 10px rgba(245,158,11,0.4)',
                 border: '2px solid rgba(254,240,138,0.7)',
                 flexShrink: 0,
                 position: 'relative',
@@ -593,11 +648,11 @@ export const HomeTab: React.FC = () => {
             </div>
           </div>
 
-          {/* Slide Indicator Dots */}
+          {/* Slide Indicator Dots - Positioned safely at bottom */}
           <div
             style={{
               position: 'absolute',
-              bottom: '12px',
+              bottom: '7px',
               left: '50%',
               transform: 'translateX(-50%)',
               display: 'flex',
@@ -610,10 +665,10 @@ export const HomeTab: React.FC = () => {
                 key={idx}
                 onClick={() => setCurrentSlide(idx)}
                 style={{
-                  width: currentSlide === idx ? '20px' : '6px',
-                  height: '6px',
+                  width: currentSlide === idx ? '18px' : '6px',
+                  height: '5px',
                   borderRadius: '3px',
-                  backgroundColor: currentSlide === idx ? '#FFFFFF' : 'rgba(255,255,255,0.4)',
+                  backgroundColor: currentSlide === idx ? '#FFFFFF' : 'rgba(255,255,255,0.45)',
                   border: 'none',
                   padding: 0,
                   cursor: 'pointer',

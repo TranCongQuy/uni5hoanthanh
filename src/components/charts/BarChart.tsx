@@ -32,6 +32,8 @@ export const BarChart: React.FC<BarChartProps> = ({
         borderRadius: '20px',
         border: '1.5px solid #E2E8F0',
         boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+        overflow: 'hidden',
+        position: 'relative',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
