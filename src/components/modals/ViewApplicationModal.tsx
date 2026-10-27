@@ -1,21 +1,27 @@
-import React from 'react';
-import { X, CheckCircle2, Clock, AlertCircle, User, Phone, Mail } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, CheckCircle2, Clock, AlertCircle, User, Phone, Mail, Ban, XCircle, AlertTriangle } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button, UniversityAvatar } from '../common/UI';
 
 export const ViewApplicationModal: React.FC = () => {
-  const { selectedAppForDetail, closeApplicationDetail } = useApp();
+  const { selectedAppForDetail, closeApplicationDetail, cancelApplication } = useApp();
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   if (!selectedAppForDetail) return null;
 
   const app = selectedAppForDetail;
+
+  const handleConfirmCancel = () => {
+    cancelApplication(app.id);
+    setShowCancelConfirm(false);
+  };
 
   return (
     <div
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 1100,
+        zIndex: 1200,
         backgroundColor: 'rgba(15, 23, 42, 0.65)',
         backdropFilter: 'blur(6px)',
         display: 'flex',
@@ -28,7 +34,8 @@ export const ViewApplicationModal: React.FC = () => {
         style={{
           width: '100%',
           maxWidth: '520px',
-          maxHeight: '90vh',
+          height: 'min(88dvh, calc(100dvh - 56px))',
+          maxHeight: 'calc(100dvh - 56px)',
           backgroundColor: '#FFFFFF',
           borderRadius: '28px 28px 0 0',
           display: 'flex',
@@ -41,30 +48,34 @@ export const ViewApplicationModal: React.FC = () => {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag handle */}
-        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '8px', paddingBottom: '4px', backgroundColor: '#FFFFFF' }}>
           <div
             style={{
               width: '40px',
               height: '4px',
               borderRadius: '2px',
-              backgroundColor: '#E2E8F0',
+              backgroundColor: '#CBD5E1',
             }}
           />
         </div>
 
-        {/* Header */}
+        {/* Sticky Top Header: 100% visible on real mobile phones */}
         <div
           style={{
-            padding: '14px 20px',
+            padding: '8px 18px 12px',
             borderBottom: '1px solid #F1F5F9',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            position: 'sticky',
+            top: 0,
+            zIndex: 60,
+            backgroundColor: '#FFFFFF',
           }}
         >
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0F172A' }}>
+              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#0F172A' }}>
                 Chi tiết hồ sơ xét tuyển
               </h3>
             </div>
@@ -75,17 +86,18 @@ export const ViewApplicationModal: React.FC = () => {
 
           <button
             onClick={closeApplicationDetail}
+            aria-label="Đóng chi tiết hồ sơ"
             style={{
-              width: '36px',
-              height: '36px',
+              width: '38px',
+              height: '38px',
               borderRadius: '50%',
-              backgroundColor: '#F1F5F9',
-              border: 'none',
+              backgroundColor: '#F8FAFC',
+              border: '1.5px solid #E2E8F0',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              color: '#64748B',
+              color: '#1E293B',
             }}
           >
             <X size={18} />
@@ -93,7 +105,7 @@ export const ViewApplicationModal: React.FC = () => {
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 96px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '18px 18px 100px' }}>
           {/* Status Card */}
           <div
             style={{
@@ -101,30 +113,76 @@ export const ViewApplicationModal: React.FC = () => {
               borderRadius: '20px',
               padding: '16px',
               border: '1.5px solid #E2E8F0',
-              marginBottom: '20px',
+              marginBottom: '18px',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <span style={{ fontSize: '13px', color: '#64748B', fontWeight: 600 }}>
-                Trạng thái hiện tại:
+                Trạng thái hồ sơ:
               </span>
               <span
                 style={{
                   fontSize: '12px',
                   fontWeight: 800,
                   color: app.statusColor,
-                  backgroundColor: app.statusColor === '#10B981' ? '#ECFDF5' : '#FFFBEB',
-                  border: `1px solid ${app.statusColor}`,
+                  backgroundColor:
+                    app.status === 'Hồ sơ hợp lệ' ? '#ECFDF5'
+                    : app.status === 'Đang xét duyệt' ? '#FFFBEB'
+                    : app.status === 'Thiếu hồ sơ' ? '#EFF6FF'
+                    : app.status === 'Đã bị hủy' ? '#FEF2F2'
+                    : '#F1F5F9',
+                  border: `1.5px solid ${app.statusColor}`,
                   padding: '4px 12px',
                   borderRadius: '12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
                 }}
               >
-                {app.status}
+                {app.status === 'Hồ sơ hợp lệ' && <CheckCircle2 size={14} />}
+                {app.status === 'Đang xét duyệt' && <Clock size={14} />}
+                {app.status === 'Thiếu hồ sơ' && <AlertCircle size={14} />}
+                {app.status === 'Đã hủy' && <Ban size={14} />}
+                {app.status === 'Đã bị hủy' && <XCircle size={14} />}
+                <span>{app.status}</span>
               </span>
             </div>
 
+            {/* Cancel banner if cancelled */}
+            {app.status === 'Đã hủy' && (
+              <div
+                style={{
+                  backgroundColor: '#F1F5F9',
+                  border: '1px solid #CBD5E1',
+                  borderRadius: '12px',
+                  padding: '10px 12px',
+                  fontSize: '12px',
+                  color: '#475569',
+                  marginBottom: '12px',
+                }}
+              >
+                <strong>Hồ sơ đã được bạn chủ động hủy</strong> vào lúc {app.submittedAt}. Hồ sơ không còn hiệu lực xét tuyển.
+              </div>
+            )}
+
+            {app.status === 'Đã bị hủy' && (
+              <div
+                style={{
+                  backgroundColor: '#FEF2F2',
+                  border: '1px solid #FECACA',
+                  borderRadius: '12px',
+                  padding: '10px 12px',
+                  fontSize: '12px',
+                  color: '#B91C1C',
+                  marginBottom: '12px',
+                }}
+              >
+                <strong>Hồ sơ đã bị nhà trường từ chối/hủy:</strong> Không đáp ứng ngưỡng đảm bảo chất lượng đầu vào của ngành học.
+              </div>
+            )}
+
             {/* Timeline Progress */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '14px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                 <CheckCircle2 size={18} color="#10B981" style={{ marginTop: '2px', flexShrink: 0 }} />
                 <div>
@@ -138,25 +196,39 @@ export const ViewApplicationModal: React.FC = () => {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <Clock size={18} color="#F59E0B" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <Clock
+                  size={18}
+                  color={app.status === 'Đang xét duyệt' ? '#F59E0B' : app.status === 'Hồ sơ hợp lệ' ? '#10B981' : '#94A3B8'}
+                  style={{ marginTop: '2px', flexShrink: 0 }}
+                />
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
                     2. Đối soát dữ liệu điểm thi & học bạ THPT
                   </div>
                   <div style={{ fontSize: '11px', color: '#64748B' }}>
-                    Ban tuyển sinh trường {app.uniCode} đang thẩm định hồ sơ.
+                    {app.status === 'Thiếu hồ sơ'
+                      ? 'Yêu cầu thí sinh bổ sung tài liệu học bạ để hoàn tất thẩm định.'
+                      : app.status === 'Đang xét duyệt'
+                      ? `Ban tuyển sinh ${app.uniCode} đang thẩm định hồ sơ của bạn.`
+                      : 'Đã hoàn tất kiểm tra tính xác thực của hồ sơ.'}
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', opacity: 0.5 }}>
-                <AlertCircle size={18} color="#94A3B8" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', opacity: app.status === 'Hồ sơ hợp lệ' ? 1 : 0.6 }}>
+                {app.status === 'Hồ sơ hợp lệ' ? (
+                  <CheckCircle2 size={18} color="#10B981" style={{ marginTop: '2px', flexShrink: 0 }} />
+                ) : (
+                  <AlertCircle size={18} color="#94A3B8" style={{ marginTop: '2px', flexShrink: 0 }} />
+                )}
                 <div>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#64748B' }}>
-                    3. Công bố danh sách trúng tuyển chính thức
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
+                    3. Kết quả xét tuyển chính thức
                   </div>
-                  <div style={{ fontSize: '11px', color: '#94A3B8' }}>
-                    Dự kiến gửi thông báo qua SMS và Email.
+                  <div style={{ fontSize: '11px', color: '#64748B' }}>
+                    {app.status === 'Hồ sơ hợp lệ'
+                      ? 'Hồ sơ đạt tiêu chuẩn. Đang chờ danh sách trúng tuyển đợt 1.'
+                      : 'Dự kiến thông báo qua SMS và cổng thông tin Unipath.'}
                   </div>
                 </div>
               </div>
@@ -242,9 +314,94 @@ export const ViewApplicationModal: React.FC = () => {
                 fontSize: '12px',
                 color: '#1E40AF',
                 lineHeight: 1.45,
+                marginBottom: '16px',
               }}
             >
               <strong>Ghi chú từ tuyển sinh:</strong> {app.notes}
+            </div>
+          )}
+
+          {/* HỦY HỒ SƠ XÉT TUYỂN KHI ĐANG XÉT DUYỆT */}
+          {app.status === 'Đang xét duyệt' && (
+            <div style={{ marginTop: '10px' }}>
+              {!showCancelConfirm ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCancelConfirm(true)}
+                  style={{
+                    width: '100%',
+                    height: '44px',
+                    borderRadius: '14px',
+                    backgroundColor: '#FEF2F2',
+                    border: '1.5px solid #FECACA',
+                    color: '#DC2626',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Ban size={16} />
+                  <span>Hủy hồ sơ xét tuyển này</span>
+                </button>
+              ) : (
+                <div
+                  style={{
+                    backgroundColor: '#FEF2F2',
+                    border: '1.5px solid #EF4444',
+                    borderRadius: '16px',
+                    padding: '14px',
+                    textAlign: 'center',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: '#B91C1C', fontWeight: 800, fontSize: '14px', marginBottom: '6px' }}>
+                    <AlertTriangle size={18} />
+                    <span>Xác nhận hủy hồ sơ xét tuyển?</span>
+                  </div>
+                  <p style={{ margin: '0 0 12px', fontSize: '12px', color: '#7F1D1D', lineHeight: 1.4 }}>
+                    Hồ sơ đăng ký vào {app.uniName} sẽ bị hủy ngay lập tức và không thể phục hồi.
+                  </p>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowCancelConfirm(false)}
+                      style={{
+                        flex: 1,
+                        height: '38px',
+                        borderRadius: '10px',
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #CBD5E1',
+                        color: '#64748B',
+                        fontWeight: 700,
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Giữ lại hồ sơ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmCancel}
+                      style={{
+                        flex: 1,
+                        height: '38px',
+                        borderRadius: '10px',
+                        backgroundColor: '#DC2626',
+                        border: 'none',
+                        color: '#FFFFFF',
+                        fontWeight: 700,
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Đồng ý Hủy
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

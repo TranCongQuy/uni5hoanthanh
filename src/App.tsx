@@ -14,12 +14,21 @@ import { EditProfileModal } from './components/modals/EditProfileModal';
 import { SettingsModal } from './components/modals/SettingsModal';
 import { ApplyDemoModal } from './components/modals/ApplyDemoModal';
 import { ViewApplicationModal } from './components/modals/ViewApplicationModal';
+import { AllApplicationsModal } from './components/modals/AllApplicationsModal';
 import { NotificationsModal } from './components/modals/NotificationsModal';
 import { AuthModal } from './components/modals/AuthModal';
 import { OnboardingModal } from './components/modals/OnboardingModal';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { Toast } from './components/common/UI';
 import './App.css';
+
+const TAB_NAMES = [
+  'Trang chủ',
+  'Khảo sát RIASEC',
+  'AI Matching 2026',
+  'Unipath LIVE',
+  'Hồ sơ cá nhân',
+];
 
 const MainApp: React.FC = () => {
   const {
@@ -36,20 +45,24 @@ const MainApp: React.FC = () => {
     isAuthModalOpen,
     isApplyDemoOpen,
     selectedAppForDetail,
+    isAllApplicationsOpen,
     isLoggedIn,
   } = useApp();
 
-  // Onboarding state: defaults to true on first visit, never prompts again once finished or skipped
-  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
-    return localStorage.getItem('unipath_onboarding_done') !== 'true';
-  });
+  // Onboarding state: defaults to true every time user re-enters the app (no device persistence as requested)
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(true);
 
   const handleFinishOnboarding = () => {
-    localStorage.setItem('unipath_onboarding_done', 'true');
     setShowOnboarding(false);
   };
 
-  // Touch Swipe on Main screen to seamlessly switch between tabs
+  // Swipe gesture animation HUD feedback
+  const [swipeFeedback, setSwipeFeedback] = useState<{
+    direction: 'left' | 'right';
+    targetTabName: string;
+  } | null>(null);
+
+  // Touch Swipe on Main screen to seamlessly switch between tabs with animated feedback
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -62,14 +75,30 @@ const MainApp: React.FC = () => {
     const dy = e.changedTouches[0].clientY - touchStart.y;
     setTouchStart(null);
 
-    // Only trigger if horizontal swipe is dominant and significant (> 50px)
-    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      if (dx < 0) {
+    // Only trigger if horizontal swipe is dominant and significant (> 45px)
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      if (dx < 0 && activeTab < 4) {
         // Swiped left (finger moved right-to-left) -> Next Tab
-        setActiveTab(Math.min(4, activeTab + 1));
-      } else {
+        const nextTab = activeTab + 1;
+        setSwipeFeedback({
+          direction: 'left',
+          targetTabName: TAB_NAMES[nextTab],
+        });
+        setTimeout(() => {
+          setActiveTab(nextTab);
+          setSwipeFeedback(null);
+        }, 320);
+      } else if (dx > 0 && activeTab > 0) {
         // Swiped right (finger moved left-to-right) -> Previous Tab
-        setActiveTab(Math.max(0, activeTab - 1));
+        const prevTab = activeTab - 1;
+        setSwipeFeedback({
+          direction: 'right',
+          targetTabName: TAB_NAMES[prevTab],
+        });
+        setTimeout(() => {
+          setActiveTab(prevTab);
+          setSwipeFeedback(null);
+        }, 320);
       }
     }
   };
@@ -86,7 +115,8 @@ const MainApp: React.FC = () => {
     isSettingsOpen ||
     isAuthModalOpen ||
     isApplyDemoOpen ||
-    selectedAppForDetail !== null;
+    selectedAppForDetail !== null ||
+    isAllApplicationsOpen;
 
   useEffect(() => {
     if (isAnyModalOpen) {
@@ -115,7 +145,7 @@ const MainApp: React.FC = () => {
   if (!isLoggedIn) {
     return (
       <>
-        {/* Onboarding Flow: Shown on first visit with "Bỏ qua" on top; saved to localStorage */}
+        {/* Onboarding Flow: Shown every time app is opened, with "Bỏ qua" at top */}
         <OnboardingModal
           isOpen={showOnboarding}
           onFinish={handleFinishOnboarding}
@@ -133,11 +163,54 @@ const MainApp: React.FC = () => {
   // 2. MAIN APPLICATION (Accessible once logged in)
   return (
     <>
-      {/* Onboarding if triggered in session */}
+      {/* Onboarding if opened in session */}
       <OnboardingModal
         isOpen={showOnboarding}
         onFinish={handleFinishOnboarding}
       />
+
+      {/* Swipe Directional Animation HUD Feedback */}
+      {swipeFeedback && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '42%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 9999,
+            backgroundColor: 'rgba(15, 23, 42, 0.92)',
+            backdropFilter: 'blur(10px)',
+            color: '#FFFFFF',
+            padding: '14px 22px',
+            borderRadius: '24px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            animation: 'fadeIn 0.2s ease',
+            pointerEvents: 'none',
+          }}
+        >
+          {swipeFeedback.direction === 'right' && (
+            <div style={{ fontSize: '22px', color: '#60A5FA' }}>
+              ⬅
+            </div>
+          )}
+          <div>
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.8px', opacity: 0.8, color: '#93C5FD' }}>
+              {swipeFeedback.direction === 'left' ? 'Đang chuyển tiếp' : 'Đang quay lại'}
+            </div>
+            <div style={{ fontSize: '15px', fontWeight: 800 }}>
+              {swipeFeedback.targetTabName}
+            </div>
+          </div>
+          {swipeFeedback.direction === 'left' && (
+            <div style={{ fontSize: '22px', color: '#60A5FA' }}>
+              ➔
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Main Tab Screen View with Horizontal Swipe Gestures */}
       <main
@@ -164,6 +237,7 @@ const MainApp: React.FC = () => {
       <SettingsModal />
       <ApplyDemoModal />
       <ViewApplicationModal />
+      <AllApplicationsModal />
       <NotificationsModal />
       <AuthModal />
 

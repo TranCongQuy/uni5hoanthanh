@@ -149,18 +149,21 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onFini
           maxWidth: '380px',
         }}
       >
-        {/* Illustration Container (FULL FRAME 100%) */}
+        {/* Illustration Container (FULL IMAGE 100% VISIBLE, NO CLIPPING) */}
         <div
           style={{
             width: '100%',
-            height: '260px',
-            borderRadius: '28px',
+            height: '240px',
+            borderRadius: '24px',
             overflow: 'hidden',
             position: 'relative',
-            boxShadow: '0 16px 36px rgba(37,99,235,0.16), 0 2px 10px rgba(0,0,0,0.04)',
+            boxShadow: '0 12px 30px rgba(0,0,0,0.15)',
             border: '2px solid rgba(255,255,255,0.9)',
-            backgroundColor: '#0F172A',
-            marginBottom: '22px',
+            background: 'linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%)',
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           <img
@@ -169,8 +172,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onFini
             style={{
               width: '100%',
               height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center',
+              objectFit: 'contain',
               display: 'block',
               transition: 'opacity 0.4s ease',
             }}
@@ -178,40 +180,27 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onFini
               (e.target as HTMLImageElement).src = '/images/career_header.png';
             }}
           />
+        </div>
 
-          {/* Bottom Gradient & Badge */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(180deg, transparent 35%, rgba(15,23,42,0.7) 100%)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'flex-end',
-              padding: '16px',
-            }}
-          >
-            <div
-              style={{
-                alignSelf: 'center',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                backgroundColor: 'rgba(255,255,255,0.95)',
-                backdropFilter: 'blur(8px)',
-                color: '#1D4ED8',
-                fontSize: '11px',
-                fontWeight: 800,
-                padding: '5px 12px',
-                borderRadius: '14px',
-                letterSpacing: '0.4px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.18)',
-              }}
-            >
-              {slide.icon}
-              <span>{slide.badge}</span>
-            </div>
-          </div>
+        {/* Feature Badge placed OUTSIDE image so it never covers the graphic or text */}
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            backgroundColor: '#EFF6FF',
+            color: '#1D4ED8',
+            fontSize: '11px',
+            fontWeight: 800,
+            padding: '5px 14px',
+            borderRadius: '16px',
+            letterSpacing: '0.4px',
+            border: '1.5px solid #BFDBFE',
+            marginBottom: '10px',
+          }}
+        >
+          {slide.icon}
+          <span>{slide.badge}</span>
         </div>
 
         {/* Title */}

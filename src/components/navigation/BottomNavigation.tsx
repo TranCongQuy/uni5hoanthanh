@@ -26,8 +26,8 @@ export const BottomNavigation: React.FC = () => {
         bottom: 0,
         left: 0,
         right: 0,
-        height: 'calc(68px + env(safe-area-inset-bottom, 0px))',
-        minHeight: '68px',
+        height: 'auto',
+        minHeight: '66px',
         backgroundColor: '#FFFFFF',
         borderRadius: '24px 24px 0 0',
         borderTop: '1px solid #E2E8F0',
@@ -39,7 +39,7 @@ export const BottomNavigation: React.FC = () => {
         maxWidth: '520px',
         margin: '0 auto',
         paddingTop: '6px',
-        paddingBottom: 'max(8px, env(safe-area-inset-bottom, 0px))',
+        paddingBottom: 'max(10px, env(safe-area-inset-bottom, 12px))',
         boxSizing: 'border-box',
       }}
     >

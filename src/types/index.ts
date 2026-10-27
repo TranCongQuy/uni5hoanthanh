@@ -89,6 +89,13 @@ export interface ChatMessage {
   timestamp: string;
 }
 
+export type ApplicationStatus =
+  | 'Đang xét duyệt'
+  | 'Hồ sơ hợp lệ'
+  | 'Thiếu hồ sơ'
+  | 'Đã hủy'
+  | 'Đã bị hủy';
+
 export interface ApplicationRecord {
   id: string;
   code: string;
@@ -101,8 +108,9 @@ export interface ApplicationRecord {
   email: string;
   score: number;
   submittedAt: string;
-  status: 'Đang xét duyệt' | 'Hồ sơ hợp lệ' | 'Chờ bổ sung học bạ';
+  status: ApplicationStatus;
   statusColor: string;
   notes?: string;
+  cancelReason?: string;
 }
 

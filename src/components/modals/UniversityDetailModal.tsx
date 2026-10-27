@@ -111,12 +111,13 @@ export const UniversityDetailModal: React.FC = () => {
         style={{
           width: '100%',
           maxWidth: '520px',
-          height: '92vh',
+          height: 'min(88dvh, calc(100dvh - 56px))',
+          maxHeight: 'calc(100dvh - 56px)',
           backgroundColor: '#FFFFFF',
           borderRadius: '28px 28px 0 0',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 -10px 30px rgba(0,0,0,0.2)',
+          boxShadow: '0 -10px 30px rgba(0,0,0,0.25)',
           animation: 'slideUp 0.3s ease-out',
           overflow: 'hidden',
           position: 'relative',
@@ -125,13 +126,25 @@ export const UniversityDetailModal: React.FC = () => {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
+        {/* Drag handle */}
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '8px', paddingBottom: '4px', backgroundColor: '#FFFFFF' }}>
+          <div
+            style={{
+              width: '40px',
+              height: '4px',
+              borderRadius: '2px',
+              backgroundColor: '#CBD5E1',
+            }}
+          />
+        </div>
+
         {/* Sticky Top Safe-Area Bar: 100% visible on every phone, never clipped by notch or curve */}
         <div
           style={{
             position: 'sticky',
             top: 0,
             zIndex: 60,
-            padding: '12px 18px',
+            padding: '10px 18px 12px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',

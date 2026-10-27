@@ -60,7 +60,8 @@ export const EditProfileModal: React.FC = () => {
         style={{
           width: '100%',
           maxWidth: '520px',
-          height: '92vh',
+          height: 'min(88dvh, calc(100dvh - 56px))',
+          maxHeight: 'calc(100dvh - 56px)',
           backgroundColor: '#FFFFFF',
           borderRadius: '28px 28px 0 0',
           display: 'flex',

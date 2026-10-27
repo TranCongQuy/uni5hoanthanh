@@ -38,6 +38,9 @@ export const HomeTab: React.FC = () => {
 
   const [selectedRegion, setSelectedRegion] = useState<string>('Tất cả');
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [visibleCount, setVisibleCount] = useState<number>(10);
+  const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
+  const [isSearchDropdownDismissed, setIsSearchDropdownDismissed] = useState<boolean>(false);
 
   // Time-based greeting
   const getGreeting = () => {
@@ -67,6 +70,17 @@ export const HomeTab: React.FC = () => {
       u.majors.some((m) => m.toLowerCase().includes(query))
     );
   });
+
+  // Autocomplete search matches across all 30 universities
+  const searchMatches = searchKeyword.trim().length > 0 ? UNIVERSITIES.filter((u) => {
+    const query = searchKeyword.toLowerCase().trim();
+    return (
+      u.name.toLowerCase().includes(query) ||
+      u.code.toLowerCase().includes(query) ||
+      u.loc.toLowerCase().includes(query) ||
+      u.majors.some((m) => m.toLowerCase().includes(query))
+    );
+  }) : [];
 
   // Featured 8 universities across North, Central, and South regions
   const featuredUnis = [
@@ -126,6 +140,7 @@ export const HomeTab: React.FC = () => {
 
   const scrollToAllUniversities = () => {
     setSelectedRegion('Tất cả');
+    setVisibleCount(10);
     const el = document.getElementById('all-universities-section');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
@@ -439,12 +454,12 @@ export const HomeTab: React.FC = () => {
             </div>
           </div>
 
-          {/* Slide 3: Unipath Premium */}
+          {/* Slide 3: Unipath Premium - Bốc lửa -50% & Hiệu ứng VIP */}
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(135deg, #B45309 0%, #D97706 50%, #F59E0B 100%)',
+              background: 'linear-gradient(135deg, #78350F 0%, #B45309 40%, #D97706 75%, #F59E0B 100%)',
               padding: '20px',
               display: 'flex',
               alignItems: 'center',
@@ -458,17 +473,24 @@ export const HomeTab: React.FC = () => {
             <div style={{ flex: 1, minWidth: 0, zIndex: 2 }}>
               <div
                 style={{
-                  display: 'inline-block',
-                  backgroundColor: 'rgba(255,255,255,0.25)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'linear-gradient(90deg, #EF4444 0%, #F97316 50%, #EAB308 100%)',
                   color: '#FFFFFF',
                   padding: '4px 10px',
                   borderRadius: '12px',
                   fontSize: '11px',
-                  fontWeight: 700,
+                  fontWeight: 900,
+                  letterSpacing: '0.4px',
+                  boxShadow: '0 0 12px rgba(249,115,22,0.6)',
                   marginBottom: '8px',
+                  animation: 'pulse 1.5s infinite',
                 }}
               >
-                ƯU ĐÃI -50% HÔM NAY
+                <span>🔥</span>
+                <span>GIẢM -50% HÔM NAY</span>
+                <span>🔥</span>
               </div>
               <h2
                 style={{
@@ -477,6 +499,7 @@ export const HomeTab: React.FC = () => {
                   color: '#FFFFFF',
                   lineHeight: 1.3,
                   margin: '0 0 14px',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.3)',
                 }}
               >
                 Unipath Premium: Lộ trình & Trợ lý AI VIP
@@ -486,22 +509,26 @@ export const HomeTab: React.FC = () => {
                 size="M"
                 onClick={() => setActiveTab(4)}
               >
-                Xem chi tiết →
+                Nâng cấp VIP ngay →
               </Button>
             </div>
 
-            {/* KHUNG ẢNH FULL VỪA KHÍT 100% */}
+            {/* KHUNG ẢNH FULL VỪA KHÍT 100% KHÔNG BỊ CẮT CHỮ */}
             <div
               style={{
                 width: '130px',
                 height: '115px',
                 borderRadius: '18px',
                 overflow: 'hidden',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
-                border: '2px solid rgba(255,255,255,0.3)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.3), 0 0 12px rgba(245,158,11,0.4)',
+                border: '2px solid rgba(254,240,138,0.7)',
                 flexShrink: 0,
                 position: 'relative',
-                backgroundColor: 'rgba(255,255,255,0.1)',
+                backgroundColor: 'rgba(255,255,255,0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '4px',
               }}
             >
               <img
@@ -510,7 +537,7 @@ export const HomeTab: React.FC = () => {
                 style={{
                   width: '100%',
                   height: '100%',
-                  objectFit: 'cover',
+                  objectFit: 'contain',
                   display: 'block',
                 }}
                 onError={(e) => {
@@ -552,26 +579,34 @@ export const HomeTab: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Search Box Pill 52dp */}
-      <div style={{ padding: '8px 20px 16px' }}>
+      {/* 3. Search Box Pill 52dp with Real-time Autocomplete Dropdown */}
+      <div style={{ padding: '8px 20px 16px', position: 'relative', zIndex: 45 }}>
         <div
           style={{
             height: '52px',
             borderRadius: '26px',
             backgroundColor: '#FFFFFF',
-            border: '1.5px solid #E2E8F0',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
+            border: isSearchFocused ? '2px solid #2563EB' : '1.5px solid #E2E8F0',
+            boxShadow: isSearchFocused ? '0 4px 16px rgba(37,99,235,0.15)' : '0 2px 10px rgba(0,0,0,0.04)',
             display: 'flex',
             alignItems: 'center',
             padding: '0 18px',
             gap: '12px',
+            transition: 'all 0.2s ease',
           }}
         >
-          <Search size={20} color="#64748B" />
+          <Search size={20} color={isSearchFocused ? '#2563EB' : '#64748B'} />
           <input
             type="text"
             value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
+            onChange={(e) => {
+              setSearchKeyword(e.target.value);
+              setIsSearchDropdownDismissed(false);
+            }}
+            onFocus={() => {
+              setIsSearchFocused(true);
+              setIsSearchDropdownDismissed(false);
+            }}
             placeholder="Tìm trường, ngành học, khu vực..."
             style={{
               border: 'none',
@@ -584,7 +619,10 @@ export const HomeTab: React.FC = () => {
           />
           {searchKeyword && (
             <button
-              onClick={() => setSearchKeyword('')}
+              onClick={() => {
+                setSearchKeyword('');
+                setIsSearchFocused(false);
+              }}
               style={{
                 border: 'none',
                 backgroundColor: 'transparent',
@@ -597,187 +635,381 @@ export const HomeTab: React.FC = () => {
             </button>
           )}
         </div>
+
+        {/* Real-time Autocomplete Dropdown (Tối đa 3 trường + Nút xem tất cả) */}
+        {searchKeyword.trim().length > 0 && isSearchFocused && !isSearchDropdownDismissed && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 'calc(100% - 6px)',
+              left: '20px',
+              right: '20px',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '20px',
+              boxShadow: '0 14px 36px rgba(0,0,0,0.16)',
+              border: '1.5px solid #DBEAFE',
+              overflow: 'hidden',
+              zIndex: 90,
+              animation: 'fadeIn 0.2s ease',
+            }}
+          >
+            <div
+              style={{
+                padding: '10px 16px',
+                backgroundColor: '#F8FAFC',
+                borderBottom: '1px solid #F1F5F9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#475569' }}>
+                Gợi ý tìm kiếm ({searchMatches.length} trường phù hợp)
+              </span>
+              <button
+                onClick={() => setIsSearchDropdownDismissed(true)}
+                style={{
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#94A3B8',
+                  cursor: 'pointer',
+                  padding: '2px',
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {searchMatches.length === 0 ? (
+              <div style={{ padding: '20px', textAlign: 'center', color: '#64748B', fontSize: '13px' }}>
+                Không tìm thấy trường nào phù hợp với từ khóa "<strong>{searchKeyword}</strong>"
+              </div>
+            ) : (
+              <div>
+                {searchMatches.slice(0, 3).map((uni) => (
+                  <div
+                    key={uni.id}
+                    onClick={() => {
+                      setIsSearchDropdownDismissed(true);
+                      openUniDetail(uni.id);
+                    }}
+                    style={{
+                      padding: '12px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      borderBottom: '1px solid #F8FAFC',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F0F7FF')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    <UniversityAvatar code={uni.code} size={38} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 700,
+                          color: '#0F172A',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {uni.name}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            color: '#2563EB',
+                            backgroundColor: '#EFF6FF',
+                            padding: '1px 6px',
+                            borderRadius: '6px',
+                          }}
+                        >
+                          {uni.code} • {uni.region}
+                        </span>
+                        <span style={{ fontSize: '12px', color: '#64748B' }}>
+                          Chuẩn: <strong style={{ color: '#0F172A' }}>{uni.score2024} đ</strong>
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight size={18} color="#94A3B8" />
+                  </div>
+                ))}
+
+                {searchMatches.length > 3 && (
+                  <button
+                    onClick={() => {
+                      setIsSearchDropdownDismissed(true);
+                      scrollToAllUniversities();
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      backgroundColor: '#EFF6FF',
+                      border: 'none',
+                      borderTop: '1px solid #DBEAFE',
+                      color: '#1D4ED8',
+                      fontSize: '13px',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <span>Xem tất cả {searchMatches.length} trường phù hợp</span>
+                    <ChevronRight size={16} />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* 4. Three shortcut cards + THPT Roadmap banner */}
+      {/* 4. Four Vibrant Interactive Quick Action Cards (RIASEC, AI Match, LIVE, Lộ trình THPT) */}
       <div style={{ padding: '0 20px 20px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-          {/* Shortcut 1: Holland */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+          {/* Card 1: RIASEC */}
           <div
             onClick={() => setActiveTab(1)}
             style={{
-              height: '104px',
               borderRadius: '20px',
-              backgroundColor: '#EFF6FF',
-              border: '1px solid #DBEAFE',
+              background: 'linear-gradient(135deg, #EEF2FF 0%, #DBEAFE 100%)',
+              border: '1.5px solid #C7D2FE',
+              padding: '14px',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(37,99,235,0.08)',
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '10px 8px',
-              cursor: 'pointer',
-              textAlign: 'center',
-              boxShadow: '0 2px 6px rgba(37,99,235,0.06)',
+              justifyContent: 'space-between',
+              minHeight: '105px',
+              transition: 'transform 0.15s ease',
             }}
           >
-            <div
-              style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '14px',
-                backgroundColor: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#2563EB',
-                marginBottom: '6px',
-                boxShadow: '0 2px 6px rgba(37,99,235,0.12)',
-              }}
-            >
-              <Compass size={22} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '12px',
+                  backgroundColor: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#2563EB',
+                  boxShadow: '0 2px 6px rgba(37,99,235,0.15)',
+                }}
+              >
+                <Compass size={22} />
+              </div>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  color: '#1D4ED8',
+                  backgroundColor: '#FFFFFF',
+                  padding: '2px 8px',
+                  borderRadius: '8px',
+                }}
+              >
+                HOT
+              </span>
             </div>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#1E293B', lineHeight: 1.2 }}>
-              Trắc nghiệm RIASEC
-            </span>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', marginTop: '8px' }}>
+                Trắc nghiệm RIASEC
+              </div>
+              <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+                Holland 6 nhóm tính cách
+              </div>
+            </div>
           </div>
 
-          {/* Shortcut 2: AI Matching */}
+          {/* Card 2: AI Matching */}
           <div
             onClick={() => setActiveTab(2)}
             style={{
-              height: '104px',
               borderRadius: '20px',
-              backgroundColor: '#F0FDF4',
-              border: '1px solid #DCFCE7',
+              background: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)',
+              border: '1.5px solid #A7F3D0',
+              padding: '14px',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(16,185,129,0.08)',
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '10px 8px',
-              cursor: 'pointer',
-              textAlign: 'center',
-              boxShadow: '0 2px 6px rgba(16,185,129,0.06)',
+              justifyContent: 'space-between',
+              minHeight: '105px',
+              transition: 'transform 0.15s ease',
             }}
           >
-            <div
-              style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '14px',
-                backgroundColor: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#10B981',
-                marginBottom: '6px',
-                boxShadow: '0 2px 6px rgba(16,185,129,0.12)',
-              }}
-            >
-              <Sparkles size={22} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '12px',
+                  backgroundColor: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#10B981',
+                  boxShadow: '0 2px 6px rgba(16,185,129,0.15)',
+                }}
+              >
+                <Sparkles size={22} />
+              </div>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  color: '#047857',
+                  backgroundColor: '#FFFFFF',
+                  padding: '2px 8px',
+                  borderRadius: '8px',
+                }}
+              >
+                AI 2026
+              </span>
             </div>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#1E293B', lineHeight: 1.2 }}>
-              AI Matching 2026
-            </span>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', marginTop: '8px' }}>
+                AI Matching 2026
+              </div>
+              <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+                Dự đoán trúng tuyển 30 trường
+              </div>
+            </div>
           </div>
 
-          {/* Shortcut 3: Unipath LIVE */}
+          {/* Card 3: Unipath LIVE */}
           <div
             onClick={() => setActiveTab(3)}
             style={{
-              height: '104px',
               borderRadius: '20px',
-              backgroundColor: '#FEF2F2',
-              border: '1px solid #FEE2E2',
+              background: 'linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 100%)',
+              border: '1.5px solid #FECDD3',
+              padding: '14px',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(239,68,68,0.08)',
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '10px 8px',
-              cursor: 'pointer',
-              textAlign: 'center',
-              position: 'relative',
-              boxShadow: '0 2px 6px rgba(239,68,68,0.06)',
+              justifyContent: 'space-between',
+              minHeight: '105px',
+              transition: 'transform 0.15s ease',
             }}
           >
-            <div
-              style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '14px',
-                backgroundColor: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#EF4444',
-                marginBottom: '6px',
-                boxShadow: '0 2px 6px rgba(239,68,68,0.12)',
-              }}
-            >
-              <Radio size={22} />
-            </div>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#1E293B', lineHeight: 1.2 }}>
-              Unipath LIVE
-            </span>
-            <span
-              style={{
-                position: 'absolute',
-                top: '6px',
-                right: '8px',
-                backgroundColor: '#EF4444',
-                color: '#FFFFFF',
-                fontSize: '9px',
-                fontWeight: 800,
-                padding: '2px 5px',
-                borderRadius: '6px',
-              }}
-            >
-              LIVE
-            </span>
-          </div>
-        </div>
-
-        {/* THPT Roadmap banner 64dp */}
-        <div
-          onClick={() => openCareerPath()}
-          style={{
-            marginTop: '12px',
-            height: '60px',
-            borderRadius: '18px',
-            backgroundColor: '#FFFFFF',
-            border: '1.5px solid #E2E8F0',
-            padding: '0 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div
-              style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '12px',
-                backgroundColor: '#F3E8FF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#7C3AED',
-              }}
-            >
-              <GraduationCap size={20} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '12px',
+                  backgroundColor: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#EF4444',
+                  boxShadow: '0 2px 6px rgba(239,68,68,0.15)',
+                }}
+              >
+                <Radio size={22} />
+              </div>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  color: '#B91C1C',
+                  backgroundColor: '#FFFFFF',
+                  padding: '2px 8px',
+                  borderRadius: '8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <span
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: '#EF4444',
+                  }}
+                />
+                LIVE
+              </span>
             </div>
             <div>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>
-                Lộ trình Phát triển THPT
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', marginTop: '8px' }}>
+                Unipath LIVE
               </div>
-              <div style={{ fontSize: '12px', color: '#64748B' }}>
-                Kế hoạch học tập Lớp 10, 11, 12 chuẩn theo nhóm ngành
+              <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+                Virtual EduFair 30 trường
               </div>
             </div>
           </div>
-          <ChevronRight size={20} color="#94A3B8" />
+
+          {/* Card 4: Lộ trình THPT */}
+          <div
+            onClick={() => openCareerPath()}
+            style={{
+              borderRadius: '20px',
+              background: 'linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%)',
+              border: '1.5px solid #E9D5FF',
+              padding: '14px',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(168,85,247,0.08)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              minHeight: '105px',
+              transition: 'transform 0.15s ease',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '12px',
+                  backgroundColor: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#8B5CF6',
+                  boxShadow: '0 2px 6px rgba(139,92,246,0.15)',
+                }}
+              >
+                <GraduationCap size={22} />
+              </div>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  color: '#6D28D9',
+                  backgroundColor: '#FFFFFF',
+                  padding: '2px 8px',
+                  borderRadius: '8px',
+                }}
+              >
+                VIP
+              </span>
+            </div>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', marginTop: '8px' }}>
+                Lộ trình Phát triển THPT
+              </div>
+              <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+                Kế hoạch 3 năm lớp 10-12
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1095,7 +1327,10 @@ export const HomeTab: React.FC = () => {
               return (
                 <button
                   key={region}
-                  onClick={() => setSelectedRegion(region)}
+                  onClick={() => {
+                    setSelectedRegion(region);
+                    setVisibleCount(10);
+                  }}
                   style={{
                     height: '38px',
                     padding: '0 18px',
@@ -1131,7 +1366,7 @@ export const HomeTab: React.FC = () => {
           />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {filteredUniversities.map((uni) => {
+            {filteredUniversities.slice(0, visibleCount).map((uni) => {
               const isFav = favoriteIds.includes(uni.id);
               const isComp = compareIds.includes(uni.id);
 
@@ -1265,20 +1500,48 @@ export const HomeTab: React.FC = () => {
                 </div>
               );
             })}
+
+            {/* Pagination Button: Xem thêm 10 trường tiếp theo */}
+            {visibleCount < filteredUniversities.length && (
+              <button
+                onClick={() => setVisibleCount((prev) => prev + 10)}
+                style={{
+                  width: '100%',
+                  marginTop: '6px',
+                  padding: '14px 18px',
+                  borderRadius: '18px',
+                  backgroundColor: '#EFF6FF',
+                  border: '1.5px solid #BFDBFE',
+                  color: '#1D4ED8',
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  boxShadow: '0 2px 8px rgba(37,99,235,0.08)',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <span>Xem thêm 10 trường tiếp theo (Đang hiện {Math.min(visibleCount, filteredUniversities.length)}/{filteredUniversities.length} trường)</span>
+                <span style={{ fontSize: '15px' }}>↓</span>
+              </button>
+            )}
           </div>
         )}
 
-        <AppFooter text={`Đã hiển thị ${filteredUniversities.length}/30 trường đại học`} />
+        <AppFooter text={`Đang hiển thị ${Math.min(visibleCount, filteredUniversities.length)}/${filteredUniversities.length} trường đại học`} />
       </div>
 
-      {/* 7. Floating Action Button: So sánh (n) */}
+      {/* 7. Floating Action Button: So sánh (n) - Positioned safely above bottom navigation */}
       {compareIds.length > 0 && (
         <div
           style={{
             position: 'fixed',
-            bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
+            bottom: 'calc(84px + env(safe-area-inset-bottom, 12px))',
             right: 'max(16px, calc((100vw - 520px) / 2 + 16px))',
-            zIndex: 70,
+            zIndex: 75,
           }}
         >
           <button

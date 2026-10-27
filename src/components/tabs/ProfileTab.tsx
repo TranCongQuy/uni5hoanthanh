@@ -34,6 +34,7 @@ export const ProfileTab: React.FC = () => {
     openAuthModal,
     applications,
     openApplicationDetail,
+    openAllApplications,
     setActiveTab,
   } = useApp();
 
@@ -518,9 +519,24 @@ export const ProfileTab: React.FC = () => {
               Hồ sơ xét tuyển của bạn ({applications.length})
             </h4>
           </div>
-          <span style={{ fontSize: '12px', color: '#10B981', fontWeight: 700 }}>
-            {applications.filter((a) => a.status === 'Hồ sơ hợp lệ').length} hồ sơ hợp lệ
-          </span>
+          <button
+            onClick={openAllApplications}
+            style={{
+              border: 'none',
+              backgroundColor: '#EFF6FF',
+              color: '#2563EB',
+              fontSize: '12px',
+              fontWeight: 800,
+              padding: '4px 10px',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2px',
+            }}
+          >
+            Xem tất cả →
+          </button>
         </div>
 
         {applications.length === 0 ? (
@@ -543,7 +559,7 @@ export const ProfileTab: React.FC = () => {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {applications.map((app) => (
+            {applications.slice(0, 3).map((app) => (
               <div
                 key={app.id}
                 onClick={() => openApplicationDetail(app)}
@@ -566,7 +582,12 @@ export const ProfileTab: React.FC = () => {
                       fontSize: '11px',
                       fontWeight: 800,
                       color: app.statusColor,
-                      backgroundColor: app.statusColor === '#10B981' ? '#ECFDF5' : '#FFFBEB',
+                      backgroundColor:
+                        app.status === 'Hồ sơ hợp lệ' ? '#ECFDF5'
+                        : app.status === 'Đang xét duyệt' ? '#FFFBEB'
+                        : app.status === 'Thiếu hồ sơ' ? '#EFF6FF'
+                        : app.status === 'Đã bị hủy' ? '#FEF2F2'
+                        : '#F1F5F9',
                       border: `1px solid ${app.statusColor}`,
                       padding: '3px 8px',
                       borderRadius: '8px',
@@ -598,6 +619,17 @@ export const ProfileTab: React.FC = () => {
                 </div>
               </div>
             ))}
+
+            {applications.length > 3 && (
+              <Button
+                variant="tonal"
+                size="M"
+                fullWidth
+                onClick={openAllApplications}
+              >
+                Xem tất cả {applications.length} hồ sơ (chia theo trạng thái) →
+              </Button>
+            )}
           </div>
         )}
       </div>

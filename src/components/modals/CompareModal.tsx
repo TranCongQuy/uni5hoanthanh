@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Scale, Plus } from 'lucide-react';
+import { X, Scale, Plus, Search } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { UNIVERSITIES, getUniversityById } from '../../data/MockData';
 import type { University } from '../../types';
@@ -17,6 +17,8 @@ export const CompareModal: React.FC = () => {
   } = useApp();
 
   const [showAddPicker, setShowAddPicker] = useState(false);
+  const [compareSearchKeyword, setCompareSearchKeyword] = useState('');
+  const [compareFilterRegion, setCompareFilterRegion] = useState('Tất cả');
 
   if (!isCompareModalOpen) return null;
 
@@ -26,6 +28,21 @@ export const CompareModal: React.FC = () => {
 
   // Available universities to add (not yet in compare)
   const availableToAdd = UNIVERSITIES.filter((u) => !compareIds.includes(u.id));
+
+  const filteredAvailableToAdd = availableToAdd.filter((u) => {
+    const kw = compareSearchKeyword.toLowerCase().trim();
+    const matchKw =
+      !kw ||
+      u.name.toLowerCase().includes(kw) ||
+      u.code.toLowerCase().includes(kw) ||
+      u.loc.toLowerCase().includes(kw) ||
+      u.majors.some((m) => m.toLowerCase().includes(kw));
+
+    const matchRegion =
+      compareFilterRegion === 'Tất cả' || u.region.toLowerCase().includes(compareFilterRegion.toLowerCase());
+
+    return matchKw && matchRegion;
+  });
 
   // Determine best values among selected
   const lowestTuition = Math.min(...compareUnis.map((u) => u.tuitionMin));
@@ -49,7 +66,8 @@ export const CompareModal: React.FC = () => {
         style={{
           width: '100%',
           maxWidth: '560px',
-          height: '90vh',
+          height: 'min(88dvh, calc(100dvh - 56px))',
+          maxHeight: 'calc(100dvh - 56px)',
           backgroundColor: '#FFFFFF',
           borderRadius: '28px 28px 0 0',
           display: 'flex',
@@ -376,12 +394,13 @@ export const CompareModal: React.FC = () => {
               position: 'absolute',
               inset: 0,
               backgroundColor: '#FFFFFF',
-              zIndex: 20,
+              zIndex: 30,
               display: 'flex',
               flexDirection: 'column',
               animation: 'fadeIn 0.2s',
             }}
           >
+            {/* Header */}
             <div
               style={{
                 padding: '14px 20px',
@@ -391,56 +410,164 @@ export const CompareModal: React.FC = () => {
                 justifyContent: 'space-between',
               }}
             >
-              <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>
-                Chọn trường thêm vào so sánh
-              </h4>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
+                  Chọn trường thêm vào so sánh
+                </h4>
+                <span style={{ fontSize: '12px', color: '#64748B' }}>
+                  Tìm thấy {filteredAvailableToAdd.length} trường phù hợp
+                </span>
+              </div>
               <button
-                onClick={() => setShowAddPicker(false)}
+                onClick={() => {
+                  setShowAddPicker(false);
+                  setCompareSearchKeyword('');
+                }}
                 style={{
-                  width: '32px',
-                  height: '32px',
+                  width: '36px',
+                  height: '36px',
                   borderRadius: '50%',
                   border: 'none',
                   backgroundColor: '#F1F5F9',
                   cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#64748B',
                 }}
               >
-                <X size={16} />
+                <X size={18} />
               </button>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
-              {availableToAdd.map((uni) => (
-                <div
-                  key={uni.id}
-                  onClick={() => {
-                    toggleCompare(uni.id);
-                    setShowAddPicker(false);
-                  }}
+            {/* Instant Search Bar inside Compare Picker (Ảnh 5) */}
+            <div style={{ padding: '12px 16px 8px', borderBottom: '1px solid #F1F5F9' }}>
+              <div
+                style={{
+                  height: '44px',
+                  borderRadius: '14px',
+                  backgroundColor: '#F8FAFC',
+                  border: '1.5px solid #E2E8F0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '0 12px',
+                  gap: '8px',
+                }}
+              >
+                <Search size={18} color="#2563EB" />
+                <input
+                  type="text"
+                  value={compareSearchKeyword}
+                  onChange={(e) => setCompareSearchKeyword(e.target.value)}
+                  placeholder="Tìm theo tên trường, mã trường, ngành học..."
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '10px 12px',
-                    borderRadius: '16px',
-                    border: '1px solid #F1F5F9',
-                    marginBottom: '8px',
-                    cursor: 'pointer',
-                    backgroundColor: '#FFFFFF',
+                    border: 'none',
+                    outline: 'none',
+                    backgroundColor: 'transparent',
+                    fontSize: '13px',
+                    color: '#0F172A',
+                    flex: 1,
                   }}
-                >
-                  <UniversityAvatar code={uni.code} size={40} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
-                      {uni.name}
+                  autoFocus
+                />
+                {compareSearchKeyword && (
+                  <button
+                    onClick={() => setCompareSearchKeyword('')}
+                    style={{
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      cursor: 'pointer',
+                      color: '#94A3B8',
+                      padding: '2px',
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+
+              {/* Quick Region Filter Chips */}
+              <div style={{ display: 'flex', gap: '6px', marginTop: '8px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+                {['Tất cả', 'Bắc', 'Trung', 'Nam'].map((reg) => {
+                  const active = compareFilterRegion === reg;
+                  return (
+                    <button
+                      key={reg}
+                      onClick={() => setCompareFilterRegion(reg)}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '10px',
+                        border: active ? '1.5px solid #2563EB' : '1px solid #E2E8F0',
+                        backgroundColor: active ? '#EFF6FF' : '#FFFFFF',
+                        color: active ? '#2563EB' : '#64748B',
+                        fontSize: '11px',
+                        fontWeight: active ? 800 : 600,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {reg === 'Tất cả' ? 'Toàn quốc' : `Miền ${reg}`}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* List */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
+              {filteredAvailableToAdd.length === 0 ? (
+                <div style={{ padding: '30px 16px', textAlign: 'center', color: '#64748B', fontSize: '13px' }}>
+                  Không tìm thấy trường nào phù hợp với từ khóa "{compareSearchKeyword}".
+                </div>
+              ) : (
+                filteredAvailableToAdd.map((uni) => (
+                  <div
+                    key={uni.id}
+                    onClick={() => {
+                      toggleCompare(uni.id);
+                      setShowAddPicker(false);
+                      setCompareSearchKeyword('');
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '10px 14px',
+                      borderRadius: '16px',
+                      border: '1px solid #E2E8F0',
+                      marginBottom: '8px',
+                      cursor: 'pointer',
+                      backgroundColor: '#FFFFFF',
+                      transition: 'all 0.15s',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                    }}
+                  >
+                    <UniversityAvatar code={uni.code} size={40} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {uni.name}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#64748B' }}>
+                        <strong style={{ color: '#2563EB' }}>{uni.code}</strong> • Miền {uni.region} • Học phí: {uni.tuitionMin}-{uni.tuitionMax} tr
+                      </div>
                     </div>
-                    <div style={{ fontSize: '11px', color: '#64748B' }}>
-                      {uni.code} • {uni.loc} • {uni.tuitionMin} tr
+                    <div
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        backgroundColor: '#EFF6FF',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#2563EB',
+                      }}
+                    >
+                      <Plus size={18} />
                     </div>
                   </div>
-                  <Plus size={18} color="#2563EB" />
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         )}

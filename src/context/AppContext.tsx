@@ -96,9 +96,13 @@ interface AppContextType {
   // Applications
   applications: ApplicationRecord[];
   addApplication: (app: Omit<ApplicationRecord, 'id' | 'submittedAt' | 'status' | 'statusColor' | 'code'>) => void;
+  cancelApplication: (appId: string) => void;
   selectedAppForDetail: ApplicationRecord | null;
   openApplicationDetail: (app: ApplicationRecord) => void;
   closeApplicationDetail: () => void;
+  isAllApplicationsOpen: boolean;
+  openAllApplications: () => void;
+  closeAllApplications: () => void;
 
   // Toast
   toastMessage: string | null;
@@ -147,6 +151,56 @@ const INITIAL_APPLICATIONS: ApplicationRecord[] = [
     status: 'Hồ sơ hợp lệ',
     statusColor: '#10B981',
     notes: 'Đã hoàn tất tải lên CCCD, Học bạ và Phiếu điểm kỳ thi đánh giá tư duy.',
+  },
+  {
+    id: 'app-3',
+    code: 'HS-2026-FTU03',
+    uniId: 2,
+    uniName: 'Đại học Ngoại Thương',
+    uniCode: 'FTU',
+    major: 'Kinh tế Quốc tế',
+    candidateName: 'Trần Công Quý',
+    phone: '0912 345 678',
+    email: 'quy@unipath.vn',
+    score: 28.2,
+    submittedAt: '20/10/2026 11:15',
+    status: 'Thiếu hồ sơ',
+    statusColor: '#2563EB',
+    notes: 'Cần bổ sung bản scan học bạ kỳ 2 lớp 12 và chứng chỉ tiếng Anh IELTS trước ngày 15/11.',
+  },
+  {
+    id: 'app-4',
+    code: 'HS-2026-NEU04',
+    uniId: 3,
+    uniName: 'Đại học Kinh tế Quốc dân',
+    uniCode: 'NEU',
+    major: 'Marketing Số & Thương mại',
+    candidateName: 'Trần Công Quý',
+    phone: '0912 345 678',
+    email: 'quy@unipath.vn',
+    score: 27.5,
+    submittedAt: '18/10/2026 14:20',
+    status: 'Đã hủy',
+    statusColor: '#64748B',
+    notes: 'Thí sinh chủ động hủy hồ sơ xét tuyển để đăng ký đổi sang nguyện vọng khác.',
+    cancelReason: 'Thí sinh tự hủy hồ sơ',
+  },
+  {
+    id: 'app-5',
+    code: 'HS-2026-HMU05',
+    uniId: 4,
+    uniName: 'Đại học Y Hà Nội',
+    uniCode: 'HMU',
+    major: 'Kỹ thuật Xét nghiệm Y học',
+    candidateName: 'Trần Công Quý',
+    phone: '0912 345 678',
+    email: 'quy@unipath.vn',
+    score: 22.0,
+    submittedAt: '15/10/2026 10:00',
+    status: 'Đã bị hủy',
+    statusColor: '#EF4444',
+    notes: 'Hồ sơ đã bị hội đồng tuyển sinh từ chối/hủy do không đạt điểm sàn nhận hồ sơ tối thiểu.',
+    cancelReason: 'Nhà trường từ chối do không đủ điều kiện ngưỡng điểm sàn',
   },
 ];
 
@@ -232,6 +286,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [selectedAppForDetail, setSelectedAppForDetail] = useState<ApplicationRecord | null>(null);
+  const [isAllApplicationsOpen, setIsAllApplicationsOpen] = useState<boolean>(false);
 
   // --- Wishlist State ---
   const [favoriteIds, setFavoriteIds] = useState<number[]>(() => {
@@ -624,6 +679,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Nộp hồ sơ xét tuyển thành công! Mã hồ sơ: ${newRecord.code}`);
   };
 
+  const cancelApplication = (appId: string) => {
+    setApplications((prev) =>
+      prev.map((app) => {
+        if (app.id === appId) {
+          const updated: ApplicationRecord = {
+            ...app,
+            status: 'Đã hủy',
+            statusColor: '#64748B',
+            cancelReason: 'Thí sinh chủ động yêu cầu hủy hồ sơ',
+          };
+          if (selectedAppForDetail?.id === appId) {
+            setSelectedAppForDetail(updated);
+          }
+          return updated;
+        }
+        return app;
+      })
+    );
+    showToast('Đã hủy hồ sơ xét tuyển thành công.');
+  };
+
   const openApplicationDetail = (app: ApplicationRecord) => {
     setSelectedAppForDetail(app);
   };
@@ -631,6 +707,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const closeApplicationDetail = () => {
     setSelectedAppForDetail(null);
   };
+
+  const openAllApplications = () => setIsAllApplicationsOpen(true);
+  const closeAllApplications = () => setIsAllApplicationsOpen(false);
 
   return (
     <AppContext.Provider
@@ -701,9 +780,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         closeApplyDemo,
         applications,
         addApplication,
+        cancelApplication,
         selectedAppForDetail,
         openApplicationDetail,
         closeApplicationDetail,
+        isAllApplicationsOpen,
+        openAllApplications,
+        closeAllApplications,
         toastMessage,
         showToast,
         searchKeyword,

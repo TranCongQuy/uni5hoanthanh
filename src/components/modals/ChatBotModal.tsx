@@ -43,16 +43,21 @@ export const ChatBotModal: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Sync to local storage
   useEffect(() => {
     localStorage.setItem('unipath_chat_history', JSON.stringify(messages));
   }, [messages]);
 
-  // Scroll to bottom
+  // Scroll to bottom cleanly within messages container ONLY (prevents scrolling window / outer modal)
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
   };
 
   useEffect(() => {
@@ -142,26 +147,43 @@ export const ChatBotModal: React.FC = () => {
         style={{
           width: '100%',
           maxWidth: '520px',
-          height: '92vh',
+          height: 'min(88dvh, calc(100dvh - 56px))',
+          maxHeight: 'calc(100dvh - 56px)',
           backgroundColor: '#F8FAFC',
           borderRadius: '28px 28px 0 0',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 -10px 30px rgba(0,0,0,0.2)',
+          boxShadow: '0 -10px 30px rgba(0,0,0,0.25)',
           animation: 'slideUp 0.3s ease-out',
           overflow: 'hidden',
+          position: 'relative',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* App Bar */}
+        {/* Drag handle */}
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '8px', paddingBottom: '4px', backgroundColor: '#FFFFFF' }}>
+          <div
+            style={{
+              width: '40px',
+              height: '4px',
+              borderRadius: '2px',
+              backgroundColor: '#CBD5E1',
+            }}
+          />
+        </div>
+
+        {/* App Bar (Sticky Top with Safe Area, 100% visible on all phones) */}
         <div
           style={{
-            padding: '12px 18px',
+            padding: '8px 18px 12px',
             backgroundColor: '#FFFFFF',
             borderBottom: '1px solid #E2E8F0',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            position: 'sticky',
+            top: 0,
+            zIndex: 60,
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -200,21 +222,22 @@ export const ChatBotModal: React.FC = () => {
                 Trợ lý AI Unipath
               </div>
               <div style={{ fontSize: '11px', color: '#10B981', fontWeight: 600 }}>
-                ● Đang hoạt động • Hỗ trợ 24/7
+                ● Đang hoạt động • Hỗ trợ tuyển sinh 24/7
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
               onClick={() => setShowClearConfirm(true)}
               title="Xóa cuộc trò chuyện"
+              aria-label="Xóa cuộc trò chuyện"
               style={{
-                width: '36px',
-                height: '36px',
+                width: '38px',
+                height: '38px',
                 borderRadius: '50%',
-                backgroundColor: '#F1F5F9',
-                border: 'none',
+                backgroundColor: '#F8FAFC',
+                border: '1px solid #E2E8F0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -227,17 +250,18 @@ export const ChatBotModal: React.FC = () => {
 
             <button
               onClick={closeChatBot}
+              aria-label="Đóng trợ lý AI"
               style={{
-                width: '36px',
-                height: '36px',
+                width: '38px',
+                height: '38px',
                 borderRadius: '50%',
-                backgroundColor: '#F1F5F9',
-                border: 'none',
+                backgroundColor: '#F8FAFC',
+                border: '1.5px solid #E2E8F0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                color: '#64748B',
+                color: '#1E293B',
               }}
             >
               <X size={18} />
@@ -247,6 +271,7 @@ export const ChatBotModal: React.FC = () => {
 
         {/* Message Container */}
         <div
+          ref={messagesContainerRef}
           style={{
             flex: 1,
             overflowY: 'auto',
@@ -341,8 +366,6 @@ export const ChatBotModal: React.FC = () => {
               </div>
             </div>
           )}
-
-          <div ref={messagesEndRef} />
         </div>
 
         {/* Quick Suggestion Chips */}
