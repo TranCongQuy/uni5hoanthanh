@@ -17,6 +17,7 @@ import { ViewApplicationModal } from './components/modals/ViewApplicationModal';
 import { NotificationsModal } from './components/modals/NotificationsModal';
 import { AuthModal } from './components/modals/AuthModal';
 import { OnboardingModal } from './components/modals/OnboardingModal';
+import { AuthScreen } from './components/auth/AuthScreen';
 import { Toast } from './components/common/UI';
 import './App.css';
 
@@ -35,11 +36,10 @@ const MainApp: React.FC = () => {
     isAuthModalOpen,
     isApplyDemoOpen,
     selectedAppForDetail,
-    openAuthModal,
     isLoggedIn,
-    isGuest,
   } = useApp();
 
+  // Onboarding state: defaults to true on first visit, never prompts again once finished or skipped
   const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
     return localStorage.getItem('unipath_onboarding_done') !== 'true';
   });
@@ -47,9 +47,6 @@ const MainApp: React.FC = () => {
   const handleFinishOnboarding = () => {
     localStorage.setItem('unipath_onboarding_done', 'true');
     setShowOnboarding(false);
-    if (!isLoggedIn && !isGuest) {
-      openAuthModal();
-    }
   };
 
   // Touch Swipe on Main screen to seamlessly switch between tabs
@@ -114,9 +111,29 @@ const MainApp: React.FC = () => {
     };
   }, [isAnyModalOpen]);
 
+  // 1. GATEWAY: MANDATORY AUTHENTICATION BEFORE ENTERING APP
+  if (!isLoggedIn) {
+    return (
+      <>
+        {/* Onboarding Flow: Shown on first visit with "Bỏ qua" on top; saved to localStorage */}
+        <OnboardingModal
+          isOpen={showOnboarding}
+          onFinish={handleFinishOnboarding}
+        />
+
+        {/* Full Authentication Screen (Login, Register & Demo account Tran Cong Quy) */}
+        <AuthScreen />
+
+        {/* System Toast Notification */}
+        <Toast message={toastMessage} />
+      </>
+    );
+  }
+
+  // 2. MAIN APPLICATION (Accessible once logged in)
   return (
     <>
-      {/* Onboarding Flow for First-time visitors */}
+      {/* Onboarding if triggered in session */}
       <OnboardingModal
         isOpen={showOnboarding}
         onFinish={handleFinishOnboarding}
