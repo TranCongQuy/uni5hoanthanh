@@ -114,3 +114,12 @@ export interface ApplicationRecord {
   cancelReason?: string;
 }
 
+export interface AIMatchState {
+  hasEvaluated: boolean;
+  score: number;
+  budget: number;
+  region: string;
+  sortBy: 'score' | 'budget' | 'location';
+  analyzedAt?: string;
+}
+

@@ -297,37 +297,147 @@ export const SettingsModal: React.FC = () => {
               zIndex: 30,
               display: 'flex',
               flexDirection: 'column',
-              padding: '24px 20px',
-              textAlign: 'center',
+              padding: '20px 18px',
+              overflowY: 'auto',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Info size={20} color="#2563EB" />
+                <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#0F172A' }}>
+                  Về Unipath & Đơn vị phát triển
+                </h4>
+              </div>
               <button
                 onClick={() => setShowAbout(false)}
-                style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', backgroundColor: '#F1F5F9', cursor: 'pointer' }}
+                style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', backgroundColor: '#F1F5F9', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <X size={16} />
               </button>
             </div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
               <img
                 src="/images/logo_unipath.png"
                 alt="Unipath Logo"
-                style={{ width: '64px', height: '64px', objectFit: 'contain', marginBottom: '14px' }}
+                style={{ width: '56px', height: '56px', objectFit: 'contain', marginBottom: '10px' }}
                 onError={(e) => {
                   (e.target as HTMLElement).style.display = 'none';
                 }}
               />
-              <h3 style={{ margin: '0 0 6px', fontSize: '20px', fontWeight: 800, color: '#0F172A' }}>
+              <h3 style={{ margin: '0 0 4px', fontSize: '19px', fontWeight: 900, color: '#0F172A' }}>
                 Hệ Sinh Thái Tuyển Sinh Unipath
               </h3>
-              <span style={{ fontSize: '13px', color: '#2563EB', fontWeight: 700, marginBottom: '14px' }}>
+              <span
+                style={{
+                  fontSize: '12px',
+                  color: '#2563EB',
+                  fontWeight: 800,
+                  backgroundColor: '#EFF6FF',
+                  border: '1px solid #DBEAFE',
+                  padding: '3px 12px',
+                  borderRadius: '12px',
+                  marginBottom: '12px',
+                }}
+              >
                 Phiên bản Web 2.0 (Mobile First)
               </span>
-              <p style={{ margin: '0 0 20px', fontSize: '13px', color: '#64748B', maxWidth: '320px', lineHeight: 1.5 }}>
+              <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#475569', lineHeight: 1.5, maxWidth: '340px' }}>
                 Đồng hành cùng học sinh THPT và quý phụ huynh trên hành trình chọn ngành, chọn trường và kiến tạo tương lai nghề nghiệp vững chắc.
               </p>
-              <div style={{ fontSize: '12px', color: '#94A3B8' }}>
+
+              {/* Developer & Copyright Card */}
+              <div
+                style={{
+                  width: '100%',
+                  backgroundColor: '#F8FAFC',
+                  borderRadius: '18px',
+                  border: '1.5px solid #E2E8F0',
+                  padding: '16px',
+                  textAlign: 'left',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                  marginBottom: '16px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 800, color: '#1E293B' }}>
+                    Phát triển bởi:
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '13px',
+                      fontWeight: 900,
+                      color: '#1D4ED8',
+                      backgroundColor: '#EFF6FF',
+                      padding: '2px 8px',
+                      borderRadius: '8px',
+                      border: '1px solid #BFDBFE',
+                    }}
+                  >
+                    Trần Công Quý
+                  </span>
+                </div>
+
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', marginBottom: '10px' }}>
+                  Bản quyền dự án thuộc về nhóm UP5:
+                </div>
+
+                {/* Team Members List */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+                  {[
+                    { name: 'Trần Công Quý', role: 'Trưởng nhóm & Kỹ sư phát triển' },
+                    { name: 'Trần Thị Nhung', role: 'Thành viên nhóm UP5' },
+                    { name: 'Dương Đình Phát', role: 'Thành viên nhóm UP5' },
+                    { name: 'Nguyễn Thị Lý Trà My', role: 'Thành viên nhóm UP5' },
+                    { name: 'Thái Thị Nga', role: 'Thành viên nhóm UP5' },
+                  ].map((member, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '6px 10px',
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '10px',
+                        border: '1px solid #F1F5F9',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 700 }}>#{idx + 1}</span>
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B' }}>
+                          {member.name}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '11px', color: '#64748B' }}>
+                        {member.role}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* University Affiliation */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 10px',
+                    backgroundColor: '#EFF6FF',
+                    borderRadius: '10px',
+                    border: '1px solid #DBEAFE',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    color: '#1E40AF',
+                  }}
+                >
+                  <span>🏛️</span>
+                  <span>Thuộc trường Đại học Phú Xuân (PXU)</span>
+                </div>
+              </div>
+
+              {/* Copyright Notice */}
+              <div style={{ fontSize: '11px', color: '#94A3B8', lineHeight: 1.4 }}>
                 © 2026 Unipath Education Platform. Bảo lưu mọi quyền.
               </div>
             </div>

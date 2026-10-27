@@ -41,6 +41,16 @@ export const HomeTab: React.FC = () => {
   const [visibleCount, setVisibleCount] = useState<number>(10);
   const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
   const [isSearchDropdownDismissed, setIsSearchDropdownDismissed] = useState<boolean>(false);
+  const [activatingShortcutId, setActivatingShortcutId] = useState<number | null>(null);
+
+  const handleShortcutClick = (id: number, callback: () => void) => {
+    if (activatingShortcutId !== null) return;
+    setActivatingShortcutId(id);
+    setTimeout(() => {
+      callback();
+      setActivatingShortcutId(null);
+    }, 800);
+  };
 
   // Time-based greeting
   const getGreeting = () => {
@@ -299,36 +309,48 @@ export const HomeTab: React.FC = () => {
               <div
                 style={{
                   display: 'inline-block',
-                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  backgroundColor: 'rgba(255,255,255,0.22)',
                   backdropFilter: 'blur(4px)',
                   color: '#FFFFFF',
                   padding: '4px 10px',
                   borderRadius: '12px',
                   fontSize: '11px',
-                  fontWeight: 700,
+                  fontWeight: 800,
                   letterSpacing: '0.5px',
                   marginBottom: '8px',
                 }}
               >
-                AI HƯỚNG NGHIỆP 2026
+                ✨ AI HƯỚNG NGHIỆP ĐỘT PHÁ 2026
               </div>
               <h2
                 style={{
-                  fontSize: '17px',
-                  fontWeight: 800,
+                  fontSize: '16px',
+                  fontWeight: 900,
                   color: '#FFFFFF',
                   lineHeight: 1.3,
-                  margin: '0 0 14px',
+                  margin: '0 0 4px',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.2)',
                 }}
               >
-                Khám phá ngành học phù hợp với bạn
+                Khám phá Ngành học Chuẩn Tương lai cùng AI
               </h2>
+              <p
+                style={{
+                  margin: '0 0 10px',
+                  fontSize: '12px',
+                  color: '#E0F2FE',
+                  lineHeight: 1.3,
+                  fontWeight: 500,
+                }}
+              >
+                Thuật toán Holland • Đối soát 30 trường Đại học
+              </p>
               <Button
                 variant="onGradient"
                 size="M"
                 onClick={() => setActiveTab(1)}
               >
-                Làm bài test →
+                Bắt đầu làm bài test →
               </Button>
             </div>
 
@@ -389,8 +411,9 @@ export const HomeTab: React.FC = () => {
                   padding: '4px 10px',
                   borderRadius: '12px',
                   fontSize: '11px',
-                  fontWeight: 700,
+                  fontWeight: 800,
                   marginBottom: '8px',
+                  boxShadow: '0 2px 8px rgba(239,68,68,0.4)',
                 }}
               >
                 <span
@@ -402,25 +425,37 @@ export const HomeTab: React.FC = () => {
                     animation: 'pulse 1s infinite',
                   }}
                 />
-                LIVE NOW
+                🔴 TRỰC TIẾP HÔM NAY • EDUFAIR 2026
               </div>
               <h2
                 style={{
-                  fontSize: '17px',
-                  fontWeight: 800,
+                  fontSize: '16px',
+                  fontWeight: 900,
                   color: '#FFFFFF',
                   lineHeight: 1.3,
-                  margin: '0 0 14px',
+                  margin: '0 0 4px',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.2)',
                 }}
               >
-                Virtual EduFair 2026: Giao lưu 30 trường
+                Virtual EduFair: Giao lưu & Đối thoại 30 Trường ĐH
               </h2>
+              <p
+                style={{
+                  margin: '0 0 10px',
+                  fontSize: '12px',
+                  color: '#EDE9FE',
+                  lineHeight: 1.3,
+                  fontWeight: 500,
+                }}
+              >
+                Tư vấn tuyển sinh trực tiếp • Cơ hội nhận học bổng 50%
+              </p>
               <Button
                 variant="onGradient"
                 size="M"
                 onClick={() => setActiveTab(3)}
               >
-                Tham gia ngay →
+                Tham gia phòng Live ngay →
               </Button>
             </div>
 
@@ -483,33 +518,44 @@ export const HomeTab: React.FC = () => {
                   fontSize: '11px',
                   fontWeight: 900,
                   letterSpacing: '0.4px',
-                  boxShadow: '0 0 12px rgba(249,115,22,0.6)',
+                  boxShadow: '0 0 14px rgba(249,115,22,0.7)',
                   marginBottom: '8px',
                   animation: 'pulse 1.5s infinite',
                 }}
               >
                 <span>🔥</span>
-                <span>GIẢM -50% HÔM NAY</span>
+                <span>ĐẶC QUYỀN VIP -50% HÔM NAY</span>
                 <span>🔥</span>
               </div>
               <h2
                 style={{
-                  fontSize: '17px',
-                  fontWeight: 800,
+                  fontSize: '16px',
+                  fontWeight: 900,
                   color: '#FFFFFF',
                   lineHeight: 1.3,
-                  margin: '0 0 14px',
+                  margin: '0 0 4px',
                   textShadow: '0 2px 4px rgba(0,0,0,0.3)',
                 }}
               >
-                Unipath Premium: Lộ trình & Trợ lý AI VIP
+                Unipath Premium: Cố vấn AI 24/7 & Lộ trình THPT
               </h2>
+              <p
+                style={{
+                  margin: '0 0 10px',
+                  fontSize: '12px',
+                  color: '#FEF3C7',
+                  lineHeight: 1.3,
+                  fontWeight: 500,
+                }}
+              >
+                Đồng hành 3 năm THPT • Tăng tỷ lệ đỗ Nguyện vọng 1
+              </p>
               <Button
                 variant="onGradient"
                 size="M"
                 onClick={() => setActiveTab(4)}
               >
-                Nâng cấp VIP ngay →
+                Kích hoạt Gói VIP ngay →
               </Button>
             </div>
 
@@ -778,19 +824,24 @@ export const HomeTab: React.FC = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
           {/* Card 1: RIASEC */}
           <div
-            onClick={() => setActiveTab(1)}
+            onClick={() => handleShortcutClick(1, () => setActiveTab(1))}
             style={{
               borderRadius: '20px',
-              background: 'linear-gradient(135deg, #EEF2FF 0%, #DBEAFE 100%)',
-              border: '1.5px solid #C7D2FE',
+              background: activatingShortcutId === 1
+                ? 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)'
+                : 'linear-gradient(135deg, #EEF2FF 0%, #DBEAFE 100%)',
+              border: activatingShortcutId === 1 ? '2px solid #1D4ED8' : '1.5px solid #C7D2FE',
               padding: '14px',
               cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(37,99,235,0.08)',
+              boxShadow: activatingShortcutId === 1
+                ? '0 10px 25px rgba(37,99,235,0.45), inset 0 0 10px rgba(255,255,255,0.2)'
+                : '0 4px 12px rgba(37,99,235,0.08)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              minHeight: '105px',
-              transition: 'transform 0.15s ease',
+              minHeight: '108px',
+              transform: activatingShortcutId === 1 ? 'scale(0.95)' : 'scale(1)',
+              transition: 'all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -799,12 +850,14 @@ export const HomeTab: React.FC = () => {
                   width: '38px',
                   height: '38px',
                   borderRadius: '12px',
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: activatingShortcutId === 1 ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#2563EB',
-                  boxShadow: '0 2px 6px rgba(37,99,235,0.15)',
+                  color: activatingShortcutId === 1 ? '#FFFFFF' : '#2563EB',
+                  boxShadow: activatingShortcutId === 1 ? 'none' : '0 2px 6px rgba(37,99,235,0.15)',
+                  transform: activatingShortcutId === 1 ? 'rotate(15deg) scale(1.1)' : 'none',
+                  transition: 'all 0.2s ease',
                 }}
               >
                 <Compass size={22} />
@@ -812,21 +865,37 @@ export const HomeTab: React.FC = () => {
               <span
                 style={{
                   fontSize: '10px',
-                  fontWeight: 800,
-                  color: '#1D4ED8',
-                  backgroundColor: '#FFFFFF',
-                  padding: '2px 8px',
+                  fontWeight: 900,
+                  color: activatingShortcutId === 1 ? '#FFFFFF' : '#1D4ED8',
+                  backgroundColor: activatingShortcutId === 1 ? 'rgba(255,255,255,0.25)' : '#FFFFFF',
+                  padding: '3px 8px',
                   borderRadius: '8px',
+                  letterSpacing: '0.4px',
                 }}
               >
-                HOT
+                {activatingShortcutId === 1 ? '⚡ ĐANG MỞ...' : 'HOT'}
               </span>
             </div>
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', marginTop: '8px' }}>
+              <div
+                style={{
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  color: activatingShortcutId === 1 ? '#FFFFFF' : '#0F172A',
+                  marginTop: '8px',
+                  transition: 'color 0.2s',
+                }}
+              >
                 Trắc nghiệm RIASEC
               </div>
-              <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+              <div
+                style={{
+                  fontSize: '11px',
+                  color: activatingShortcutId === 1 ? '#DBEAFE' : '#64748B',
+                  marginTop: '2px',
+                  transition: 'color 0.2s',
+                }}
+              >
                 Holland 6 nhóm tính cách
               </div>
             </div>
@@ -834,19 +903,24 @@ export const HomeTab: React.FC = () => {
 
           {/* Card 2: AI Matching */}
           <div
-            onClick={() => setActiveTab(2)}
+            onClick={() => handleShortcutClick(2, () => setActiveTab(2))}
             style={{
               borderRadius: '20px',
-              background: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)',
-              border: '1.5px solid #A7F3D0',
+              background: activatingShortcutId === 2
+                ? 'linear-gradient(135deg, #065F46 0%, #059669 100%)'
+                : 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)',
+              border: activatingShortcutId === 2 ? '2px solid #047857' : '1.5px solid #A7F3D0',
               padding: '14px',
               cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(16,185,129,0.08)',
+              boxShadow: activatingShortcutId === 2
+                ? '0 10px 25px rgba(5,150,105,0.45), inset 0 0 10px rgba(255,255,255,0.2)'
+                : '0 4px 12px rgba(16,185,129,0.08)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              minHeight: '105px',
-              transition: 'transform 0.15s ease',
+              minHeight: '108px',
+              transform: activatingShortcutId === 2 ? 'scale(0.95)' : 'scale(1)',
+              transition: 'all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -855,12 +929,14 @@ export const HomeTab: React.FC = () => {
                   width: '38px',
                   height: '38px',
                   borderRadius: '12px',
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: activatingShortcutId === 2 ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#10B981',
-                  boxShadow: '0 2px 6px rgba(16,185,129,0.15)',
+                  color: activatingShortcutId === 2 ? '#FFFFFF' : '#10B981',
+                  boxShadow: activatingShortcutId === 2 ? 'none' : '0 2px 6px rgba(16,185,129,0.15)',
+                  transform: activatingShortcutId === 2 ? 'rotate(15deg) scale(1.1)' : 'none',
+                  transition: 'all 0.2s ease',
                 }}
               >
                 <Sparkles size={22} />
@@ -868,21 +944,37 @@ export const HomeTab: React.FC = () => {
               <span
                 style={{
                   fontSize: '10px',
-                  fontWeight: 800,
-                  color: '#047857',
-                  backgroundColor: '#FFFFFF',
-                  padding: '2px 8px',
+                  fontWeight: 900,
+                  color: activatingShortcutId === 2 ? '#FFFFFF' : '#047857',
+                  backgroundColor: activatingShortcutId === 2 ? 'rgba(255,255,255,0.25)' : '#FFFFFF',
+                  padding: '3px 8px',
                   borderRadius: '8px',
+                  letterSpacing: '0.4px',
                 }}
               >
-                AI 2026
+                {activatingShortcutId === 2 ? '⚡ ĐANG MỞ...' : 'AI 2026'}
               </span>
             </div>
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', marginTop: '8px' }}>
+              <div
+                style={{
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  color: activatingShortcutId === 2 ? '#FFFFFF' : '#0F172A',
+                  marginTop: '8px',
+                  transition: 'color 0.2s',
+                }}
+              >
                 AI Matching 2026
               </div>
-              <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+              <div
+                style={{
+                  fontSize: '11px',
+                  color: activatingShortcutId === 2 ? '#D1FAE5' : '#64748B',
+                  marginTop: '2px',
+                  transition: 'color 0.2s',
+                }}
+              >
                 Dự đoán trúng tuyển 30 trường
               </div>
             </div>
@@ -890,19 +982,24 @@ export const HomeTab: React.FC = () => {
 
           {/* Card 3: Unipath LIVE */}
           <div
-            onClick={() => setActiveTab(3)}
+            onClick={() => handleShortcutClick(3, () => setActiveTab(3))}
             style={{
               borderRadius: '20px',
-              background: 'linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 100%)',
-              border: '1.5px solid #FECDD3',
+              background: activatingShortcutId === 3
+                ? 'linear-gradient(135deg, #991B1B 0%, #DC2626 100%)'
+                : 'linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 100%)',
+              border: activatingShortcutId === 3 ? '2px solid #B91C1C' : '1.5px solid #FECDD3',
               padding: '14px',
               cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(239,68,68,0.08)',
+              boxShadow: activatingShortcutId === 3
+                ? '0 10px 25px rgba(220,38,38,0.45), inset 0 0 10px rgba(255,255,255,0.2)'
+                : '0 4px 12px rgba(239,68,68,0.08)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              minHeight: '105px',
-              transition: 'transform 0.15s ease',
+              minHeight: '108px',
+              transform: activatingShortcutId === 3 ? 'scale(0.95)' : 'scale(1)',
+              transition: 'all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -911,12 +1008,14 @@ export const HomeTab: React.FC = () => {
                   width: '38px',
                   height: '38px',
                   borderRadius: '12px',
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: activatingShortcutId === 3 ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#EF4444',
-                  boxShadow: '0 2px 6px rgba(239,68,68,0.15)',
+                  color: activatingShortcutId === 3 ? '#FFFFFF' : '#EF4444',
+                  boxShadow: activatingShortcutId === 3 ? 'none' : '0 2px 6px rgba(239,68,68,0.15)',
+                  transform: activatingShortcutId === 3 ? 'rotate(15deg) scale(1.1)' : 'none',
+                  transition: 'all 0.2s ease',
                 }}
               >
                 <Radio size={22} />
@@ -924,32 +1023,54 @@ export const HomeTab: React.FC = () => {
               <span
                 style={{
                   fontSize: '10px',
-                  fontWeight: 800,
-                  color: '#B91C1C',
-                  backgroundColor: '#FFFFFF',
-                  padding: '2px 8px',
+                  fontWeight: 900,
+                  color: activatingShortcutId === 3 ? '#FFFFFF' : '#B91C1C',
+                  backgroundColor: activatingShortcutId === 3 ? 'rgba(255,255,255,0.25)' : '#FFFFFF',
+                  padding: '3px 8px',
                   borderRadius: '8px',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '4px',
+                  letterSpacing: '0.4px',
                 }}
               >
-                <span
-                  style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    backgroundColor: '#EF4444',
-                  }}
-                />
-                LIVE
+                {activatingShortcutId === 3 ? (
+                  '⚡ ĐANG MỞ...'
+                ) : (
+                  <>
+                    <span
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        backgroundColor: '#EF4444',
+                      }}
+                    />
+                    LIVE
+                  </>
+                )}
               </span>
             </div>
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', marginTop: '8px' }}>
+              <div
+                style={{
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  color: activatingShortcutId === 3 ? '#FFFFFF' : '#0F172A',
+                  marginTop: '8px',
+                  transition: 'color 0.2s',
+                }}
+              >
                 Unipath LIVE
               </div>
-              <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+              <div
+                style={{
+                  fontSize: '11px',
+                  color: activatingShortcutId === 3 ? '#FEE2E2' : '#64748B',
+                  marginTop: '2px',
+                  transition: 'color 0.2s',
+                }}
+              >
                 Virtual EduFair 30 trường
               </div>
             </div>
@@ -957,19 +1078,24 @@ export const HomeTab: React.FC = () => {
 
           {/* Card 4: Lộ trình THPT */}
           <div
-            onClick={() => openCareerPath()}
+            onClick={() => handleShortcutClick(4, () => openCareerPath())}
             style={{
               borderRadius: '20px',
-              background: 'linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%)',
-              border: '1.5px solid #E9D5FF',
+              background: activatingShortcutId === 4
+                ? 'linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%)'
+                : 'linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%)',
+              border: activatingShortcutId === 4 ? '2px solid #6D28D9' : '1.5px solid #E9D5FF',
               padding: '14px',
               cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(168,85,247,0.08)',
+              boxShadow: activatingShortcutId === 4
+                ? '0 10px 25px rgba(124,58,237,0.45), inset 0 0 10px rgba(255,255,255,0.2)'
+                : '0 4px 12px rgba(168,85,247,0.08)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              minHeight: '105px',
-              transition: 'transform 0.15s ease',
+              minHeight: '108px',
+              transform: activatingShortcutId === 4 ? 'scale(0.95)' : 'scale(1)',
+              transition: 'all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -978,12 +1104,14 @@ export const HomeTab: React.FC = () => {
                   width: '38px',
                   height: '38px',
                   borderRadius: '12px',
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: activatingShortcutId === 4 ? 'rgba(255,255,255,0.2)' : '#FFFFFF',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#8B5CF6',
-                  boxShadow: '0 2px 6px rgba(139,92,246,0.15)',
+                  color: activatingShortcutId === 4 ? '#FFFFFF' : '#8B5CF6',
+                  boxShadow: activatingShortcutId === 4 ? 'none' : '0 2px 6px rgba(139,92,246,0.15)',
+                  transform: activatingShortcutId === 4 ? 'rotate(15deg) scale(1.1)' : 'none',
+                  transition: 'all 0.2s ease',
                 }}
               >
                 <GraduationCap size={22} />
@@ -991,21 +1119,37 @@ export const HomeTab: React.FC = () => {
               <span
                 style={{
                   fontSize: '10px',
-                  fontWeight: 800,
-                  color: '#6D28D9',
-                  backgroundColor: '#FFFFFF',
-                  padding: '2px 8px',
+                  fontWeight: 900,
+                  color: activatingShortcutId === 4 ? '#FFFFFF' : '#6D28D9',
+                  backgroundColor: activatingShortcutId === 4 ? 'rgba(255,255,255,0.25)' : '#FFFFFF',
+                  padding: '3px 8px',
                   borderRadius: '8px',
+                  letterSpacing: '0.4px',
                 }}
               >
-                VIP
+                {activatingShortcutId === 4 ? '⚡ ĐANG MỞ...' : 'VIP'}
               </span>
             </div>
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', marginTop: '8px' }}>
+              <div
+                style={{
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  color: activatingShortcutId === 4 ? '#FFFFFF' : '#0F172A',
+                  marginTop: '8px',
+                  transition: 'color 0.2s',
+                }}
+              >
                 Lộ trình Phát triển THPT
               </div>
-              <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+              <div
+                style={{
+                  fontSize: '11px',
+                  color: activatingShortcutId === 4 ? '#F3E8FF' : '#64748B',
+                  marginTop: '2px',
+                  transition: 'color 0.2s',
+                }}
+              >
                 Kế hoạch 3 năm lớp 10-12
               </div>
             </div>

@@ -18,16 +18,18 @@ export const MatchingTab: React.FC = () => {
     openUniDetail,
     openChatBot,
     setActiveTab,
+    aiMatchState,
+    saveAIMatchState,
   } = useApp();
 
-  // Initial parameters: default to lowest values as requested by user
-  const [score, setScore] = useState<number>(15.0); // Min: 15.0
-  const [budget, setBudget] = useState<number>(10); // Min: 10 Triệu / năm
-  const [region, setRegion] = useState<string>('Tất cả');
-  const [sortBy, setSortBy] = useState<'score' | 'budget' | 'location'>('score');
+  // Initial parameters: load from latest remembered analysis or default to min
+  const [score, setScore] = useState<number>(aiMatchState.score ?? 15.0); // Min: 15.0
+  const [budget, setBudget] = useState<number>(aiMatchState.budget ?? 10); // Min: 10 Triệu / năm
+  const [region, setRegion] = useState<string>(aiMatchState.region ?? 'Tất cả');
+  const [sortBy, setSortBy] = useState<'score' | 'budget' | 'location'>(aiMatchState.sortBy ?? 'score');
 
-  const [hasEvaluated, setHasEvaluated] = useState<boolean>(false);
-  const [isEditingParams, setIsEditingParams] = useState<boolean>(true);
+  const [hasEvaluated, setHasEvaluated] = useState<boolean>(aiMatchState.hasEvaluated ?? false);
+  const [isEditingParams, setIsEditingParams] = useState<boolean>(!aiMatchState.hasEvaluated);
   const [loading, setLoading] = useState<boolean>(false);
 
   // Evaluate matching results
@@ -44,6 +46,14 @@ export const MatchingTab: React.FC = () => {
       setLoading(false);
       setHasEvaluated(true);
       setIsEditingParams(false);
+      saveAIMatchState({
+        hasEvaluated: true,
+        score,
+        budget,
+        region,
+        sortBy,
+        analyzedAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      });
     }, 600);
   };
 
@@ -497,7 +507,11 @@ export const MatchingTab: React.FC = () => {
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setSortBy(tab.id as 'score' | 'budget' | 'location')}
+                    onClick={() => {
+                      const nextSort = tab.id as 'score' | 'budget' | 'location';
+                      setSortBy(nextSort);
+                      saveAIMatchState({ sortBy: nextSort });
+                    }}
                     style={{
                       padding: '6px 12px',
                       borderRadius: '14px',

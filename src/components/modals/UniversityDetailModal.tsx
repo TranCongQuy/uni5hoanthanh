@@ -29,7 +29,6 @@ export const UniversityDetailModal: React.FC = () => {
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'majors' | 'tuition' | 'reviews'>('overview');
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
 
   if (selectedUniIdForDetail === null) return null;
   const uni = getUniversityById(selectedUniIdForDetail);
@@ -76,23 +75,6 @@ export const UniversityDetailModal: React.FC = () => {
     matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm thấp hơn điểm chuẩn 2024 (${cutoff} điểm) tận ${Math.abs(diff)} điểm. Bạn nên cân nhắc thêm trường an toàn hơn hoặc phương thức xét học bạ.`;
   }
 
-  // Swipe handling to go back / dismiss modal
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStart) return;
-    const dx = e.changedTouches[0].clientX - touchStart.x;
-    const dy = e.changedTouches[0].clientY - touchStart.y;
-    setTouchStart(null);
-
-    // Swipe left or right closes modal (horizontal dominant)
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      closeUniDetail();
-    }
-  };
-
   return (
     <div
       style={{
@@ -123,8 +105,6 @@ export const UniversityDetailModal: React.FC = () => {
           position: 'relative',
         }}
         onClick={(e) => e.stopPropagation()}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
       >
         {/* Drag handle */}
         <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '8px', paddingBottom: '4px', backgroundColor: '#FFFFFF' }}>

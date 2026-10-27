@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type {
+  AIMatchState,
   ApplicationRecord,
   ConsultationBooking,
   HollandCode,
@@ -111,6 +112,10 @@ interface AppContextType {
   // Search keyword sync
   searchKeyword: string;
   setSearchKeyword: (kw: string) => void;
+
+  // AI Match persistence (remembers latest analysis across tabs)
+  aiMatchState: AIMatchState;
+  saveAIMatchState: (state: Partial<AIMatchState>) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -711,6 +716,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const openAllApplications = () => setIsAllApplicationsOpen(true);
   const closeAllApplications = () => setIsAllApplicationsOpen(false);
 
+  // --- AI Match State (Persists latest single analysis across tab navigations) ---
+  const [aiMatchState, setAIMatchState] = useState<AIMatchState>(() => {
+    try {
+      const saved = localStorage.getItem('unipath_latest_ai_match');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return {
+      hasEvaluated: false,
+      score: 15.0,
+      budget: 10,
+      region: 'Tất cả',
+      sortBy: 'score',
+    };
+  });
+
+  const saveAIMatchState = (partial: Partial<AIMatchState>) => {
+    setAIMatchState((prev) => {
+      const updated = { ...prev, ...partial };
+      try {
+        localStorage.setItem('unipath_latest_ai_match', JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -791,6 +825,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         showToast,
         searchKeyword,
         setSearchKeyword,
+        aiMatchState,
+        saveAIMatchState,
       }}
     >
       {children}

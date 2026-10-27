@@ -149,31 +149,32 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onFini
           maxWidth: '380px',
         }}
       >
-        {/* Illustration Container (FULL IMAGE 100% VISIBLE, NO CLIPPING) */}
+        {/* Illustration Container (Gọn gàng vừa khít tỉ lệ ảnh, bỏ 2 vệt đen 2 bên) */}
         <div
           style={{
-            width: '100%',
+            maxWidth: '100%',
             height: '240px',
             borderRadius: '24px',
             overflow: 'hidden',
-            position: 'relative',
-            boxShadow: '0 12px 30px rgba(0,0,0,0.15)',
-            border: '2px solid rgba(255,255,255,0.9)',
-            background: 'linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%)',
+            boxShadow: '0 10px 28px rgba(0,0,0,0.12)',
+            border: '2px solid rgba(255,255,255,0.95)',
             marginBottom: '16px',
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
+            backgroundColor: 'transparent',
           }}
         >
           <img
             src={slide.img}
             alt={slide.title}
             style={{
-              width: '100%',
-              height: '100%',
+              height: '240px',
+              width: 'auto',
+              maxWidth: '100%',
               objectFit: 'contain',
               display: 'block',
+              borderRadius: '22px',
               transition: 'opacity 0.4s ease',
             }}
             onError={(e) => {

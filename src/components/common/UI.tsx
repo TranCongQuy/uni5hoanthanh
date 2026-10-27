@@ -443,7 +443,7 @@ export const EmptyState: React.FC<{
 // 7. FOOTER COMPONENT
 // ==========================================
 export const AppFooter: React.FC<{ text?: string }> = ({
-  text = 'Unipath • Đồng hành cùng bạn kiến tạo tương lai',
+  text = 'Đồng hành cùng học sinh THPT và quý phụ huynh trên hành trình chọn ngành, chọn trường.',
 }) => {
   return (
     <div
@@ -453,10 +453,10 @@ export const AppFooter: React.FC<{ text?: string }> = ({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: '8px',
+        gap: '6px',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.85 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.95 }}>
         <img
           src="/images/logo_unipath.png"
           alt="Unipath Logo"
@@ -465,15 +465,18 @@ export const AppFooter: React.FC<{ text?: string }> = ({
             (e.target as HTMLElement).style.display = 'none';
           }}
         />
-        <span style={{ fontSize: '13px', fontWeight: 700, color: '#2563EB', letterSpacing: '0.5px' }}>
-          UNIPATH
+        <span style={{ fontSize: '13px', fontWeight: 800, color: '#1E3A8A', letterSpacing: '0.4px' }}>
+          HỆ SINH THÁI TUYỂN SINH UNIPATH
         </span>
       </div>
-      <span style={{ fontSize: '12px', color: '#94A3B8' }}>
+      <span style={{ fontSize: '12px', color: '#64748B', maxWidth: '380px', lineHeight: 1.4 }}>
         {text}
       </span>
-      <span style={{ fontSize: '11px', color: '#CBD5E1' }}>
-        Phiên bản Web 2.0 • Chế độ trải nghiệm
+      <div style={{ fontSize: '11px', color: '#2563EB', fontWeight: 700, marginTop: '2px' }}>
+        Phát triển bởi Trần Công Quý • Bản quyền dự án thuộc nhóm UP5 (ĐH Phú Xuân)
+      </div>
+      <span style={{ fontSize: '10px', color: '#94A3B8' }}>
+        © 2026 Unipath Education Platform. Bảo lưu mọi quyền.
       </span>
     </div>
   );
