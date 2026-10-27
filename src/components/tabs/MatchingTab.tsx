@@ -14,16 +14,15 @@ import { DonutChart } from '../charts/DonutChart';
 
 export const MatchingTab: React.FC = () => {
   const {
-    profile,
     hollandResult,
     openUniDetail,
     openChatBot,
     setActiveTab,
   } = useApp();
 
-  // Initial parameters: start from baseline, user triggers analysis
-  const [score, setScore] = useState<number>(profile.expectedScore || 20.0);
-  const [budget, setBudget] = useState<number>(30); // Triệu / năm
+  // Initial parameters: default to lowest values as requested by user
+  const [score, setScore] = useState<number>(15.0); // Min: 15.0
+  const [budget, setBudget] = useState<number>(10); // Min: 10 Triệu / năm
   const [region, setRegion] = useState<string>('Tất cả');
   const [sortBy, setSortBy] = useState<'score' | 'budget' | 'location'>('score');
 
@@ -256,19 +255,26 @@ export const MatchingTab: React.FC = () => {
             )}
           </div>
 
-          {/* Row 1: Expected Score */}
-          <div style={{ marginBottom: '20px' }}>
+          {/* Row 1: Expected Score (Decorated dynamic slider) */}
+          <div style={{ marginBottom: '22px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
-              <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748B' }}>
-                Điểm thi THPT dự kiến
-              </span>
+              <div>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>
+                  Điểm thi THPT dự kiến
+                </span>
+                <div style={{ fontSize: '11px', color: '#2563EB', fontWeight: 700, marginTop: '2px' }}>
+                  {score < 18 ? '🎯 Mức cơ bản (Xét tuyển trường địa phương)' : score < 22 ? '🚀 Mức khá (Cơ hội vào nhiều trường tốt)' : score < 26 ? '🌟 Mức giỏi (Vào các trường Top đầu)' : '🏆 Mức xuất sắc (Thủ khoa / Y Dược / Bách Khoa)'}
+                </div>
+              </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                <span style={{ fontSize: '28px', fontWeight: 800, color: '#2563EB' }}>
+                <span style={{ fontSize: '30px', fontWeight: 900, color: '#2563EB', letterSpacing: '-0.5px' }}>
                   {score.toFixed(1)}
                 </span>
-                <span style={{ fontSize: '14px', color: '#64748B' }}>điểm</span>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: '#64748B' }}>điểm</span>
               </div>
             </div>
+
+            {/* Slider with dynamic gradient track */}
             <input
               type="range"
               min={15}
@@ -278,32 +284,66 @@ export const MatchingTab: React.FC = () => {
               onChange={(e) => setScore(parseFloat(e.target.value))}
               style={{
                 width: '100%',
-                height: '8px',
-                borderRadius: '4px',
-                accentColor: '#2563EB',
+                height: '10px',
+                borderRadius: '6px',
+                background: `linear-gradient(to right, #2563EB 0%, #3B82F6 ${((score - 15) / 15) * 100}%, #E2E8F0 ${((score - 15) / 15) * 100}%, #E2E8F0 100%)`,
+                outline: 'none',
                 cursor: 'pointer',
+                accentColor: '#2563EB',
+                boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)',
               }}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94A3B8', marginTop: '4px' }}>
-              <span>15.0</span>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94A3B8', marginTop: '6px' }}>
+              <span style={{ fontWeight: score === 15 ? 800 : 500, color: score === 15 ? '#2563EB' : '#94A3B8' }}>15.0 (Thấp nhất)</span>
               <span>22.5</span>
-              <span>30.0</span>
+              <span style={{ fontWeight: score === 30 ? 800 : 500, color: score === 30 ? '#2563EB' : '#94A3B8' }}>30.0 (Tối đa)</span>
+            </div>
+
+            {/* Quick preset chips */}
+            <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+              {[15.0, 18.5, 21.0, 24.5, 27.0, 30.0].map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setScore(p)}
+                  style={{
+                    border: score === p ? '1.5px solid #2563EB' : '1px solid #E2E8F0',
+                    backgroundColor: score === p ? '#EFF6FF' : '#F8FAFC',
+                    color: score === p ? '#2563EB' : '#64748B',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    padding: '3px 8px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {p.toFixed(1)}đ
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Row 2: Tuition Budget */}
-          <div style={{ marginBottom: '20px' }}>
+          {/* Row 2: Tuition Budget (Decorated dynamic slider) */}
+          <div style={{ marginBottom: '22px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
-              <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748B' }}>
-                Ngân sách học phí tối đa
-              </span>
+              <div>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>
+                  Ngân sách học phí tối đa
+                </span>
+                <div style={{ fontSize: '11px', color: '#10B981', fontWeight: 700, marginTop: '2px' }}>
+                  {budget <= 15 ? '🍃 Mức tiết kiệm & Có học bổng cao' : budget <= 30 ? '⚖️ Đại học công lập tiêu chuẩn' : budget <= 45 ? '🏢 Tư thục & Đào tạo chất lượng cao' : '💎 Quốc tế & Liên kết nước ngoài'}
+                </div>
+              </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                <span style={{ fontSize: '28px', fontWeight: 800, color: '#10B981' }}>
+                <span style={{ fontSize: '30px', fontWeight: 900, color: '#10B981', letterSpacing: '-0.5px' }}>
                   {budget}
                 </span>
-                <span style={{ fontSize: '14px', color: '#64748B' }}>triệu/năm</span>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: '#64748B' }}>triệu/năm</span>
               </div>
             </div>
+
+            {/* Slider with dynamic gradient track */}
             <input
               type="range"
               min={10}
@@ -313,16 +353,43 @@ export const MatchingTab: React.FC = () => {
               onChange={(e) => setBudget(parseInt(e.target.value))}
               style={{
                 width: '100%',
-                height: '8px',
-                borderRadius: '4px',
-                accentColor: '#10B981',
+                height: '10px',
+                borderRadius: '6px',
+                background: `linear-gradient(to right, #10B981 0%, #059669 ${((budget - 10) / 50) * 100}%, #E2E8F0 ${((budget - 10) / 50) * 100}%, #E2E8F0 100%)`,
+                outline: 'none',
                 cursor: 'pointer',
+                accentColor: '#10B981',
+                boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)',
               }}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94A3B8', marginTop: '4px' }}>
-              <span>10 tr</span>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94A3B8', marginTop: '6px' }}>
+              <span style={{ fontWeight: budget === 10 ? 800 : 500, color: budget === 10 ? '#10B981' : '#94A3B8' }}>10 tr (Thấp nhất)</span>
               <span>35 tr</span>
-              <span>60 tr</span>
+              <span style={{ fontWeight: budget === 60 ? 800 : 500, color: budget === 60 ? '#10B981' : '#94A3B8' }}>60 tr (Tối đa)</span>
+            </div>
+
+            {/* Quick preset chips */}
+            <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+              {[10, 20, 30, 45, 60].map((b) => (
+                <button
+                  key={b}
+                  type="button"
+                  onClick={() => setBudget(b)}
+                  style={{
+                    border: budget === b ? '1.5px solid #10B981' : '1px solid #E2E8F0',
+                    backgroundColor: budget === b ? '#ECFDF5' : '#F8FAFC',
+                    color: budget === b ? '#059669' : '#64748B',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    padding: '3px 8px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {b} tr/năm
+                </button>
+              ))}
             </div>
           </div>
 

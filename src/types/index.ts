@@ -89,3 +89,20 @@ export interface ChatMessage {
   timestamp: string;
 }
 
+export interface ApplicationRecord {
+  id: string;
+  code: string;
+  uniId: number;
+  uniName: string;
+  uniCode: string;
+  major: string;
+  candidateName: string;
+  phone: string;
+  email: string;
+  score: number;
+  submittedAt: string;
+  status: 'Đang xét duyệt' | 'Hồ sơ hợp lệ' | 'Chờ bổ sung học bạ';
+  statusColor: string;
+  notes?: string;
+}
+

@@ -244,7 +244,7 @@ export const AuthModal: React.FC = () => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="minh@unipath.vn"
+                      placeholder="quy@unipath.vn"
                       required
                       style={{
                         width: '100%',
@@ -323,7 +323,7 @@ export const AuthModal: React.FC = () => {
                       type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Nguyễn Văn Minh"
+                      placeholder="Trần Công Quý"
                       required
                       style={{
                         width: '100%',
@@ -452,7 +452,7 @@ export const AuthModal: React.FC = () => {
                   fullWidth
                   onClick={loginDemo}
                 >
-                  Dùng tài khoản demo (minh@unipath.vn)
+                  Dùng tài khoản demo (Trần Công Quý)
                 </Button>
 
                 <Button

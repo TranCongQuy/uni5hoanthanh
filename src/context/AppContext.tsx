@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type {
+  ApplicationRecord,
   ConsultationBooking,
   HollandCode,
   University,
@@ -92,6 +93,13 @@ interface AppContextType {
   openApplyDemo: (uni: University) => void;
   closeApplyDemo: () => void;
 
+  // Applications
+  applications: ApplicationRecord[];
+  addApplication: (app: Omit<ApplicationRecord, 'id' | 'submittedAt' | 'status' | 'statusColor' | 'code'>) => void;
+  selectedAppForDetail: ApplicationRecord | null;
+  openApplicationDetail: (app: ApplicationRecord) => void;
+  closeApplicationDetail: () => void;
+
   // Toast
   toastMessage: string | null;
   showToast: (msg: string) => void;
@@ -103,9 +111,44 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const DEMO_EMAIL = 'minh@unipath.vn';
+const DEMO_EMAIL = 'quy@unipath.vn';
 const DEMO_PASS = '123456';
-const DEMO_NAME = 'Nguyễn Văn Minh';
+const DEMO_NAME = 'Trần Công Quý';
+
+const INITIAL_APPLICATIONS: ApplicationRecord[] = [
+  {
+    id: 'app-1',
+    code: 'HS-2026-PXU01',
+    uniId: 11,
+    uniName: 'Đại học Phú Xuân',
+    uniCode: 'PXU',
+    major: 'Công nghệ thông tin (AI & Cloud)',
+    candidateName: 'Trần Công Quý',
+    phone: '0912 345 678',
+    email: 'quy@unipath.vn',
+    score: 24.5,
+    submittedAt: '24/10/2026 09:30',
+    status: 'Đang xét duyệt',
+    statusColor: '#F59E0B',
+    notes: 'Đăng ký xét tuyển sớm đợt 1 bằng kết quả học bạ THPT và chứng chỉ tin học quốc tế.',
+  },
+  {
+    id: 'app-2',
+    code: 'HS-2026-BKA02',
+    uniId: 1,
+    uniName: 'Đại học Bách Khoa Hà Nội',
+    uniCode: 'BKA',
+    major: 'Khoa học Máy tính (IT1)',
+    candidateName: 'Trần Công Quý',
+    phone: '0912 345 678',
+    email: 'quy@unipath.vn',
+    score: 28.5,
+    submittedAt: '22/10/2026 15:45',
+    status: 'Hồ sơ hợp lệ',
+    statusColor: '#10B981',
+    notes: 'Đã hoàn tất tải lên CCCD, Học bạ và Phiếu điểm kỳ thi đánh giá tư duy.',
+  },
+];
 
 const DEFAULT_PROFILE: UserProfile = {
   name: DEMO_NAME,
@@ -165,7 +208,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return [
       {
         id: 'bk-1',
-        name: 'Nguyễn Văn Minh',
+        name: DEMO_NAME,
         phone: '0912 345 678',
         dateTime: '14:30 15/11/2026',
         uniCode: 'PXU',
@@ -174,6 +217,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       },
     ];
   });
+
+  // --- Applications State ---
+  const [applications, setApplications] = useState<ApplicationRecord[]>(() => {
+    const raw = localStorage.getItem('unipath_applications');
+    if (raw) {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        // fallback
+      }
+    }
+    return INITIAL_APPLICATIONS;
+  });
+
+  const [selectedAppForDetail, setSelectedAppForDetail] = useState<ApplicationRecord | null>(null);
 
   // --- Wishlist State ---
   const [favoriteIds, setFavoriteIds] = useState<number[]>(() => {
@@ -273,6 +331,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem('unipath_compare', JSON.stringify(compareIds));
   }, [compareIds]);
+
+  useEffect(() => {
+    localStorage.setItem('unipath_applications', JSON.stringify(applications));
+  }, [applications]);
 
   useEffect(() => {
     if (hollandResult) {
@@ -545,6 +607,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   const closeApplyDemo = () => setIsApplyDemoOpen(false);
 
+  // --- Application Handlers ---
+  const addApplication = (appData: Omit<ApplicationRecord, 'id' | 'submittedAt' | 'status' | 'statusColor' | 'code'>) => {
+    const now = new Date();
+    const dateStr = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const codeNum = Math.floor(1000 + Math.random() * 9000);
+    const newRecord: ApplicationRecord = {
+      ...appData,
+      id: `app-${Date.now()}`,
+      code: `HS-2026-${appData.uniCode || 'UNI'}${codeNum}`,
+      submittedAt: dateStr,
+      status: 'Đang xét duyệt',
+      statusColor: '#F59E0B',
+    };
+    setApplications((prev) => [newRecord, ...prev]);
+    showToast(`Nộp hồ sơ xét tuyển thành công! Mã hồ sơ: ${newRecord.code}`);
+  };
+
+  const openApplicationDetail = (app: ApplicationRecord) => {
+    setSelectedAppForDetail(app);
+  };
+
+  const closeApplicationDetail = () => {
+    setSelectedAppForDetail(null);
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -612,6 +699,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         applyDemoTargetUni,
         openApplyDemo,
         closeApplyDemo,
+        applications,
+        addApplication,
+        selectedAppForDetail,
+        openApplicationDetail,
+        closeApplicationDetail,
         toastMessage,
         showToast,
         searchKeyword,

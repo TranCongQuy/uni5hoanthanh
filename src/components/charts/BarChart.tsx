@@ -20,51 +20,119 @@ export const BarChart: React.FC<BarChartProps> = ({
     { label: 'Của bạn', score: userScore, isUser: true },
   ];
 
-  const maxVal = Math.max(30, ...bars.map((b) => b.score));
+  const MAX_SCORE = 30;
+  const TRACK_HEIGHT = 110; // Explicit pixel height
 
   return (
-    <div style={{ width: '100%', padding: '16px 12px 10px', background: '#F8FAFC', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B' }}>
-          Biến động điểm chuẩn 3 năm gần nhất
+    <div
+      style={{
+        width: '100%',
+        padding: '16px 14px 14px',
+        backgroundColor: '#F8FAFC',
+        borderRadius: '20px',
+        border: '1.5px solid #E2E8F0',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>
+            Biến động điểm chuẩn 3 năm gần nhất
+          </span>
+        </div>
+        <span
+          style={{
+            fontSize: '11px',
+            color: '#2563EB',
+            fontWeight: 700,
+            backgroundColor: '#EFF6FF',
+            padding: '2px 8px',
+            borderRadius: '8px',
+          }}
+        >
+          Thang 30 điểm
         </span>
-        <span style={{ fontSize: '11px', color: '#64748B' }}>Thang 30</span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', height: '120px', gap: '8px' }}>
+      {/* Chart Canvas with explicit pixel height */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '10px',
+          height: `${TRACK_HEIGHT + 44}px`,
+          alignItems: 'end',
+          position: 'relative',
+          paddingTop: '10px',
+        }}
+      >
+        {/* Background baseline reference line */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '26px',
+            left: 0,
+            right: 0,
+            height: '1px',
+            backgroundColor: '#E2E8F0',
+          }}
+        />
+
         {bars.map((bar, idx) => {
-          const heightPercent = Math.max(15, Math.min(100, (bar.score / maxVal) * 100));
-          const barColor = bar.isUser ? '#10B981' : '#2563EB';
+          // Explicit pixel height calculation: guarantees bar is NEVER 0px
+          const barPx = Math.max(18, Math.round((Math.min(bar.score, MAX_SCORE) / MAX_SCORE) * TRACK_HEIGHT));
 
           return (
-            <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+            <div
+              key={idx}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                height: '100%',
+                justifyContent: 'flex-end',
+                position: 'relative',
+                zIndex: 1,
+              }}
+            >
+              {/* Score Value Label on Top of Bar */}
               <span
                 style={{
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  color: bar.isUser ? '#10B981' : '#1E293B',
-                  marginBottom: '4px',
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  color: bar.isUser ? '#059669' : '#1E3A8A',
+                  marginBottom: '6px',
                 }}
               >
                 {bar.score.toFixed(1)}
               </span>
+
+              {/* Solid Vertical Bar with Explicit Pixel Height & Gradient */}
               <div
                 style={{
-                  width: '100%',
-                  maxWidth: '36px',
-                  height: `${heightPercent}%`,
-                  backgroundColor: barColor,
-                  borderRadius: '6px 6px 0 0',
-                  boxShadow: bar.isUser ? '0 2px 6px rgba(16, 185, 129, 0.3)' : '0 2px 6px rgba(37, 99, 235, 0.2)',
-                  transition: 'height 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                  width: '38px',
+                  height: `${barPx}px`,
+                  background: bar.isUser
+                    ? 'linear-gradient(180deg, #10B981 0%, #059669 100%)'
+                    : 'linear-gradient(180deg, #3B82F6 0%, #1D4ED8 100%)',
+                  borderRadius: '10px 10px 4px 4px',
+                  boxShadow: bar.isUser
+                    ? '0 4px 12px rgba(16, 185, 129, 0.4)'
+                    : '0 4px 12px rgba(37, 99, 235, 0.25)',
+                  transition: 'height 0.4s ease',
+                  border: bar.isUser ? '1.5px solid #A7F3D0' : '1.5px solid #BFDBFE',
+                  borderBottom: 'none',
                 }}
               />
+
+              {/* Year / Label below */}
               <span
                 style={{
-                  fontSize: '11px',
-                  fontWeight: bar.isUser ? 700 : 500,
-                  color: bar.isUser ? '#10B981' : '#64748B',
+                  fontSize: '12px',
+                  fontWeight: bar.isUser ? 800 : 600,
+                  color: bar.isUser ? '#059669' : '#64748B',
                   marginTop: '8px',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {bar.label}
@@ -76,4 +144,3 @@ export const BarChart: React.FC<BarChartProps> = ({
     </div>
   );
 };
-

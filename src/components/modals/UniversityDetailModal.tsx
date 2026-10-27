@@ -29,6 +29,7 @@ export const UniversityDetailModal: React.FC = () => {
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'majors' | 'tuition' | 'reviews'>('overview');
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
 
   if (selectedUniIdForDetail === null) return null;
   const uni = getUniversityById(selectedUniIdForDetail);
@@ -36,6 +37,61 @@ export const UniversityDetailModal: React.FC = () => {
 
   const isFav = favoriteIds.includes(uni.id);
   const isComp = compareIds.includes(uni.id);
+
+  // Dynamic AI Match Algorithm based on actual score and cutoff
+  const userScore = profile.expectedScore || 15.0;
+  const cutoff = uni.score2024;
+  const diff = Number((userScore - cutoff).toFixed(1));
+
+  let matchPercent: number;
+  let matchStatus: string;
+  let matchColor: string;
+  let matchDesc: string;
+
+  if (diff >= 1.5) {
+    matchPercent = Math.min(98, Math.round(86 + Math.min(diff, 4) * 3));
+    matchStatus = `Cơ hội rất cao (${matchPercent}%)`;
+    matchColor = '#10B981';
+    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm của bạn vượt điểm chuẩn 2024 (${cutoff} điểm) là +${diff} điểm. Tỷ lệ trúng tuyển rất an toàn!`;
+  } else if (diff >= 0) {
+    matchPercent = Math.round(72 + diff * 9);
+    matchStatus = `Cơ hội tốt (${matchPercent}%)`;
+    matchColor = '#059669';
+    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm ngang bằng hoặc nhỉnh hơn điểm chuẩn 2024 (${cutoff} điểm). Cơ hội trúng tuyển khả quan nếu giữ vững phong độ!`;
+  } else if (diff >= -1.5) {
+    matchPercent = Math.round(52 + diff * 12); // ~34% - 52%
+    matchStatus = `Vừa sức / Cạnh tranh (${matchPercent}%)`;
+    matchColor = '#F59E0B';
+    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm thấp hơn điểm chuẩn 2024 (${cutoff} điểm) là ${Math.abs(diff)} điểm. Cần nỗ lực thêm ở các tổ hợp môn!`;
+  } else if (diff >= -3.5) {
+    matchPercent = Math.max(16, Math.round(30 + (diff + 1.5) * 7)); // ~16% - 30%
+    matchStatus = `Thách thức cao (${matchPercent}%)`;
+    matchColor = '#EA580C';
+    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm cách điểm chuẩn 2024 (${cutoff} điểm) là ${Math.abs(diff)} điểm. Nguyện vọng này có mức cạnh tranh cao.`;
+  } else {
+    // Large negative difference (e.g. 16.5 vs 28.2)
+    matchPercent = Math.max(8, Math.round(18 - Math.min(Math.abs(diff) - 3.5, 10))); // 8% - 15%
+    matchStatus = `Rất khó / Thách thức lớn (${matchPercent}%)`;
+    matchColor = '#EF4444';
+    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm thấp hơn điểm chuẩn 2024 (${cutoff} điểm) tận ${Math.abs(diff)} điểm. Bạn nên cân nhắc thêm trường an toàn hơn hoặc phương thức xét học bạ.`;
+  }
+
+  // Swipe handling to go back / dismiss modal
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart) return;
+    const dx = e.changedTouches[0].clientX - touchStart.x;
+    const dy = e.changedTouches[0].clientY - touchStart.y;
+    setTouchStart(null);
+
+    // Swipe left or right closes modal (horizontal dominant)
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      closeUniDetail();
+    }
+  };
 
   return (
     <div
@@ -66,7 +122,85 @@ export const UniversityDetailModal: React.FC = () => {
           position: 'relative',
         }}
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
+        {/* Sticky Top Safe-Area Bar: 100% visible on every phone, never clipped by notch or curve */}
+        <div
+          style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 60,
+            padding: '12px 18px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: '#FFFFFF',
+            borderBottom: '1px solid #F1F5F9',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+          }}
+        >
+          {/* Back button [X Đóng] */}
+          <button
+            onClick={closeUniDetail}
+            aria-label="Đóng chi tiết trường"
+            style={{
+              height: '38px',
+              padding: '0 14px 0 10px',
+              borderRadius: '19px',
+              backgroundColor: '#F8FAFC',
+              border: '1.5px solid #E2E8F0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: 'pointer',
+              color: '#1E293B',
+              fontSize: '13px',
+              fontWeight: 700,
+            }}
+          >
+            <X size={18} />
+            <span>Đóng</span>
+          </button>
+
+          {/* School Badge */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: '#EFF6FF',
+              padding: '4px 12px',
+              borderRadius: '12px',
+              border: '1px solid #DBEAFE',
+            }}
+          >
+            <span style={{ fontSize: '13px', fontWeight: 800, color: '#1D4ED8' }}>
+              {uni.code} • Chi tiết trường
+            </span>
+          </div>
+
+          {/* Heart Button [<3] */}
+          <button
+            onClick={() => toggleFavorite(uni.id)}
+            aria-label="Lưu trường"
+            style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '50%',
+              backgroundColor: isFav ? '#FEF2F2' : '#F8FAFC',
+              border: `1.5px solid ${isFav ? '#FECACA' : '#E2E8F0'}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: isFav ? '#EF4444' : '#64748B',
+            }}
+          >
+            <Heart size={18} fill={isFav ? '#EF4444' : 'none'} />
+          </button>
+        </div>
+
         {/* Scrollable Content */}
         <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '110px' }}>
           {/* 1. Header Campus Image 200dp */}
@@ -77,60 +211,6 @@ export const UniversityDetailModal: React.FC = () => {
               altText={uni.name}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
-
-            {/* Back & Heart Buttons */}
-            <div
-              style={{
-                position: 'absolute',
-                top: '16px',
-                left: '16px',
-                right: '16px',
-                display: 'flex',
-                justifyContent: 'space-between',
-              }}
-            >
-              <button
-                onClick={closeUniDetail}
-                style={{
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '50%',
-                  backgroundColor: 'rgba(255,255,255,0.92)',
-                  backdropFilter: 'blur(4px)',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  color: '#1E293B',
-                }}
-              >
-                <X size={20} />
-              </button>
-
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  onClick={() => toggleFavorite(uni.id)}
-                  style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '50%',
-                    backgroundColor: 'rgba(255,255,255,0.92)',
-                    backdropFilter: 'blur(4px)',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                    color: isFav ? '#EF4444' : '#64748B',
-                  }}
-                >
-                  <Heart size={20} fill={isFav ? '#EF4444' : 'none'} />
-                </button>
-              </div>
-            </div>
           </div>
 
           {/* 2. University Brand & Info */}
@@ -307,20 +387,20 @@ export const UniversityDetailModal: React.FC = () => {
                     backgroundColor: '#F8FAFC',
                     borderRadius: '20px',
                     padding: '16px',
-                    border: '1px solid #E2E8F0',
+                    border: '1.5px solid #E2E8F0',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '16px',
                     marginBottom: '16px',
                   }}
                 >
-                  <DonutChart percent={86} size={68} strokeWidth={6} />
+                  <DonutChart percent={matchPercent} size={68} strokeWidth={6} />
                   <div>
-                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#10B981' }}>
-                      Cơ hội trúng tuyển: Rất cao (86%)
+                    <div style={{ fontSize: '15px', fontWeight: 800, color: matchColor }}>
+                      {matchStatus}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', lineHeight: 1.35 }}>
-                      Điểm thi dự kiến {profile.expectedScore} điểm của bạn cao hơn điểm sàn năm 2024.
+                    <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px', lineHeight: 1.4 }}>
+                      {matchDesc}
                     </div>
                   </div>
                 </div>
@@ -331,7 +411,7 @@ export const UniversityDetailModal: React.FC = () => {
                     score2022={uni.score2022}
                     score2023={uni.score2023}
                     score2024={uni.score2024}
-                    userScore={profile.expectedScore}
+                    userScore={userScore}
                   />
                 </div>
 

@@ -32,6 +32,9 @@ export const ProfileTab: React.FC = () => {
     openSettings,
     openCareerPath,
     openAuthModal,
+    applications,
+    openApplicationDetail,
+    setActiveTab,
   } = useApp();
 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -506,7 +509,100 @@ export const ProfileTab: React.FC = () => {
         )}
       </div>
 
-      {/* 5. Wishlist (Trường yêu thích) */}
+      {/* 5. Submitted Applications Section */}
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FileText size={20} color="#2563EB" />
+            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
+              Hồ sơ xét tuyển của bạn ({applications.length})
+            </h4>
+          </div>
+          <span style={{ fontSize: '12px', color: '#10B981', fontWeight: 700 }}>
+            {applications.filter((a) => a.status === 'Hồ sơ hợp lệ').length} hồ sơ hợp lệ
+          </span>
+        </div>
+
+        {applications.length === 0 ? (
+          <div
+            style={{
+              padding: '24px',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '20px',
+              textAlign: 'center',
+              border: '1px dashed #CBD5E1',
+            }}
+          >
+            <FileText size={28} color="#CBD5E1" style={{ margin: '0 auto 8px' }} />
+            <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#64748B' }}>
+              Bạn chưa nộp hồ sơ xét tuyển nào. Hãy chọn trường và nộp hồ sơ trực tuyến ngay!
+            </p>
+            <Button variant="tonal" size="M" onClick={() => setActiveTab(0)}>
+              Khám phá trường ngay
+            </Button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {applications.map((app) => (
+              <div
+                key={app.id}
+                onClick={() => openApplicationDetail(app)}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '20px',
+                  border: '1.5px solid #E2E8F0',
+                  padding: '16px',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 800, color: '#2563EB', backgroundColor: '#EFF6FF', padding: '3px 8px', borderRadius: '8px' }}>
+                    {app.code}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      color: app.statusColor,
+                      backgroundColor: app.statusColor === '#10B981' ? '#ECFDF5' : '#FFFBEB',
+                      border: `1px solid ${app.statusColor}`,
+                      padding: '3px 8px',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    {app.status}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+                  <UniversityAvatar code={app.uniCode} size={38} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {app.uniName}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748B' }}>
+                      {app.major}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #F1F5F9', paddingTop: '10px', fontSize: '12px' }}>
+                  <span style={{ color: '#94A3B8' }}>
+                    Thời gian: {app.submittedAt}
+                  </span>
+                  <span style={{ color: '#2563EB', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    Xem chi tiết hồ sơ <ChevronRight size={14} />
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 6. Wishlist (Trường yêu thích) */}
       <div style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

@@ -26,17 +26,21 @@ export const BottomNavigation: React.FC = () => {
         bottom: 0,
         left: 0,
         right: 0,
-        height: '64px',
+        height: 'calc(68px + env(safe-area-inset-bottom, 0px))',
+        minHeight: '68px',
         backgroundColor: '#FFFFFF',
         borderRadius: '24px 24px 0 0',
-        boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.08)',
+        borderTop: '1px solid #E2E8F0',
+        boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.08)',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'space-around',
-        zIndex: 50,
+        zIndex: 80,
         maxWidth: '520px',
         margin: '0 auto',
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        paddingTop: '6px',
+        paddingBottom: 'max(8px, env(safe-area-inset-bottom, 0px))',
+        boxSizing: 'border-box',
       }}
     >
       {NAV_ITEMS.map((item) => {
@@ -52,7 +56,7 @@ export const BottomNavigation: React.FC = () => {
             aria-label={item.label}
             style={{
               flex: 1,
-              height: '100%',
+              height: '52px',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -61,7 +65,7 @@ export const BottomNavigation: React.FC = () => {
               backgroundColor: 'transparent',
               color: isActive ? '#2563EB' : '#94A3B8',
               cursor: 'pointer',
-              padding: '6px 0',
+              padding: '2px 0',
               transition: 'all 0.2s ease',
               position: 'relative',
             }}
@@ -69,14 +73,14 @@ export const BottomNavigation: React.FC = () => {
             {/* Sliding / Selected Pill */}
             <div
               style={{
-                width: isActive ? '42px' : '32px',
+                width: isActive ? '44px' : '32px',
                 height: '28px',
                 borderRadius: '14px',
                 backgroundColor: isActive ? '#EFF6FF' : 'transparent',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginBottom: '3px',
+                marginBottom: '2px',
                 transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                 transform: isActive ? 'scale(1.08)' : 'scale(1)',
               }}
@@ -87,9 +91,10 @@ export const BottomNavigation: React.FC = () => {
             <span
               style={{
                 fontSize: '11px',
-                fontWeight: isActive ? 700 : 500,
+                fontWeight: isActive ? 800 : 600,
                 color: isActive ? '#2563EB' : '#64748B',
                 letterSpacing: '-0.2px',
+                lineHeight: 1.2,
               }}
             >
               {item.label}
@@ -100,4 +105,3 @@ export const BottomNavigation: React.FC = () => {
     </nav>
   );
 };
-

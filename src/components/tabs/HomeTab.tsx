@@ -1276,9 +1276,9 @@ export const HomeTab: React.FC = () => {
         <div
           style={{
             position: 'fixed',
-            bottom: '76px',
-            right: '20px',
-            zIndex: 45,
+            bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
+            right: 'max(16px, calc((100vw - 520px) / 2 + 16px))',
+            zIndex: 70,
           }}
         >
           <button
