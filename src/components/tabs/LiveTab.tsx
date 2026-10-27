@@ -41,8 +41,11 @@ export const LiveTab: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Live chat state
+  // Live chat state (Max 8 comments sliding window, showing 4 in view, scroll to see other 4)
   const [chatInput, setChatInput] = useState('');
+  const chatScrollRef = React.useRef<HTMLDivElement>(null);
+  const poolIndexRef = React.useRef(0);
+
   const [messages, setMessages] = useState<LiveChatMessage[]>([
     {
       id: 'm1',
@@ -67,7 +70,116 @@ export const LiveTab: React.FC = () => {
       text: 'Chào Lan! Điểm chuẩn CNTT dự kiến từ 24.5. Trường đang có gói học bổng 50-100% cho thí sinh nộp hồ sơ đợt 1 nhé!',
       isAdvisor: true,
     },
+    {
+      id: 'm4',
+      author: 'Quốc Huy (Đà Nẵng)',
+      avatar: '/images/avatar_user.png',
+      time: '14:32',
+      text: 'Cho em hỏi điểm xét học bạ ngành Trí tuệ nhân tạo có lấy chứng chỉ tiếng Anh để quy đổi điểm không ạ?',
+    },
   ]);
+
+  // Infinite real-time live comments generator (keep max 8 comments, FIFO sliding window)
+  useEffect(() => {
+    const commentsPool: Omit<LiveChatMessage, 'id' | 'time'>[] = [
+      {
+        author: 'Trần Minh Quân (Đà Nẵng)',
+        avatar: '/images/avatar_user.png',
+        text: 'Em được 24.5 điểm khối A00 có cơ hội đỗ CNTT Bách Khoa không ạ?',
+      },
+      {
+        author: 'Ban Tư vấn Tuyển sinh',
+        avatar: '/images/advisor_avatar.png',
+        text: 'Chào Quân! 24.5đ em hoàn toàn yên tâm nộp NV1 CNTT ĐH Phú Xuân hoặc Điện tử Bách Khoa nhé!',
+        isAdvisor: true,
+      },
+      {
+        author: 'Lê Hoàng Yến (Huế)',
+        avatar: '/images/speaker_2.png',
+        text: 'Trường Đại học Phú Xuân có chính sách học bổng cho học sinh giỏi tỉnh không ạ?',
+      },
+      {
+        author: 'TS. Lê Thành Trung',
+        avatar: '/images/advisor_avatar.png',
+        text: 'Chào Yến! PXU cấp học bổng OJT 100% học phí toàn khóa cho học sinh giỏi cấp tỉnh trở lên nhé!',
+        isAdvisor: true,
+      },
+      {
+        author: 'Nguyễn Đăng Khoa (TP.HCM)',
+        avatar: '/images/speaker_3.png',
+        text: 'Thầy cho em hỏi kỳ thi ĐGNL ĐHQG-HCM năm nay cổng đăng ký đợt 1 mở khi nào ạ?',
+      },
+      {
+        author: 'Phạm Thu Trang (Hà Nội)',
+        avatar: '/images/speaker_1.png',
+        text: 'Học phí ĐH Ngoại Thương năm nay có tăng nhiều so với khóa trước không thầy?',
+      },
+      {
+        author: 'Ban Tư vấn Unipath',
+        avatar: '/images/advisor_avatar.png',
+        text: 'Mức học phí các trường công lập từ 18-35 triệu/năm, các bạn tham khảo chi tiết trong bảng so sánh nhé!',
+        isAdvisor: true,
+      },
+      {
+        author: 'Vũ Đức Nam (Quảng Nam)',
+        avatar: '/images/avatar_user.png',
+        text: 'Ngành Vi mạch bán dẫn tại Bách Khoa cần học tốt những môn gì nhất ạ?',
+      },
+      {
+        author: 'Đặng Mai Phương (Hải Phòng)',
+        avatar: '/images/speaker_2.png',
+        text: 'Có bạn nào định nộp hồ sơ xét tuyển sớm bằng IELTS vào NEU không?',
+      },
+      {
+        author: 'Hoàng Anh Tuấn (Nghệ An)',
+        avatar: '/images/speaker_3.png',
+        text: 'Trường có ký túc xá cho tân sinh viên ngoại tỉnh không ạ? Đăng ký thế nào ạ?',
+      },
+      {
+        author: 'TS. Lê Thành Trung',
+        avatar: '/images/advisor_avatar.png',
+        text: '100% thí sinh nộp đợt 1 đều được ưu tiên xếp phòng KTX tiện nghi đầy đủ nhé các em!',
+        isAdvisor: true,
+      },
+      {
+        author: 'Bùi Thanh Hằng (Cần Thơ)',
+        avatar: '/images/speaker_1.png',
+        text: 'Em muốn theo ngành Logistics thì nên chọn ĐH Kinh tế TP.HCM hay ĐH Quốc tế ạ?',
+      },
+    ];
+
+    const interval = setInterval(() => {
+      const template = commentsPool[poolIndexRef.current % commentsPool.length];
+      poolIndexRef.current += 1;
+
+      const newMsg: LiveChatMessage = {
+        id: `m-live-${Date.now()}-${poolIndexRef.current}`,
+        author: template.author,
+        avatar: template.avatar,
+        time: 'Vừa xong',
+        text: template.text,
+        isAdvisor: template.isAdvisor,
+      };
+
+      setMessages((prev) => {
+        // Keep maximum 8 comments in the sliding buffer
+        const nextList = prev.length >= 8 ? prev.slice(1) : prev;
+        return [...nextList, newMsg];
+      });
+    }, 3200);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Smooth scroll to bottom when new comment arrives
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTo({
+        top: chatScrollRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  }, [messages]);
 
   const handleSendChat = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,23 +193,29 @@ export const LiveTab: React.FC = () => {
       text: chatInput.trim(),
     };
 
-    setMessages((prev) => [...prev, newMsg]);
+    setMessages((prev) => {
+      const nextList = prev.length >= 8 ? prev.slice(1) : prev;
+      return [...nextList, newMsg];
+    });
     setChatInput('');
 
-    // Simulated reply from bot/advisor
+    // Simulated reply from advisor
     setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `m-bot-${Date.now()}`,
-          author: 'Ban Tư vấn Unipath',
-          avatar: '/images/advisor_avatar.png',
-          time: 'Vừa xong',
-          text: 'Cảm ơn câu hỏi của bạn! Chuyên viên tuyển sinh sẽ kết nối và tư vấn chi tiết trong ít phút.',
-          isAdvisor: true,
-        },
-      ]);
-    }, 1500);
+      setMessages((prev) => {
+        const nextList = prev.length >= 8 ? prev.slice(1) : prev;
+        return [
+          ...nextList,
+          {
+            id: `m-bot-${Date.now()}`,
+            author: 'Ban Tư vấn Tuyển sinh',
+            avatar: '/images/advisor_avatar.png',
+            time: 'Vừa xong',
+            text: 'Cảm ơn bạn! Ban tuyển sinh đã ghi nhận và sẽ giải đáp chi tiết cho bạn ngay bây giờ nhé.',
+            isAdvisor: true,
+          },
+        ];
+      });
+    }, 2000);
   };
 
   // Virtual booths (6 featured universities)
@@ -444,19 +562,74 @@ export const LiveTab: React.FC = () => {
             boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
           }}
         >
+          {/* Header of Chat with Counter Badge */}
           <div
             style={{
-              maxHeight: '180px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '10px',
+              paddingBottom: '8px',
+              borderBottom: '1px solid #F1F5F9',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: '#10B981',
+                  boxShadow: '0 0 6px #10B981',
+                }}
+              />
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A' }}>
+                Khung bình luận trực tiếp
+              </span>
+            </div>
+            <span
+              style={{
+                fontSize: '11px',
+                color: '#64748B',
+                backgroundColor: '#F8FAFC',
+                padding: '2px 8px',
+                borderRadius: '8px',
+                border: '1px solid #E2E8F0',
+              }}
+            >
+              8 bình luận gần nhất • Lướt để xem
+            </span>
+          </div>
+
+          {/* Viewport for 4 comments visible at a time, scroll to view all 8 */}
+          <div
+            ref={chatScrollRef}
+            style={{
+              height: '210px',
               overflowY: 'auto',
               display: 'flex',
               flexDirection: 'column',
               gap: '10px',
               marginBottom: '12px',
-              paddingRight: '4px',
+              paddingRight: '6px',
+              scrollBehavior: 'smooth',
             }}
           >
             {messages.map((msg) => (
-              <div key={msg.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+              <div
+                key={msg.id}
+                style={{
+                  display: 'flex',
+                  gap: '8px',
+                  alignItems: 'flex-start',
+                  padding: '6px 8px',
+                  borderRadius: '12px',
+                  backgroundColor: msg.isAdvisor ? '#EFF6FF' : '#F8FAFC',
+                  border: msg.isAdvisor ? '1px solid #DBEAFE' : '1px solid #F1F5F9',
+                  transition: 'all 0.3s ease',
+                  flexShrink: 0,
+                }}
+              >
                 <img
                   src={msg.avatar}
                   alt={msg.author}

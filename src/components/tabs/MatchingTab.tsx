@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import {
   Edit2,
   Calendar,
+  Sparkles,
+  ArrowRight,
+  HelpCircle,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { evaluateMatching, GROUP_META } from '../../services/MatchingService';
@@ -15,15 +18,17 @@ export const MatchingTab: React.FC = () => {
     hollandResult,
     openUniDetail,
     openBookConsultation,
+    setActiveTab,
   } = useApp();
 
-  const [score, setScore] = useState<number>(profile.expectedScore || 24.5);
+  // Initial parameters: start from baseline, user triggers analysis
+  const [score, setScore] = useState<number>(profile.expectedScore || 20.0);
   const [budget, setBudget] = useState<number>(30); // Triệu / năm
   const [region, setRegion] = useState<string>('Tất cả');
   const [sortBy, setSortBy] = useState<'score' | 'budget' | 'location'>('score');
 
-  const [hasEvaluated, setHasEvaluated] = useState<boolean>(true);
-  const [isEditingParams, setIsEditingParams] = useState<boolean>(false);
+  const [hasEvaluated, setHasEvaluated] = useState<boolean>(false);
+  const [isEditingParams, setIsEditingParams] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
 
   // Evaluate matching results
@@ -69,7 +74,83 @@ export const MatchingTab: React.FC = () => {
         </p>
       </div>
 
-      {/* 2. Parameters Card: Full or Collapsed */}
+      {/* 2. Notice Banner: Holland RIASEC integration */}
+      <div
+        style={{
+          backgroundColor: hollandResult ? '#EFF6FF' : '#FFFBEB',
+          border: `1.5px solid ${hollandResult ? '#BFDBFE' : '#FCD34D'}`,
+          borderRadius: '20px',
+          padding: '14px 16px',
+          marginBottom: '20px',
+          display: 'flex',
+          gap: '12px',
+          alignItems: 'flex-start',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+        }}
+      >
+        <div
+          style={{
+            width: '38px',
+            height: '38px',
+            borderRadius: '12px',
+            backgroundColor: hollandResult ? '#DBEAFE' : '#FDE68A',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: hollandResult ? '#2563EB' : '#D97706',
+            flexShrink: 0,
+          }}
+        >
+          <Sparkles size={20} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: '13px',
+              fontWeight: 800,
+              color: hollandResult ? '#1E40AF' : '#92400E',
+              marginBottom: '3px',
+            }}
+          >
+            {hollandResult
+              ? `✅ Đã tích hợp kết quả Holland nhóm [${hollandResult.primaryCode}]`
+              : '💡 Lưu ý: Tăng tỉ lệ dự đoán trường phù hợp lên 98%'}
+          </div>
+          <div style={{ fontSize: '12px', color: hollandResult ? '#1E3A8A' : '#78350F', lineHeight: 1.45 }}>
+            {hollandResult ? (
+              <>Thuật toán AI đã kết hợp đối soát nhóm tính cách của bạn để đề xuất đúng ngành học thế mạnh.</>
+            ) : (
+              <>
+                Học sinh sau khi <strong>hoàn thành bài khảo sát trắc nghiệm Holland RIASEC</strong> sẽ giúp thuật toán AI phân tích sở thích nghề nghiệp, nâng cao tỉ lệ dự đoán trường và ngành học phù hợp lên tới <strong>98%</strong>!
+              </>
+            )}
+          </div>
+          {!hollandResult && (
+            <button
+              onClick={() => setActiveTab(1)}
+              style={{
+                marginTop: '8px',
+                border: 'none',
+                backgroundColor: '#D97706',
+                color: '#FFFFFF',
+                padding: '6px 12px',
+                borderRadius: '10px',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                boxShadow: '0 2px 6px rgba(217, 119, 6, 0.3)',
+              }}
+            >
+              Làm khảo sát tính cách ngay <ArrowRight size={13} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 3. Parameters Card: Full or Collapsed */}
       {!isEditingParams && hasEvaluated ? (
         /* Collapsed Summary Card */
         <div
@@ -139,7 +220,7 @@ export const MatchingTab: React.FC = () => {
               cursor: 'pointer',
             }}
           >
-            <Edit2 size={14} /> Sửa
+            <Edit2 size={14} /> Sửa tiêu chí
           </button>
         </div>
       ) : (
@@ -149,11 +230,32 @@ export const MatchingTab: React.FC = () => {
             backgroundColor: '#FFFFFF',
             borderRadius: '24px',
             padding: '20px',
-            border: '1px solid #E2E8F0',
+            border: '1.5px solid #E2E8F0',
             boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
             marginBottom: '24px',
           }}
         >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
+              Thiết lập thông tin dự đoán AI
+            </h3>
+            {hasEvaluated && (
+              <button
+                onClick={() => setIsEditingParams(false)}
+                style={{
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#64748B',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Đóng
+              </button>
+            )}
+          </div>
+
           {/* Row 1: Expected Score */}
           <div style={{ marginBottom: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
@@ -272,173 +374,211 @@ export const MatchingTab: React.FC = () => {
             loading={loading}
             onClick={handleEvaluate}
           >
-            Phân tích cơ hội đỗ ngay →
+            {hasEvaluated ? 'Cập nhật phân tích mới →' : '🚀 Phân tích cơ hội trúng tuyển ngay →'}
           </Button>
         </div>
       )}
 
-      {/* 3. Sorting Tabs (Điểm số / Ngân sách / Vị trí) */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748B' }}>
-          Sắp xếp kết quả theo:
-        </span>
-        <div style={{ display: 'flex', gap: '6px' }}>
-          {[
-            { id: 'score', label: 'Điểm số' },
-            { id: 'budget', label: 'Ngân sách' },
-            { id: 'location', label: 'Vị trí' },
-          ].map((tab) => {
-            const active = sortBy === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setSortBy(tab.id as 'score' | 'budget' | 'location')}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '14px',
-                  backgroundColor: active ? '#2563EB' : '#F1F5F9',
-                  color: active ? '#FFFFFF' : '#64748B',
-                  border: 'none',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+      {/* Conditionally show results only after user clicks analyze */}
+      {!hasEvaluated ? (
+        <div
+          style={{
+            padding: '36px 20px',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '24px',
+            textAlign: 'center',
+            border: '1.5px dashed #CBD5E1',
+            marginBottom: '24px',
+          }}
+        >
+          <div
+            style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              backgroundColor: '#EFF6FF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#2563EB',
+              margin: '0 auto 12px',
+            }}
+          >
+            <HelpCircle size={30} />
+          </div>
+          <h4 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
+            Chưa có dữ liệu phân tích
+          </h4>
+          <p style={{ margin: 0, fontSize: '13px', color: '#64748B', lineHeight: 1.5 }}>
+            Vui lòng chọn mức điểm dự kiến, ngân sách học phí và bấm nút <strong>"Phân tích cơ hội trúng tuyển ngay"</strong> phía trên để AI đối soát và phân nhóm 30 trường đại học!
+          </p>
         </div>
-      </div>
-
-      {/* 4. Results by 3 Probability Groups */}
-      {[
-        { type: 'SAFE' as GroupType, list: sortResults(evaluation.safeList) },
-        { type: 'MODERATE' as GroupType, list: sortResults(evaluation.moderateList) },
-        { type: 'CHALLENGING' as GroupType, list: sortResults(evaluation.challengingList) },
-      ].map(({ type, list }) => {
-        const meta = GROUP_META[type];
-
-        return (
-          <div key={type} style={{ marginBottom: '24px' }}>
-            {/* Group Header Badge */}
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <span
-                  style={{
-                    backgroundColor: meta.color,
-                    color: '#FFFFFF',
-                    fontSize: '13px',
-                    fontWeight: 800,
-                    padding: '4px 12px',
-                    borderRadius: '14px',
-                  }}
-                >
-                  {meta.title} ({list.length})
-                </span>
-              </div>
-              <span style={{ fontSize: '12px', color: '#64748B', paddingLeft: '4px' }}>
-                {meta.description}
-              </span>
-            </div>
-
-            {/* University Cards */}
-            {list.length === 0 ? (
-              <div
-                style={{
-                  padding: '16px',
-                  backgroundColor: '#F8FAFC',
-                  borderRadius: '16px',
-                  textAlign: 'center',
-                  fontSize: '13px',
-                  color: '#94A3B8',
-                  border: '1px dashed #E2E8F0',
-                }}
-              >
-                Không có trường nào thuộc nhóm này theo tiêu chí lọc
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {list.map((item) => (
-                  <div
-                    key={item.university.id}
-                    onClick={() => openUniDetail(item.university.id)}
+      ) : (
+        <>
+          {/* 4. Sorting Tabs (Điểm số / Ngân sách / Vị trí) */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748B' }}>
+              Sắp xếp kết quả theo:
+            </span>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {[
+                { id: 'score', label: 'Điểm số' },
+                { id: 'budget', label: 'Ngân sách' },
+                { id: 'location', label: 'Vị trí' },
+              ].map((tab) => {
+                const active = sortBy === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setSortBy(tab.id as 'score' | 'budget' | 'location')}
                     style={{
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: '20px',
-                      padding: '14px 16px',
-                      border: '1px solid #E2E8F0',
-                      borderLeft: `5px solid ${meta.color}`,
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
+                      padding: '6px 12px',
+                      borderRadius: '14px',
+                      backgroundColor: active ? '#2563EB' : '#F1F5F9',
+                      color: active ? '#FFFFFF' : '#64748B',
+                      border: 'none',
+                      fontSize: '12px',
+                      fontWeight: 600,
                       cursor: 'pointer',
                     }}
                   >
-                    <UniversityAvatar code={item.university.code} size={50} />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          fontSize: '15px',
-                          fontWeight: 700,
-                          color: '#0F172A',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          lineHeight: 1.25,
-                        }}
-                      >
-                        {item.university.name}
-                      </div>
+          {/* 5. Results by 3 Probability Groups */}
+          {[
+            { type: 'SAFE' as GroupType, list: sortResults(evaluation.safeList) },
+            { type: 'MODERATE' as GroupType, list: sortResults(evaluation.moderateList) },
+            { type: 'CHALLENGING' as GroupType, list: sortResults(evaluation.challengingList) },
+          ].map(({ type, list }) => {
+            const meta = GROUP_META[type];
 
-                      <div
-                        style={{
-                          fontSize: '12px',
-                          color: '#2563EB',
-                          fontWeight: 600,
-                          marginTop: '3px',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {item.matchedMajor} (Chuẩn: {item.majorCutoff}đ)
-                      </div>
+            return (
+              <div key={type} style={{ marginBottom: '24px' }}>
+                {/* Group Header Badge */}
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <span
+                      style={{
+                        backgroundColor: meta.color,
+                        color: '#FFFFFF',
+                        fontSize: '13px',
+                        fontWeight: 800,
+                        padding: '4px 12px',
+                        borderRadius: '14px',
+                      }}
+                    >
+                      {meta.title} ({list.length})
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '12px', color: '#64748B', paddingLeft: '4px' }}>
+                    {meta.description}
+                  </span>
+                </div>
 
+                {/* University Cards */}
+                {list.length === 0 ? (
+                  <div
+                    style={{
+                      padding: '16px',
+                      backgroundColor: '#F8FAFC',
+                      borderRadius: '16px',
+                      textAlign: 'center',
+                      fontSize: '13px',
+                      color: '#94A3B8',
+                      border: '1px dashed #E2E8F0',
+                    }}
+                  >
+                    Không có trường nào thuộc nhóm này theo tiêu chí lọc
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {list.map((item) => (
                       <div
+                        key={item.university.id}
+                        onClick={() => openUniDetail(item.university.id)}
                         style={{
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: '20px',
+                          padding: '14px 16px',
+                          border: '1px solid #E2E8F0',
+                          borderLeft: `5px solid ${meta.color}`,
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '8px',
-                          fontSize: '11px',
-                          color: '#64748B',
-                          marginTop: '3px',
+                          gap: '12px',
+                          cursor: 'pointer',
                         }}
                       >
-                        <span>{item.university.loc.split(',')[0]}</span>
-                        <span>•</span>
-                        <span>{item.university.tuitionMin}-{item.university.tuitionMax} tr/năm</span>
-                      </div>
-                    </div>
+                        <UniversityAvatar code={item.university.code} size={50} />
 
-                    {/* Donut Chart with matching percentage */}
-                    <div style={{ flexShrink: 0 }}>
-                      <DonutChart
-                        percent={item.matchingPercent}
-                        color={meta.color}
-                        size={56}
-                        strokeWidth={5}
-                      />
-                    </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
+                            style={{
+                              fontSize: '15px',
+                              fontWeight: 700,
+                              color: '#0F172A',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              lineHeight: 1.25,
+                            }}
+                          >
+                            {item.university.name}
+                          </div>
+
+                          <div
+                            style={{
+                              fontSize: '12px',
+                              color: '#2563EB',
+                              fontWeight: 600,
+                              marginTop: '3px',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {item.matchedMajor} (Chuẩn: {item.majorCutoff}đ)
+                          </div>
+
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              fontSize: '11px',
+                              color: '#64748B',
+                              marginTop: '3px',
+                            }}
+                          >
+                            <span>{item.university.loc.split(',')[0]}</span>
+                            <span>•</span>
+                            <span>{item.university.tuitionMin}-{item.university.tuitionMax} tr/năm</span>
+                          </div>
+                        </div>
+
+                        {/* Donut Chart with matching percentage */}
+                        <div style={{ flexShrink: 0 }}>
+                          <DonutChart
+                            percent={item.matchingPercent}
+                            color={meta.color}
+                            size={56}
+                            strokeWidth={5}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
-        );
-      })}
+            );
+          })}
+        </>
+      )}
 
       {/* 5. Bottom note & Book 1-1 Consultation Button */}
       <div

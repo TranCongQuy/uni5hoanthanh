@@ -186,69 +186,135 @@ export const ProfileTab: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Unipath Premium Banner Card */}
+      {/* 2. Unipath Premium Banner Card with Flame Effect */}
       {!profile.isPremium ? (
         <div
           style={{
-            background: 'linear-gradient(135deg, #FEF9C3 0%, #FDE68A 100%)',
-            border: '1.5px solid #FCD34D',
-            borderRadius: '24px',
-            padding: '20px',
+            background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 45%, #FDE68A 100%)',
+            border: '2px solid #F59E0B',
+            borderRadius: '26px',
+            padding: '22px 20px',
             marginBottom: '24px',
             position: 'relative',
-            boxShadow: '0 6px 18px rgba(245, 158, 11, 0.15)',
+            overflow: 'hidden',
+            boxShadow: '0 10px 30px rgba(245, 158, 11, 0.25), 0 0 15px rgba(239, 68, 68, 0.15)',
           }}
         >
-          {/* Header row: Crown + Title + -50% badge */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+          {/* Shimmering light beam across the card */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '40%',
+              height: '100%',
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
+              animation: 'shimmerBeam 3.5s infinite linear',
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          />
+
+          {/* Header row: Crown + Title + -50% Flame badge */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '14px',
+              position: 'relative',
+              zIndex: 2,
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div
                 style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '50%',
-                  backgroundColor: '#FFFFFF',
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: '#D97706',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+                  boxShadow: '0 4px 12px rgba(217, 119, 6, 0.25)',
+                  border: '1.5px solid #FCD34D',
+                  animation: 'floatBob 3s ease-in-out infinite',
                 }}
               >
-                <Crown size={24} />
+                <Crown size={26} fill="#F59E0B" color="#B45309" />
               </div>
-              <span style={{ fontSize: '18px', fontWeight: 800, color: '#78350F' }}>
-                Unipath Premium
-              </span>
+              <div>
+                <span style={{ fontSize: '18px', fontWeight: 900, color: '#78350F' }}>
+                  Unipath Premium
+                </span>
+                <div style={{ fontSize: '11px', color: '#92400E', fontWeight: 600 }}>
+                  Gói quyền lợi hướng nghiệp trọn gói
+                </div>
+              </div>
             </div>
 
-            <span
+            {/* BỐC LỬA -50% FLAME BADGE */}
+            <div
               style={{
-                backgroundColor: '#EF4444',
+                background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 50%, #B91C1C 100%)',
                 color: '#FFFFFF',
                 fontSize: '12px',
-                fontWeight: 800,
-                padding: '4px 10px',
-                borderRadius: '12px',
+                fontWeight: 900,
+                padding: '5px 12px',
+                borderRadius: '20px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                animation: 'fireFlicker 1.6s infinite ease-in-out',
+                letterSpacing: '0.3px',
+                cursor: 'pointer',
+                textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                border: '1px solid #FECACA',
               }}
             >
-              -50%
-            </span>
+              <span style={{ fontSize: '15px' }}>🔥</span>
+              <span>-50% GIẢM SỐC</span>
+            </div>
           </div>
 
           {/* Price row */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '4px' }}>
-            <span style={{ fontSize: '32px', fontWeight: 900, color: '#B45309' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '2px', position: 'relative', zIndex: 2 }}>
+            <span
+              style={{
+                fontSize: '34px',
+                fontWeight: 900,
+                background: 'linear-gradient(135deg, #B45309 0%, #D97706 60%, #78350F 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                letterSpacing: '-0.5px',
+              }}
+            >
               199.000đ
             </span>
-            <span style={{ fontSize: '14px', color: '#78350F' }}>/năm</span>
+            <span style={{ fontSize: '14px', color: '#78350F', fontWeight: 700 }}>/năm</span>
+            <span
+              style={{
+                marginLeft: 'auto',
+                fontSize: '11px',
+                fontWeight: 800,
+                color: '#DC2626',
+                backgroundColor: '#FEE2E2',
+                padding: '3px 8px',
+                borderRadius: '8px',
+                border: '1px solid #FECACA',
+              }}
+            >
+              ⚡ Ưu đãi chỉ hôm nay
+            </span>
           </div>
-          <div style={{ fontSize: '14px', color: '#92400E', textDecoration: 'line-through', marginBottom: '16px' }}>
+
+          <div style={{ fontSize: '14px', color: '#92400E', textDecoration: 'line-through', marginBottom: '16px', position: 'relative', zIndex: 2 }}>
             399.000đ/năm
           </div>
 
           {/* 4 Benefits with green checks */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', position: 'relative', zIndex: 2 }}>
             {[
               'Bộ đề & Tài liệu ôn thi ĐGNL độc quyền',
               'Tư vấn 1-1 trực tiếp cùng chuyên gia tuyển sinh',
@@ -267,6 +333,7 @@ export const ProfileTab: React.FC = () => {
                     justifyContent: 'center',
                     color: '#FFFFFF',
                     flexShrink: 0,
+                    boxShadow: '0 2px 6px rgba(16,185,129,0.3)',
                   }}
                 >
                   <CheckCircle2 size={14} />
@@ -278,15 +345,43 @@ export const ProfileTab: React.FC = () => {
             ))}
           </div>
 
-          {/* Upgrade Button */}
-          <Button
-            variant="danger"
-            size="L"
-            fullWidth
+          {/* Upgrade Button with Shine Effect */}
+          <button
             onClick={() => setShowUpgradeModal(true)}
+            style={{
+              width: '100%',
+              height: '52px',
+              borderRadius: '16px',
+              border: 'none',
+              background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 50%, #B91C1C 100%)',
+              color: '#FFFFFF',
+              fontSize: '15px',
+              fontWeight: 800,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              boxShadow: '0 6px 20px rgba(239, 68, 68, 0.4), 0 0 10px rgba(245, 158, 11, 0.3)',
+              position: 'relative',
+              overflow: 'hidden',
+              zIndex: 2,
+            }}
           >
-            Nâng cấp ngay →
-          </Button>
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '30%',
+                height: '100%',
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+                animation: 'shimmerBeam 2.5s infinite linear',
+              }}
+            />
+            <span>🔥 Nâng cấp ngay — Mở khóa trọn bộ</span>
+            <span style={{ fontSize: '18px' }}>→</span>
+          </button>
         </div>
       ) : (
         /* Already Premium Card */

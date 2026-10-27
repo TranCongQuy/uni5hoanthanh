@@ -7,20 +7,8 @@ const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: 'm-welcome',
     sender: 'bot',
-    text: 'Unipath xin chào bạn! Mình là Trợ lý AI Hướng nghiệp & Tuyển sinh.\n\nBạn đang quan tâm đến trường đại học, ngành học, điểm chuẩn hay phương thức xét tuyển nào? Hãy đặt câu hỏi hoặc chọn các gợi ý bên dưới, mình sẽ hỗ trợ tư vấn ngay cho bạn nhé!',
+    text: '👋 Xin chào bạn! Mình là Trợ lý AI Hướng nghiệp & Tuyển sinh Unipath.\n\nBạn đang quan tâm hay muốn tìm kiếm thông tin về trường đại học, ngành học, điểm chuẩn hay học phí nào hôm nay? Hãy nhập câu hỏi hoặc bấm chọn các gợi ý bên dưới để mình hỗ trợ ngay nhé!',
     timestamp: 'Vừa xong',
-  },
-  {
-    id: 'm-sample-user',
-    sender: 'user',
-    text: 'Cho mình hỏi về học phí ngành CNTT tại Đại học Phú Xuân (PXU) và tỷ lệ đỗ với 24.5 điểm ạ?',
-    timestamp: '14:30',
-  },
-  {
-    id: 'm-sample-bot',
-    sender: 'bot',
-    text: 'Chào bạn! Trường Đại học Phú Xuân (PXU) tại TP. Huế có mức học phí rất hợp lý, chỉ từ 18 - 22 triệu VNĐ/năm cho ngành Công nghệ Thông tin.\n\nVới điểm thi THPT dự kiến 24.5 điểm, bạn nằm trong nhóm AN TOÀN (>90% cơ hội trúng tuyển) vào ngành CNTT của PXU (điểm chuẩn 2024 là 24.50 đ). Trường còn có chính sách cam kết việc làm OJT cho 92% sinh viên sau khi tốt nghiệp đấy!',
-    timestamp: '14:30',
   },
 ];
 
@@ -40,7 +28,11 @@ export const ChatBotModal: React.FC = () => {
     const saved = localStorage.getItem('unipath_chat_history');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // If old sample messages are present, clean them up
+        if (Array.isArray(parsed) && parsed.length > 0 && !parsed.some((m: ChatMessage) => m.id === 'm-sample-user')) {
+          return parsed;
+        }
       } catch {
         // fallback
       }

@@ -103,3 +103,57 @@ html, body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
 }
+
+/* Flame burning effect */
+@keyframes fireFlicker {
+  0% {
+    transform: scale(1) rotate(-0.5deg);
+    box-shadow: 0 0 10px #EF4444, 0 0 20px #F59E0B, inset 0 0 6px #FBBF24;
+  }
+  25% {
+    transform: scale(1.05) rotate(1deg);
+    box-shadow: 0 0 14px #DC2626, 0 0 26px #EA580C, inset 0 0 10px #FDE047;
+  }
+  50% {
+    transform: scale(0.98) rotate(-1deg);
+    box-shadow: 0 0 12px #EF4444, 0 0 22px #F59E0B, inset 0 0 8px #FDE047;
+  }
+  75% {
+    transform: scale(1.07) rotate(0.8deg);
+    box-shadow: 0 0 16px #DC2626, 0 0 30px #F97316, inset 0 0 12px #FEF08A;
+  }
+  100% {
+    transform: scale(1) rotate(-0.5deg);
+    box-shadow: 0 0 10px #EF4444, 0 0 20px #F59E0B, inset 0 0 6px #FBBF24;
+  }
+}
+
+/* Light shimmer sweep */
+@keyframes shimmerBeam {
+  0% {
+    transform: translateX(-150%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(250%) skewX(-20deg);
+  }
+}
+
+/* Glowing gold aura */
+@keyframes goldPulse {
+  0%, 100% {
+    box-shadow: 0 8px 24px rgba(245, 158, 11, 0.25), 0 0 0 1px rgba(245, 158, 11, 0.3);
+  }
+  50% {
+    box-shadow: 0 12px 32px rgba(245, 158, 11, 0.45), 0 0 20px rgba(251, 191, 36, 0.5);
+  }
+}
+
+/* Floating animation */
+@keyframes floatBob {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(3deg);
+  }
+}

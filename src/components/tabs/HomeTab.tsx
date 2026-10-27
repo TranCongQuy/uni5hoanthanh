@@ -68,10 +68,69 @@ export const HomeTab: React.FC = () => {
     );
   });
 
-  // Featured universities for top carousel (PXU, BKA, HCMUT, FTU, UEH)
-  const featuredUnis = UNIVERSITIES.filter((u) =>
-    [11, 1, 21, 2, 23].includes(u.id)
-  );
+  // Featured 8 universities across North, Central, and South regions
+  const featuredUnis = [
+    UNIVERSITIES.find((u) => u.id === 1)!, // BKA - Bách Khoa HN
+    UNIVERSITIES.find((u) => u.id === 2)!, // FTU - Ngoại Thương
+    UNIVERSITIES.find((u) => u.id === 3)!, // NEU - Kinh Tế Quốc Dân
+    UNIVERSITIES.find((u) => u.id === 11)!, // PXU - Phú Xuân
+    UNIVERSITIES.find((u) => u.id === 13)!, // DUT - Bách Khoa ĐN
+    UNIVERSITIES.find((u) => u.id === 21)!, // HCMUT - Bách Khoa HCM
+    UNIVERSITIES.find((u) => u.id === 23)!, // UEH - Kinh Tế HCM
+    UNIVERSITIES.find((u) => u.id === 24)!, // UIT - CNTT HCM
+  ].filter(Boolean);
+
+  const featuredScrollRef = React.useRef<HTMLDivElement>(null);
+  const [featuredIndex, setFeaturedIndex] = useState(0);
+  const [isCarouselHovered, setIsCarouselHovered] = useState(false);
+  const carouselDirectionRef = React.useRef<'forward' | 'backward'>('forward');
+
+  // Auto transition: Left-to-Right, and at the end bounce Right-to-Left
+  useEffect(() => {
+    if (isCarouselHovered) return;
+
+    const interval = setInterval(() => {
+      setFeaturedIndex((prev) => {
+        const totalItems = 9; // 8 universities + 1 "Xem tất cả" card
+        if (carouselDirectionRef.current === 'forward') {
+          if (prev < totalItems - 1) {
+            return prev + 1;
+          } else {
+            carouselDirectionRef.current = 'backward';
+            return prev - 1;
+          }
+        } else {
+          if (prev > 0) {
+            return prev - 1;
+          } else {
+            carouselDirectionRef.current = 'forward';
+            return prev + 1;
+          }
+        }
+      });
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [isCarouselHovered]);
+
+  // Smooth scroll container to match featuredIndex
+  useEffect(() => {
+    if (featuredScrollRef.current) {
+      const cardWidth = 284; // 270px width + 14px gap
+      featuredScrollRef.current.scrollTo({
+        left: featuredIndex * cardWidth,
+        behavior: 'smooth',
+      });
+    }
+  }, [featuredIndex]);
+
+  const scrollToAllUniversities = () => {
+    setSelectedRegion('Tất cả');
+    const el = document.getElementById('all-universities-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
     <div className="home-container" style={{ paddingBottom: '96px' }}>
@@ -286,16 +345,17 @@ export const HomeTab: React.FC = () => {
               position: 'absolute',
               inset: 0,
               background: 'linear-gradient(135deg, #7C3AED 0%, #4F46E5 60%, #06B6D4 100%)',
-              padding: '22px 20px',
+              padding: '20px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              gap: '12px',
               opacity: currentSlide === 1 ? 1 : 0,
               pointerEvents: currentSlide === 1 ? 'auto' : 'none',
               transition: 'opacity 0.6s ease',
             }}
           >
-            <div style={{ maxWidth: '65%', zIndex: 2 }}>
+            <div style={{ flex: 1, minWidth: 0, zIndex: 2 }}>
               <div
                 style={{
                   display: 'inline-flex',
@@ -323,7 +383,7 @@ export const HomeTab: React.FC = () => {
               </div>
               <h2
                 style={{
-                  fontSize: '18px',
+                  fontSize: '17px',
                   fontWeight: 800,
                   color: '#FFFFFF',
                   lineHeight: 1.3,
@@ -340,25 +400,32 @@ export const HomeTab: React.FC = () => {
                 Tham gia ngay →
               </Button>
             </div>
+
+            {/* KHUNG ẢNH DEMO VỪA KHÍT - BẠN CHỈ CẦN THAY ĐƯỜNG DẪN ẢNH VÀO SRC DƯỚI ĐÂY */}
             <div
               style={{
-                width: '35%',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
+                width: '130px',
+                height: '115px',
+                borderRadius: '18px',
+                overflow: 'hidden',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                border: '2px solid rgba(255,255,255,0.3)',
+                flexShrink: 0,
+                position: 'relative',
+                backgroundColor: 'rgba(255,255,255,0.1)',
               }}
             >
               <img
-                src="/images/slide_edufair.png"
-                alt="EduFair"
+                src="/images/advisor_live.png"
+                alt="Virtual EduFair Live"
                 style={{
-                  width: '120px',
-                  height: '110px',
-                  objectFit: 'contain',
-                  borderRadius: '12px',
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  display: 'block',
                 }}
                 onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
+                  (e.target as HTMLImageElement).src = '/images/banner_edufair.png';
                 }}
               />
             </div>
@@ -717,8 +784,13 @@ export const HomeTab: React.FC = () => {
           </div>
         </div>
 
-        {/* Horizontal Snap Scroll */}
+        {/* Horizontal Snap Scroll with Auto-bounce & Direction reversal */}
         <div
+          ref={featuredScrollRef}
+          onMouseEnter={() => setIsCarouselHovered(true)}
+          onMouseLeave={() => setIsCarouselHovered(false)}
+          onTouchStart={() => setIsCarouselHovered(true)}
+          onTouchEnd={() => setIsCarouselHovered(false)}
           style={{
             display: 'flex',
             gap: '14px',
@@ -726,11 +798,13 @@ export const HomeTab: React.FC = () => {
             padding: '0 20px 8px',
             scrollSnapType: 'x mandatory',
             scrollbarWidth: 'none',
+            scrollBehavior: 'smooth',
           }}
         >
-          {featuredUnis.map((uni) => {
+          {featuredUnis.map((uni, idx) => {
             const isFav = favoriteIds.includes(uni.id);
             const isComp = compareIds.includes(uni.id);
+            const isCurrent = featuredIndex === idx;
 
             return (
               <div
@@ -742,8 +816,8 @@ export const HomeTab: React.FC = () => {
                   height: '240px',
                   borderRadius: '24px',
                   backgroundColor: '#FFFFFF',
-                  border: '1px solid #E2E8F0',
-                  boxShadow: '0 4px 16px rgba(37,99,235,0.08)',
+                  border: isCurrent ? '2px solid #2563EB' : '1px solid #E2E8F0',
+                  boxShadow: isCurrent ? '0 8px 24px rgba(37,99,235,0.18)' : '0 4px 16px rgba(37,99,235,0.08)',
                   display: 'flex',
                   flexDirection: 'column',
                   overflow: 'hidden',
@@ -751,6 +825,8 @@ export const HomeTab: React.FC = () => {
                   scrollSnapAlign: 'start',
                   flexShrink: 0,
                   position: 'relative',
+                  transition: 'all 0.3s ease',
+                  transform: isCurrent ? 'translateY(-2px)' : 'none',
                 }}
               >
                 {/* Upper Campus Image */}
@@ -799,7 +875,7 @@ export const HomeTab: React.FC = () => {
                         {uni.name}
                       </div>
                       <div style={{ fontSize: '11px', color: '#64748B' }}>
-                        {uni.code} • {uni.region}
+                        {uni.code} • Miền {uni.region}
                       </div>
                     </div>
                   </div>
@@ -877,11 +953,119 @@ export const HomeTab: React.FC = () => {
               </div>
             );
           })}
+
+          {/* Special Card at the End: "Xem tất cả các trường" */}
+          <div
+            onClick={scrollToAllUniversities}
+            style={{
+              minWidth: '270px',
+              width: '270px',
+              height: '240px',
+              borderRadius: '24px',
+              background: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 50%, #06B6D4 100%)',
+              boxShadow: featuredIndex === 8 ? '0 8px 24px rgba(37,99,235,0.3)' : '0 4px 16px rgba(37,99,235,0.12)',
+              border: featuredIndex === 8 ? '2px solid #FFFFFF' : '1px solid rgba(255,255,255,0.2)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: '24px 20px',
+              cursor: 'pointer',
+              scrollSnapAlign: 'start',
+              flexShrink: 0,
+              textAlign: 'center',
+              color: '#FFFFFF',
+              position: 'relative',
+              overflow: 'hidden',
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <div
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255,255,255,0.2)',
+                backdropFilter: 'blur(6px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '14px',
+                border: '1.5px solid rgba(255,255,255,0.4)',
+              }}
+            >
+              <GraduationCap size={30} color="#FFFFFF" />
+            </div>
+            <h4 style={{ margin: '0 0 6px', fontSize: '18px', fontWeight: 800 }}>
+              Xem tất cả 30 trường
+            </h4>
+            <p style={{ margin: '0 0 16px', fontSize: '12px', opacity: 0.9, lineHeight: 1.4 }}>
+              Khám phá toàn bộ dữ liệu điểm chuẩn & học phí 3 miền Bắc - Trung - Nam
+            </p>
+            <div
+              style={{
+                backgroundColor: '#FFFFFF',
+                color: '#2563EB',
+                padding: '8px 18px',
+                borderRadius: '16px',
+                fontSize: '13px',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              }}
+            >
+              Khám phá ngay <ChevronRight size={16} />
+            </div>
+          </div>
+        </div>
+
+        {/* Numbered Dots Indicator for Carousel Navigation */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            marginTop: '12px',
+            padding: '0 20px',
+          }}
+        >
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((idx) => {
+            const isActive = featuredIndex === idx;
+            const isLast = idx === 8;
+            return (
+              <button
+                key={idx}
+                onClick={() => setFeaturedIndex(idx)}
+                style={{
+                  minWidth: isActive ? (isLast ? '46px' : '26px') : '18px',
+                  height: '20px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  backgroundColor: isActive ? '#2563EB' : '#E2E8F0',
+                  color: isActive ? '#FFFFFF' : '#64748B',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.25s ease',
+                  padding: '0 4px',
+                }}
+                title={isLast ? 'Xem tất cả' : `Trường ${idx + 1}`}
+              >
+                {isActive ? (isLast ? 'Tất cả' : idx + 1) : (isLast ? '★' : idx + 1)}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* 6. Section "Danh sách trường" + Region Filter */}
-      <div style={{ padding: '0 20px' }}>
+      <div id="all-universities-section" style={{ padding: '0 20px' }}>
         <div style={{ marginBottom: '14px' }}>
           <h3 style={{ margin: '0 0 10px', fontSize: '18px', fontWeight: 800, color: '#0F172A' }}>
             Danh sách 30 trường đại học
