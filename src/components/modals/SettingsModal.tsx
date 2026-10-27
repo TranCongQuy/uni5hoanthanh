@@ -385,9 +385,9 @@ export const SettingsModal: React.FC = () => {
                 {/* Team Members List */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
                   {[
-                    { name: 'Trần Công Quý', role: 'Trưởng nhóm & Kỹ sư phát triển' },
+                    { name: 'Dương Đình Phát', role: 'Trưởng nhóm UP5' },
+                    { name: 'Trần Công Quý', role: 'Phát triển App (Kỹ sư phần mềm)' },
                     { name: 'Trần Thị Nhung', role: 'Thành viên nhóm UP5' },
-                    { name: 'Dương Đình Phát', role: 'Thành viên nhóm UP5' },
                     { name: 'Nguyễn Thị Lý Trà My', role: 'Thành viên nhóm UP5' },
                     { name: 'Thái Thị Nga', role: 'Thành viên nhóm UP5' },
                   ].map((member, idx) => (

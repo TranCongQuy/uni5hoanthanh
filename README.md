@@ -15,15 +15,15 @@
 
 Dự án được xây dựng và hoàn thiện bởi **Nhóm UP5** thuộc **Trường Đại học Phú Xuân (PXU)**:
 
-* 🚀 **Kỹ sư phát triển chính & Trưởng nhóm:** **Trần Công Quý**
+* 👑 **Trưởng nhóm UP5:** **Dương Đình Phát**
+* 💻 **Phát triển App & Kỹ sư phần mềm:** **Trần Công Quý**
 * 🤝 **Thành viên nhóm UP5:**
   * **Trần Thị Nhung**
-  * **Dương Đình Phát**
   * **Nguyễn Thị Lý Trà My**
   * **Thái Thị Nga**
 * 🏛️ **Đơn vị chủ quản & Đào tạo:** **Trường Đại học Phú Xuân (PXU)**
 
-> **© Bản quyền dự án thuộc về Nhóm UP5 - Trường Đại học Phú Xuân (PXU). Phát triển bởi Trần Công Quý.**
+> **© Bản quyền dự án thuộc về Nhóm UP5 - Trường Đại học Phú Xuân (PXU). Phát triển app bởi Trần Công Quý.**
 
 ---
 
