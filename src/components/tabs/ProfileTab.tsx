@@ -503,7 +503,7 @@ export const ProfileTab: React.FC = () => {
             <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#64748B' }}>
               Bạn chưa hoàn thành bài khảo sát tính cách nào.
             </p>
-            <Button variant="tonal" size="M" onClick={() => (window.location.hash = '#quiz')}>
+            <Button variant="tonal" size="M" onClick={() => setActiveTab(1)}>
               Làm trắc nghiệm ngay
             </Button>
           </div>

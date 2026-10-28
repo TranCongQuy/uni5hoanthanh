@@ -78,6 +78,17 @@ export const QuizTab: React.FC = () => {
     }
   }, [mode, reduceMotion]);
 
+  // Synchronize mode when hollandResult is reset (e.g. fresh demo login)
+  useEffect(() => {
+    if (!hollandResult) {
+      setMode('intro');
+      setCurrentIdx(0);
+      setAnswers(new Array(12).fill(-1));
+    } else {
+      setMode('result');
+    }
+  }, [hollandResult]);
+
   // Start test
   const handleStart = () => {
     setCurrentIdx(0);

@@ -226,111 +226,65 @@ const DEFAULT_PROFILE: UserProfile = {
   avatarPath: '/images/avatar_user.png',
 };
 
+// Helper to purge all stale demo session data from localStorage
+const clearDemoStorage = () => {
+  try {
+    localStorage.removeItem('unipath_logged_in');
+    localStorage.removeItem('unipath_is_guest');
+    localStorage.removeItem('unipath_current_email');
+    localStorage.removeItem('unipath_current_name');
+    localStorage.removeItem('unipath_user_profile');
+    localStorage.removeItem('unipath_bookings');
+    localStorage.removeItem('unipath_wishlist');
+    localStorage.removeItem('unipath_compare');
+    localStorage.removeItem('unipath_applications');
+    localStorage.removeItem('unipath_holland_result');
+    localStorage.removeItem('unipath_latest_ai_match');
+    localStorage.removeItem('unipath_chat_history');
+  } catch {
+    // ignore
+  }
+};
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // --- Auth State ---
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    return localStorage.getItem('unipath_logged_in') === 'true';
+  // Mandatory gateway: always starts at false so every user starts at Onboarding & AuthScreen
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [isGuest, setIsGuest] = useState<boolean>(false);
+  const [user, setUser] = useState<{ email: string; name: string }>({
+    email: DEMO_EMAIL,
+    name: DEMO_NAME,
   });
 
-  const [isGuest, setIsGuest] = useState<boolean>(() => {
-    return localStorage.getItem('unipath_is_guest') === 'true';
-  });
+  // --- Profile State (Clean, pristine default) ---
+  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
 
-  const [user, setUser] = useState<{ email: string; name: string }>(() => {
-    const email = localStorage.getItem('unipath_current_email') || DEMO_EMAIL;
-    const name = localStorage.getItem('unipath_current_name') || DEMO_NAME;
-    return { email, name };
-  });
+  const [bookings, setBookings] = useState<ConsultationBooking[]>([
+    {
+      id: 'bk-1',
+      name: DEMO_NAME,
+      phone: '0912 345 678',
+      dateTime: '14:30 15/11/2026',
+      uniCode: 'PXU',
+      major: 'Công nghệ Thông tin',
+      notes: 'Muốn tìm hiểu kỹ hơn về học bổng OJT và cam kết việc làm',
+    },
+  ]);
 
-  // --- Profile State ---
-  const [profile, setProfile] = useState<UserProfile>(() => {
-    const raw = localStorage.getItem('unipath_user_profile');
-    if (raw) {
-      try {
-        return JSON.parse(raw);
-      } catch {
-        // fallback
-      }
-    }
-    return DEFAULT_PROFILE;
-  });
-
-  const [bookings, setBookings] = useState<ConsultationBooking[]>(() => {
-    const raw = localStorage.getItem('unipath_bookings');
-    if (raw) {
-      try {
-        return JSON.parse(raw);
-      } catch {
-        // fallback
-      }
-    }
-    return [
-      {
-        id: 'bk-1',
-        name: DEMO_NAME,
-        phone: '0912 345 678',
-        dateTime: '14:30 15/11/2026',
-        uniCode: 'PXU',
-        major: 'Công nghệ Thông tin',
-        notes: 'Muốn tìm hiểu kỹ hơn về học bổng OJT và cam kết việc làm',
-      },
-    ];
-  });
-
-  // --- Applications State ---
-  const [applications, setApplications] = useState<ApplicationRecord[]>(() => {
-    const raw = localStorage.getItem('unipath_applications');
-    if (raw) {
-      try {
-        return JSON.parse(raw);
-      } catch {
-        // fallback
-      }
-    }
-    return INITIAL_APPLICATIONS;
-  });
+  // --- Applications State (Pristine sample list) ---
+  const [applications, setApplications] = useState<ApplicationRecord[]>(INITIAL_APPLICATIONS);
 
   const [selectedAppForDetail, setSelectedAppForDetail] = useState<ApplicationRecord | null>(null);
   const [isAllApplicationsOpen, setIsAllApplicationsOpen] = useState<boolean>(false);
 
-  // --- Wishlist State ---
-  const [favoriteIds, setFavoriteIds] = useState<number[]>(() => {
-    const raw = localStorage.getItem('unipath_wishlist');
-    if (raw) {
-      try {
-        return JSON.parse(raw);
-      } catch {
-        // fallback
-      }
-    }
-    return [11, 1, 21]; // Default: PXU, BKA, HCMUT
-  });
+  // --- Wishlist State (Default: PXU, BKA, HCMUT) ---
+  const [favoriteIds, setFavoriteIds] = useState<number[]>([11, 1, 21]);
 
-  // --- Compare State ---
-  const [compareIds, setCompareIds] = useState<number[]>(() => {
-    const raw = localStorage.getItem('unipath_compare');
-    if (raw) {
-      try {
-        return JSON.parse(raw);
-      } catch {
-        // fallback
-      }
-    }
-    return [11, 12]; // Default: PXU, DUT
-  });
+  // --- Compare State (Default: PXU, DUT) ---
+  const [compareIds, setCompareIds] = useState<number[]>([11, 12]);
 
-  // --- Holland Quiz Result ---
-  const [hollandResult, setHollandResult] = useState<HollandResult | null>(() => {
-    const raw = localStorage.getItem('unipath_holland_result');
-    if (raw) {
-      try {
-        return JSON.parse(raw);
-      } catch {
-        // fallback
-      }
-    }
-    return null;
-  });
+  // --- Holland Quiz Result (Clean unattempted state) ---
+  const [hollandResult, setHollandResult] = useState<HollandResult | null>(null);
 
   // --- Settings ---
   const [reduceMotion, setReduceMotion] = useState<boolean>(() => {
@@ -340,6 +294,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [notifications, setNotifications] = useState<boolean>(() => {
     return localStorage.getItem('unipath_notifications') !== 'false';
   });
+
+  // Clear any leftover stale demo storage on initial app load
+  useEffect(() => {
+    clearDemoStorage();
+  }, []);
 
   // --- Modals & Navigation ---
   const [activeTab, setActiveTab] = useState<number>(0);
@@ -368,41 +327,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, 2800);
   };
 
-  // --- Sync Effects to LocalStorage ---
+  // --- Sync Effects to LocalStorage (Only for registered non-demo accounts) ---
+  const isDemoOrGuest = user.email === DEMO_EMAIL || isGuest || !isLoggedIn;
+
   useEffect(() => {
+    if (isDemoOrGuest) return;
     localStorage.setItem('unipath_logged_in', isLoggedIn.toString());
     localStorage.setItem('unipath_is_guest', isGuest.toString());
     localStorage.setItem('unipath_current_email', user.email);
     localStorage.setItem('unipath_current_name', user.name);
-  }, [isLoggedIn, isGuest, user]);
+  }, [isLoggedIn, isGuest, user, isDemoOrGuest]);
 
   useEffect(() => {
+    if (isDemoOrGuest) return;
     localStorage.setItem('unipath_user_profile', JSON.stringify(profile));
-  }, [profile]);
+  }, [profile, isDemoOrGuest]);
 
   useEffect(() => {
+    if (isDemoOrGuest) return;
     localStorage.setItem('unipath_bookings', JSON.stringify(bookings));
-  }, [bookings]);
+  }, [bookings, isDemoOrGuest]);
 
   useEffect(() => {
+    if (isDemoOrGuest) return;
     localStorage.setItem('unipath_wishlist', JSON.stringify(favoriteIds));
-  }, [favoriteIds]);
+  }, [favoriteIds, isDemoOrGuest]);
 
   useEffect(() => {
+    if (isDemoOrGuest) return;
     localStorage.setItem('unipath_compare', JSON.stringify(compareIds));
-  }, [compareIds]);
+  }, [compareIds, isDemoOrGuest]);
 
   useEffect(() => {
+    if (isDemoOrGuest) return;
     localStorage.setItem('unipath_applications', JSON.stringify(applications));
-  }, [applications]);
+  }, [applications, isDemoOrGuest]);
 
   useEffect(() => {
+    if (isDemoOrGuest) return;
     if (hollandResult) {
       localStorage.setItem('unipath_holland_result', JSON.stringify(hollandResult));
     } else {
       localStorage.removeItem('unipath_holland_result');
     }
-  }, [hollandResult]);
+  }, [hollandResult, isDemoOrGuest]);
 
   useEffect(() => {
     localStorage.setItem('unipath_reduce_motion', reduceMotion.toString());
@@ -416,12 +384,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const login = (email: string, pass: string): boolean => {
     const cleanEmail = email.trim().toLowerCase();
     if (cleanEmail === DEMO_EMAIL && pass === DEMO_PASS) {
-      setIsLoggedIn(true);
-      setIsGuest(false);
-      setUser({ email: DEMO_EMAIL, name: DEMO_NAME });
-      setProfile((prev) => ({ ...prev, name: DEMO_NAME, email: DEMO_EMAIL }));
-      showToast(`Chào mừng bạn trở lại, ${DEMO_NAME}!`);
-      setIsAuthModalOpen(false);
+      loginDemo();
       return true;
     }
 
@@ -447,20 +410,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const loginDemo = () => {
+    // 1. Purge all cached demo state from storage
+    clearDemoStorage();
+
+    // 2. Reset in-memory state to 100% pristine defaults (zero saved progress)
     setIsLoggedIn(true);
     setIsGuest(false);
     setUser({ email: DEMO_EMAIL, name: DEMO_NAME });
-    setProfile((prev) => ({ ...prev, name: DEMO_NAME, email: DEMO_EMAIL }));
-    showToast('Đã đăng nhập bằng tài khoản Demo!');
+    setProfile({ ...DEFAULT_PROFILE });
+    setHollandResult(null);
+    setAIMatchState({
+      hasEvaluated: false,
+      score: 15.0,
+      budget: 10,
+      region: 'Tất cả',
+      sortBy: 'score',
+    });
+    setApplications([...INITIAL_APPLICATIONS]);
+    setFavoriteIds([11, 1, 21]);
+    setCompareIds([11, 12]);
+    setBookings([
+      {
+        id: 'bk-1',
+        name: DEMO_NAME,
+        phone: '0912 345 678',
+        dateTime: '14:30 15/11/2026',
+        uniCode: 'PXU',
+        major: 'Công nghệ Thông tin',
+        notes: 'Muốn tìm hiểu kỹ hơn về học bổng OJT và cam kết việc làm',
+      },
+    ]);
+    setActiveTab(0);
     setIsAuthModalOpen(false);
+    showToast('Đã đăng nhập bằng tài khoản Demo (Bản mới hoàn toàn)!');
   };
 
   const loginAsGuest = () => {
+    clearDemoStorage();
     setIsLoggedIn(true);
     setIsGuest(true);
     setUser({ email: 'khach@unipath.vn', name: 'Khách trải nghiệm' });
-    showToast('Tiếp tục với chế độ Khách');
+    setProfile({
+      ...DEFAULT_PROFILE,
+      name: 'Khách trải nghiệm',
+      email: 'khach@unipath.vn',
+      school: 'Học sinh THPT',
+    });
+    setHollandResult(null);
+    setAIMatchState({
+      hasEvaluated: false,
+      score: 15.0,
+      budget: 10,
+      region: 'Tất cả',
+      sortBy: 'score',
+    });
+    setApplications([...INITIAL_APPLICATIONS]);
+    setFavoriteIds([11, 1, 21]);
+    setCompareIds([11, 12]);
+    setActiveTab(0);
     setIsAuthModalOpen(false);
+    showToast('Tiếp tục với chế độ Khách trải nghiệm');
   };
 
   const register = (fullName: string, email: string, pass: string): boolean => {
@@ -499,9 +508,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = () => {
+    clearDemoStorage();
     setIsLoggedIn(false);
     setIsGuest(false);
     setUser({ email: '', name: '' });
+    setHollandResult(null);
+    setAIMatchState({
+      hasEvaluated: false,
+      score: 15.0,
+      budget: 10,
+      region: 'Tất cả',
+      sortBy: 'score',
+    });
+    setApplications([...INITIAL_APPLICATIONS]);
+    setProfile({ ...DEFAULT_PROFILE });
     showToast('Đã đăng xuất tài khoản');
   };
 
@@ -614,15 +634,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetAllData = () => {
+    clearDemoStorage();
     localStorage.clear();
     setIsLoggedIn(false);
     setIsGuest(false);
     setUser({ email: DEMO_EMAIL, name: DEMO_NAME });
-    setProfile(DEFAULT_PROFILE);
+    setProfile({ ...DEFAULT_PROFILE });
     setBookings([]);
-    setFavoriteIds([]);
-    setCompareIds([]);
+    setFavoriteIds([11, 1, 21]);
+    setCompareIds([11, 12]);
+    setApplications([...INITIAL_APPLICATIONS]);
     setHollandResult(null);
+    setAIMatchState({
+      hasEvaluated: false,
+      score: 15.0,
+      budget: 10,
+      region: 'Tất cả',
+      sortBy: 'score',
+    });
     showToast('Đã xóa toàn bộ dữ liệu ứng dụng!');
   };
 
@@ -716,30 +745,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const openAllApplications = () => setIsAllApplicationsOpen(true);
   const closeAllApplications = () => setIsAllApplicationsOpen(false);
 
-  // --- AI Match State (Persists latest single analysis across tab navigations) ---
-  const [aiMatchState, setAIMatchState] = useState<AIMatchState>(() => {
-    try {
-      const saved = localStorage.getItem('unipath_latest_ai_match');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // fallback
-    }
-    return {
-      hasEvaluated: false,
-      score: 15.0,
-      budget: 10,
-      region: 'Tất cả',
-      sortBy: 'score',
-    };
+  // --- AI Match State ---
+  const [aiMatchState, setAIMatchState] = useState<AIMatchState>({
+    hasEvaluated: false,
+    score: 15.0,
+    budget: 10,
+    region: 'Tất cả',
+    sortBy: 'score',
   });
 
   const saveAIMatchState = (partial: Partial<AIMatchState>) => {
     setAIMatchState((prev) => {
       const updated = { ...prev, ...partial };
-      try {
-        localStorage.setItem('unipath_latest_ai_match', JSON.stringify(updated));
-      } catch {
-        // ignore
+      // Only persist to storage if registered user (not demo or guest)
+      if (user.email !== DEMO_EMAIL && !isGuest && isLoggedIn) {
+        try {
+          localStorage.setItem('unipath_latest_ai_match', JSON.stringify(updated));
+        } catch {
+          // ignore
+        }
       }
       return updated;
     });

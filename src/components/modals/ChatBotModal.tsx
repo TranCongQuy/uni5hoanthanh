@@ -22,9 +22,12 @@ const SUGGESTIONS = [
 ];
 
 export const ChatBotModal: React.FC = () => {
-  const { isChatBotOpen, closeChatBot, profile } = useApp();
+  const { isChatBotOpen, closeChatBot, profile, user } = useApp();
 
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    if (user?.email === 'quy@unipath.vn') {
+      return INITIAL_MESSAGES;
+    }
     const saved = localStorage.getItem('unipath_chat_history');
     if (saved) {
       try {
@@ -45,10 +48,19 @@ export const ChatBotModal: React.FC = () => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  // Sync to local storage
+  // Sync to local storage only for non-demo users
   useEffect(() => {
-    localStorage.setItem('unipath_chat_history', JSON.stringify(messages));
-  }, [messages]);
+    if (user?.email !== 'quy@unipath.vn') {
+      localStorage.setItem('unipath_chat_history', JSON.stringify(messages));
+    }
+  }, [messages, user?.email]);
+
+  // Reset chat messages to fresh initial when demo user logs in
+  useEffect(() => {
+    if (user?.email === 'quy@unipath.vn') {
+      setMessages(INITIAL_MESSAGES);
+    }
+  }, [user?.email]);
 
   // Scroll to bottom cleanly within messages container ONLY (prevents scrolling window / outer modal)
   const scrollToBottom = () => {

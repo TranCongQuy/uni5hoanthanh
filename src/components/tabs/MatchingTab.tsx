@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Edit2,
   Bot,
@@ -31,6 +31,16 @@ export const MatchingTab: React.FC = () => {
   const [hasEvaluated, setHasEvaluated] = useState<boolean>(aiMatchState.hasEvaluated ?? false);
   const [isEditingParams, setIsEditingParams] = useState<boolean>(!aiMatchState.hasEvaluated);
   const [loading, setLoading] = useState<boolean>(false);
+
+  // Synchronize when aiMatchState is reset (e.g. fresh demo login)
+  useEffect(() => {
+    setScore(aiMatchState.score ?? 15.0);
+    setBudget(aiMatchState.budget ?? 10);
+    setRegion(aiMatchState.region ?? 'Tất cả');
+    setSortBy(aiMatchState.sortBy ?? 'score');
+    setHasEvaluated(aiMatchState.hasEvaluated ?? false);
+    setIsEditingParams(!aiMatchState.hasEvaluated);
+  }, [aiMatchState]);
 
   // Evaluate matching results
   const evaluation: EvaluationGroup = evaluateMatching(
