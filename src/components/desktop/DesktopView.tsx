@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  Laptop,
   Smartphone,
   Sparkles,
   Compass,
@@ -420,70 +419,92 @@ export const DesktopView: React.FC = () => {
           style={{
             maxWidth: '1380px',
             margin: '0 auto',
-            padding: '12px 24px',
+            padding: '10px 24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: '16px',
+            gap: '12px',
           }}
         >
           {/* Brand Logo & Edition Badge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div
-              onClick={() => setActiveTab(0)}
+          <div
+            onClick={() => {
+              setActiveTab(0);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            <img
+              src="/images/logo_unipath.png"
+              alt="UniPath"
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                cursor: 'pointer',
+                width: '38px',
+                height: '38px',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 2px 6px rgba(37,99,235,0.25))',
               }}
-            >
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
+            <div>
               <div
                 style={{
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)',
+                  fontSize: '19px',
+                  fontWeight: 900,
+                  letterSpacing: '-0.4px',
+                  color: '#0F172A',
+                  lineHeight: 1.1,
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#FFFFFF',
-                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
+                  gap: '6px',
                 }}
               >
-                <GraduationCap size={24} />
+                <span>Uni<span style={{ color: '#2563EB' }}>Path</span></span>
+                <span
+                  style={{
+                    backgroundColor: '#EFF6FF',
+                    color: '#2563EB',
+                    border: '1px solid #BFDBFE',
+                    padding: '2px 7px',
+                    borderRadius: '6px',
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    letterSpacing: '0.2px',
+                  }}
+                >
+                  DESKTOP
+                </span>
               </div>
-              <div>
-                <div style={{ fontSize: '21px', fontWeight: 900, letterSpacing: '-0.5px', color: '#0F172A', lineHeight: 1.1 }}>
-                  Uni<span style={{ color: '#2563EB' }}>Path</span>
-                </div>
-                <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#64748B', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
-                  Hệ Sinh Thái Tuyển Sinh 2.0
-                </div>
+              <div
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  color: '#64748B',
+                  letterSpacing: '0.4px',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Hệ Sinh Thái Tuyển Sinh 2.0
               </div>
-            </div>
-
-            <div
-              style={{
-                backgroundColor: '#EFF6FF',
-                color: '#2563EB',
-                border: '1px solid #BFDBFE',
-                padding: '4px 10px',
-                borderRadius: '8px',
-                fontSize: '11px',
-                fontWeight: 800,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-              }}
-            >
-              <Laptop size={13} />
-              <span>DESKTOP MODE</span>
             </div>
           </div>
 
-          {/* Desktop Navigation Links */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {/* Desktop Navigation Links (with NEVER-WRAP & sleek spacing) */}
+          <nav
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              flexShrink: 0,
+            }}
+          >
             {navLinks.map((tab) => {
               const active = activeTab === tab.id;
               return (
@@ -494,35 +515,63 @@ export const DesktopView: React.FC = () => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   style={{
-                    display: 'flex',
+                    display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '7px',
-                    padding: '8px 14px',
+                    gap: '6px',
+                    padding: '7px 12px',
                     borderRadius: '10px',
-                    border: 'none',
+                    border: active ? '1px solid #BFDBFE' : '1px solid transparent',
                     backgroundColor: active ? '#EFF6FF' : 'transparent',
                     color: active ? '#2563EB' : '#475569',
-                    fontSize: '13.5px',
+                    fontSize: '13px',
                     fontWeight: active ? 800 : 600,
                     cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
                     transition: 'all 0.15s ease',
                   }}
                   onMouseEnter={(e) => {
-                    if (!active) e.currentTarget.style.backgroundColor = '#F1F5F9';
+                    if (!active) {
+                      e.currentTarget.style.backgroundColor = '#F8FAFC';
+                      e.currentTarget.style.color = '#1E293B';
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    if (!active) e.currentTarget.style.backgroundColor = 'transparent';
+                    if (!active) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#475569';
+                    }
                   }}
                 >
                   {tab.icon}
-                  <span>{tab.label}</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>{tab.label}</span>
                   {tab.id === 2 && (
-                    <span style={{ backgroundColor: '#DBEAFE', color: '#1D4ED8', fontSize: '10px', padding: '1px 6px', borderRadius: '6px', fontWeight: 800 }}>
+                    <span
+                      style={{
+                        backgroundColor: '#DBEAFE',
+                        color: '#1D4ED8',
+                        fontSize: '9.5px',
+                        padding: '1px 5px',
+                        borderRadius: '5px',
+                        fontWeight: 800,
+                        lineHeight: 1.2,
+                      }}
+                    >
                       AI
                     </span>
                   )}
                   {tab.id === 3 && (
-                    <span style={{ backgroundColor: '#FEE2E2', color: '#DC2626', fontSize: '10px', padding: '1px 6px', borderRadius: '6px', fontWeight: 800 }}>
+                    <span
+                      style={{
+                        backgroundColor: '#FEE2E2',
+                        color: '#DC2626',
+                        fontSize: '9.5px',
+                        padding: '1px 5px',
+                        borderRadius: '5px',
+                        fontWeight: 800,
+                        lineHeight: 1.2,
+                      }}
+                    >
                       LIVE
                     </span>
                   )}
@@ -532,11 +581,18 @@ export const DesktopView: React.FC = () => {
           </nav>
 
           {/* Search bar & Action Buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              flexShrink: 0,
+            }}
+          >
             {/* Quick search input */}
-            <div style={{ position: 'relative', width: '220px' }}>
+            <div style={{ position: 'relative', width: '170px' }}>
               <Search
-                size={15}
+                size={14}
                 style={{
                   position: 'absolute',
                   left: '10px',
@@ -552,17 +608,33 @@ export const DesktopView: React.FC = () => {
                   setDesktopSearch(e.target.value);
                   setSearchKeyword(e.target.value);
                 }}
-                placeholder="Tìm trường, mã trường..."
+                placeholder="Tìm trường..."
                 style={{
                   width: '100%',
-                  height: '36px',
-                  paddingLeft: '32px',
-                  paddingRight: desktopSearch ? '28px' : '10px',
+                  height: '35px',
+                  paddingLeft: '30px',
+                  paddingRight: desktopSearch ? '26px' : '10px',
                   borderRadius: '10px',
                   border: '1px solid #E2E8F0',
                   backgroundColor: '#F8FAFC',
-                  fontSize: '13px',
+                  fontSize: '12.5px',
                   outline: 'none',
+                  whiteSpace: 'nowrap',
+                  transition: 'width 0.2s ease, border-color 0.2s ease, background-color 0.2s ease',
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#93C5FD';
+                  e.currentTarget.style.backgroundColor = '#FFFFFF';
+                  if (e.currentTarget.parentElement) {
+                    e.currentTarget.parentElement.style.width = '210px';
+                  }
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#E2E8F0';
+                  e.currentTarget.style.backgroundColor = '#F8FAFC';
+                  if (e.currentTarget.parentElement) {
+                    e.currentTarget.parentElement.style.width = '170px';
+                  }
                 }}
               />
               {desktopSearch && (
@@ -583,7 +655,7 @@ export const DesktopView: React.FC = () => {
                     padding: 0,
                   }}
                 >
-                  <X size={14} />
+                  <X size={13} />
                 </button>
               )}
 
@@ -592,9 +664,9 @@ export const DesktopView: React.FC = () => {
                 <div
                   style={{
                     position: 'absolute',
-                    top: '42px',
+                    top: '40px',
                     left: 0,
-                    right: 0,
+                    width: '260px',
                     backgroundColor: '#FFFFFF',
                     borderRadius: '12px',
                     boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
@@ -618,7 +690,7 @@ export const DesktopView: React.FC = () => {
                         gap: '8px',
                         cursor: 'pointer',
                         borderBottom: '1px solid #F1F5F9',
-                        fontSize: '12.5px',
+                        fontSize: '12px',
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor = '#EFF6FF';
@@ -627,8 +699,15 @@ export const DesktopView: React.FC = () => {
                         e.currentTarget.style.backgroundColor = '#FFFFFF';
                       }}
                     >
-                      <strong style={{ color: '#2563EB' }}>{m.code}</strong>
-                      <span style={{ color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <strong style={{ color: '#2563EB', flexShrink: 0 }}>{m.code}</strong>
+                      <span
+                        style={{
+                          color: '#1E293B',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
                         {m.name}
                       </span>
                     </div>
@@ -641,17 +720,19 @@ export const DesktopView: React.FC = () => {
             <button
               onClick={() => setViewMode('mobile')}
               style={{
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                gap: '7px',
-                padding: '8px 15px',
+                gap: '6px',
+                padding: '7px 12px',
                 borderRadius: '10px',
                 backgroundColor: '#0F172A',
                 color: '#FFFFFF',
                 border: 'none',
-                fontSize: '12.5px',
+                fontSize: '12px',
                 fontWeight: 700,
                 cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
                 boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)',
                 transition: 'all 0.15s ease',
               }}
@@ -665,8 +746,8 @@ export const DesktopView: React.FC = () => {
                 e.currentTarget.style.transform = 'translateY(0px)';
               }}
             >
-              <Smartphone size={15} />
-              <span>Chuyển sang Mobile 📱</span>
+              <Smartphone size={14} />
+              <span style={{ whiteSpace: 'nowrap' }}>Chuyển sang Mobile 📱</span>
             </button>
 
             {/* Notification Bell */}
@@ -674,10 +755,10 @@ export const DesktopView: React.FC = () => {
               onClick={openNotifications}
               aria-label="Thông báo"
               style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '10px',
-                backgroundColor: '#F1F5F9',
+                width: '34px',
+                height: '34px',
+                borderRadius: '9px',
+                backgroundColor: '#F8FAFC',
                 border: '1px solid #E2E8F0',
                 display: 'flex',
                 alignItems: 'center',
@@ -685,16 +766,25 @@ export const DesktopView: React.FC = () => {
                 cursor: 'pointer',
                 color: '#334155',
                 position: 'relative',
+                flexShrink: 0,
+                transition: 'all 0.15s ease',
+              }}
+              title="Thông báo hệ thống"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#F1F5F9';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#F8FAFC';
               }}
             >
-              <Bell size={17} />
+              <Bell size={16} />
               <span
                 style={{
                   position: 'absolute',
-                  top: '7px',
-                  right: '7px',
-                  width: '7px',
-                  height: '7px',
+                  top: '6px',
+                  right: '6px',
+                  width: '6px',
+                  height: '6px',
                   borderRadius: '50%',
                   backgroundColor: '#EF4444',
                 }}
@@ -706,9 +796,9 @@ export const DesktopView: React.FC = () => {
               onClick={openChatBot}
               aria-label="Trợ lý AI UniPath"
               style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '10px',
+                width: '34px',
+                height: '34px',
+                borderRadius: '9px',
                 backgroundColor: '#EFF6FF',
                 border: '1px solid #BFDBFE',
                 display: 'flex',
@@ -716,10 +806,18 @@ export const DesktopView: React.FC = () => {
                 justifyContent: 'center',
                 cursor: 'pointer',
                 color: '#2563EB',
+                flexShrink: 0,
+                transition: 'all 0.15s ease',
               }}
               title="Mở Trợ lý AI Tuyển sinh 24/7"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#DBEAFE';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#EFF6FF';
+              }}
             >
-              <Bot size={17} />
+              <Bot size={16} />
             </button>
 
             {/* User Profile or Demo Login */}
@@ -727,22 +825,32 @@ export const DesktopView: React.FC = () => {
               <div
                 onClick={() => setActiveTab(4)}
                 style={{
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '8px',
-                  padding: '4px 10px',
-                  borderRadius: '10px',
+                  gap: '7px',
+                  padding: '3px 8px',
+                  borderRadius: '9px',
                   backgroundColor: '#F8FAFC',
                   border: '1px solid #E2E8F0',
                   cursor: 'pointer',
+                  flexShrink: 0,
+                  transition: 'all 0.15s ease',
                 }}
                 title="Xem hồ sơ thí sinh"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#EFF6FF';
+                  e.currentTarget.style.borderColor = '#BFDBFE';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#F8FAFC';
+                  e.currentTarget.style.borderColor = '#E2E8F0';
+                }}
               >
                 <div
                   style={{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '8px',
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '7px',
                     backgroundColor: '#2563EB',
                     color: '#FFFFFF',
                     display: 'flex',
@@ -750,17 +858,35 @@ export const DesktopView: React.FC = () => {
                     justifyContent: 'center',
                     fontWeight: 800,
                     fontSize: '12px',
+                    flexShrink: 0,
                   }}
                 >
                   {user.name.charAt(0)}
                 </div>
                 <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#1E293B' }}>{user.name}</div>
-                  <div style={{ fontSize: '10px', color: '#64748B' }}>{profile.school || 'THPT Quốc Học Huế'}</div>
+                  <div
+                    style={{
+                      fontSize: '11.5px',
+                      fontWeight: 800,
+                      color: '#1E293B',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {user.name}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '9.5px',
+                      color: '#64748B',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {profile.school ? (profile.school.length > 18 ? profile.school.substring(0, 18) + '...' : profile.school) : 'THPT Quốc Học Huế'}
+                  </div>
                 </div>
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                 <button
                   onClick={loginDemo}
                   style={{
@@ -772,6 +898,7 @@ export const DesktopView: React.FC = () => {
                     fontSize: '12px',
                     fontWeight: 700,
                     cursor: 'pointer',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   ⚡ Đăng nhập Demo
@@ -787,6 +914,7 @@ export const DesktopView: React.FC = () => {
                     fontSize: '12px',
                     fontWeight: 600,
                     cursor: 'pointer',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   Đăng nhập
@@ -824,7 +952,7 @@ export const DesktopView: React.FC = () => {
                 height: '240px',
                 borderRadius: '24px',
                 overflow: 'hidden',
-                boxShadow: '0 10px 30px rgba(37, 99, 235, 0.16)',
+                boxShadow: '0 10px 30px rgba(15, 23, 42, 0.12)',
                 marginBottom: '28px',
               }}
             >
@@ -833,12 +961,12 @@ export const DesktopView: React.FC = () => {
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 55%, #06B6D4 100%)',
-                  padding: '28px 40px',
+                  background: 'linear-gradient(135deg, #0F2D59 0%, #1D4ED8 50%, #0284C7 100%)',
+                  padding: '28px 44px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: '24px',
+                  gap: '28px',
                   opacity: homeSlide === 0 ? 1 : 0,
                   pointerEvents: homeSlide === 0 ? 'auto' : 'none',
                   transition: 'opacity 0.5s ease',
@@ -855,12 +983,13 @@ export const DesktopView: React.FC = () => {
                       color: '#FFFFFF',
                       padding: '4px 12px',
                       borderRadius: '12px',
-                      fontSize: '11.5px',
+                      fontSize: '11px',
                       fontWeight: 800,
                       marginBottom: '10px',
+                      letterSpacing: '0.4px',
                     }}
                   >
-                    <Sparkles size={14} />
+                    <Sparkles size={13} />
                     <span>AI HƯỚNG NGHIỆP ĐỘT PHÁ 2026</span>
                   </div>
                   <h2
@@ -873,10 +1002,10 @@ export const DesktopView: React.FC = () => {
                       letterSpacing: '-0.3px',
                     }}
                   >
-                    Khám phá Ngành học Chuẩn Tương lai cùng AI
+                    Khám phá Tiềm năng & Nguyện vọng Đại học cùng AI
                   </h2>
-                  <p style={{ margin: '0 0 16px', fontSize: '14px', color: '#E0F2FE', lineHeight: 1.5 }}>
-                    Thuật toán tâm lý học Holland RIASEC kết hợp trí tuệ nhân tạo đối soát 30 trường Đại học danh tiếng.
+                  <p style={{ margin: '0 0 16px', fontSize: '13.5px', color: '#E0F2FE', lineHeight: 1.5 }}>
+                    Hệ thống trắc nghiệm Holland RIASEC 12 câu tiêu chuẩn, đối soát điểm chuẩn và dự báo cơ hội trúng tuyển 30 trường đại học hàng đầu Việt Nam.
                   </p>
                   <button
                     onClick={() => setActiveTab(1)}
@@ -894,22 +1023,30 @@ export const DesktopView: React.FC = () => {
                       alignItems: 'center',
                       gap: '6px',
                       boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+                      transition: 'transform 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0px)';
                     }}
                   >
-                    <span>Bắt đầu làm bài test</span>
+                    <span>Bắt đầu làm bài test RIASEC</span>
                     <ArrowRight size={15} />
                   </button>
                 </div>
 
                 <div
                   style={{
-                    width: '160px',
-                    height: '150px',
+                    width: '210px',
+                    height: '160px',
                     borderRadius: '18px',
                     overflow: 'hidden',
                     border: '2px solid rgba(255,255,255,0.4)',
                     boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
                     flexShrink: 0,
+                    backgroundColor: 'rgba(255,255,255,0.1)',
                   }}
                 >
                   <img
@@ -928,12 +1065,12 @@ export const DesktopView: React.FC = () => {
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: 'linear-gradient(135deg, #7C3AED 0%, #4F46E5 55%, #06B6D4 100%)',
-                  padding: '28px 40px',
+                  background: 'linear-gradient(135deg, #311042 0%, #6D28D9 50%, #9333EA 100%)',
+                  padding: '28px 44px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: '24px',
+                  gap: '28px',
                   opacity: homeSlide === 1 ? 1 : 0,
                   pointerEvents: homeSlide === 1 ? 'auto' : 'none',
                   transition: 'opacity 0.5s ease',
@@ -949,9 +1086,10 @@ export const DesktopView: React.FC = () => {
                       color: '#FFFFFF',
                       padding: '4px 12px',
                       borderRadius: '12px',
-                      fontSize: '11.5px',
+                      fontSize: '11px',
                       fontWeight: 800,
                       marginBottom: '10px',
+                      letterSpacing: '0.4px',
                     }}
                   >
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#FFFFFF' }} />
@@ -967,10 +1105,10 @@ export const DesktopView: React.FC = () => {
                       letterSpacing: '-0.3px',
                     }}
                   >
-                    Virtual EduFair 2026: Giao lưu 30 Trường ĐH
+                    Virtual EduFair 2026: Trực tiếp Ngày hội Tuyển sinh Sớm
                   </h2>
-                  <p style={{ margin: '0 0 16px', fontSize: '14px', color: '#EDE9FE', lineHeight: 1.5 }}>
-                    Gặp gỡ đại diện 30 trường đại học hàng đầu, tư vấn phương thức xét tuyển sớm và học bổng tới 50%.
+                  <p style={{ margin: '0 0 16px', fontSize: '13.5px', color: '#F3E8FF', lineHeight: 1.5 }}>
+                    Giao lưu ban tuyển sinh trực tuyến, hỏi đáp tiêu chí xét tuyển học bạ đợt 1 và tiếp cận hàng ngàn suất học bổng đại học giá trị.
                   </p>
                   <button
                     onClick={() => setActiveTab(3)}
@@ -979,7 +1117,7 @@ export const DesktopView: React.FC = () => {
                       padding: '0 20px',
                       borderRadius: '20px',
                       backgroundColor: '#FFFFFF',
-                      color: '#4F46E5',
+                      color: '#6D28D9',
                       border: 'none',
                       fontWeight: 800,
                       fontSize: '13px',
@@ -988,6 +1126,13 @@ export const DesktopView: React.FC = () => {
                       alignItems: 'center',
                       gap: '6px',
                       boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+                      transition: 'transform 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0px)';
                     }}
                   >
                     <span>Tham gia phòng Live ngay</span>
@@ -997,37 +1142,38 @@ export const DesktopView: React.FC = () => {
 
                 <div
                   style={{
-                    width: '160px',
-                    height: '150px',
+                    width: '210px',
+                    height: '160px',
                     borderRadius: '18px',
                     overflow: 'hidden',
                     border: '2px solid rgba(255,255,255,0.4)',
                     boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
                     flexShrink: 0,
+                    backgroundColor: 'rgba(255,255,255,0.1)',
                   }}
                 >
                   <img
-                    src="/images/home_banner_edufair.png"
+                    src="/images/slide_edufair.png"
                     alt="Virtual EduFair"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/images/career_header.png';
+                      (e.target as HTMLImageElement).src = '/images/banner_edufair.png';
                     }}
                   />
                 </div>
               </div>
 
-              {/* Slide 3: VIP Membership */}
+              {/* Slide 3: VIP AI Assistant */}
               <div
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: 'linear-gradient(135deg, #B45309 0%, #D97706 50%, #F59E0B 100%)',
-                  padding: '28px 40px',
+                  background: 'linear-gradient(135deg, #0F172A 0%, #1E1B4B 50%, #312E81 100%)',
+                  padding: '28px 44px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: '24px',
+                  gap: '28px',
                   opacity: homeSlide === 2 ? 1 : 0,
                   pointerEvents: homeSlide === 2 ? 'auto' : 'none',
                   transition: 'opacity 0.5s ease',
@@ -1039,17 +1185,19 @@ export const DesktopView: React.FC = () => {
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
-                      backgroundColor: 'rgba(255,255,255,0.22)',
+                      backgroundColor: 'rgba(245, 158, 11, 0.25)',
+                      border: '1px solid rgba(245, 158, 11, 0.4)',
                       backdropFilter: 'blur(6px)',
-                      color: '#FFFFFF',
+                      color: '#FDE68A',
                       padding: '4px 12px',
                       borderRadius: '12px',
-                      fontSize: '11.5px',
+                      fontSize: '11px',
                       fontWeight: 800,
                       marginBottom: '10px',
+                      letterSpacing: '0.4px',
                     }}
                   >
-                    <span>⭐ ĐẶC QUYỀN HỘI VIÊN VIP</span>
+                    <span>⭐ TRỢ LÝ AI ĐỘC QUYỀN 24/7</span>
                   </div>
                   <h2
                     style={{
@@ -1061,10 +1209,10 @@ export const DesktopView: React.FC = () => {
                       letterSpacing: '-0.3px',
                     }}
                   >
-                    Trợ lý AI Tuyển sinh Thông minh 24/7
+                    Trợ lý Tuyển sinh AI UniPath: Đồng hành 24/7
                   </h2>
-                  <p style={{ margin: '0 0 16px', fontSize: '14px', color: '#FEF3C7', lineHeight: 1.5 }}>
-                    Phân tích điểm chuẩn, giải đáp học phí và gợi ý nguyện vọng xét tuyển chính xác cho từng thí sinh.
+                  <p style={{ margin: '0 0 16px', fontSize: '13.5px', color: '#E2E8F0', lineHeight: 1.5 }}>
+                    Phân tích điểm chuẩn, đối soát học phí, giải đáp phương thức xét tuyển và gợi ý nguyện vọng tối ưu theo năng lực cá nhân.
                   </p>
                   <button
                     onClick={openChatBot}
@@ -1073,7 +1221,7 @@ export const DesktopView: React.FC = () => {
                       padding: '0 20px',
                       borderRadius: '20px',
                       backgroundColor: '#FFFFFF',
-                      color: '#B45309',
+                      color: '#1E1B4B',
                       border: 'none',
                       fontWeight: 800,
                       fontSize: '13px',
@@ -1082,27 +1230,35 @@ export const DesktopView: React.FC = () => {
                       alignItems: 'center',
                       gap: '6px',
                       boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+                      transition: 'transform 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0px)';
                     }}
                   >
-                    <span>Mở Trợ lý AI Tuyển sinh</span>
+                    <span>Trò chuyện với AI Tuyển sinh</span>
                     <ArrowRight size={15} />
                   </button>
                 </div>
 
                 <div
                   style={{
-                    width: '160px',
-                    height: '150px',
+                    width: '210px',
+                    height: '160px',
                     borderRadius: '18px',
                     overflow: 'hidden',
-                    border: '2px solid rgba(255,255,255,0.4)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
                     flexShrink: 0,
+                    backgroundColor: 'rgba(255,255,255,0.1)',
                   }}
                 >
                   <img
-                    src="/images/home_banner_vip.png"
-                    alt="VIP"
+                    src="/images/slide_premium.png"
+                    alt="VIP AI"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/images/career_header.png';
@@ -1110,6 +1266,75 @@ export const DesktopView: React.FC = () => {
                   />
                 </div>
               </div>
+
+              {/* Slider Left & Right Navigation Arrows */}
+              <button
+                onClick={() => setHomeSlide((prev) => (prev - 1 + 3) % 3)}
+                aria-label="Slide trước"
+                style={{
+                  position: 'absolute',
+                  left: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                  backdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(255, 255, 255, 0.4)',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  zIndex: 10,
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.45)';
+                  e.currentTarget.style.transform = 'translateY(-50%) scale(1.08)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.25)';
+                  e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+                }}
+              >
+                <ChevronLeft size={20} />
+              </button>
+
+              <button
+                onClick={() => setHomeSlide((prev) => (prev + 1) % 3)}
+                aria-label="Slide tiếp theo"
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                  backdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(255, 255, 255, 0.4)',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  zIndex: 10,
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.45)';
+                  e.currentTarget.style.transform = 'translateY(-50%) scale(1.08)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.25)';
+                  e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+                }}
+              >
+                <ChevronRight size={20} />
+              </button>
 
               {/* Slider Dots */}
               <div
@@ -1119,6 +1344,7 @@ export const DesktopView: React.FC = () => {
                   left: '50%',
                   transform: 'translateX(-50%)',
                   display: 'flex',
+                  alignItems: 'center',
                   gap: '6px',
                   zIndex: 10,
                 }}
@@ -1127,6 +1353,7 @@ export const DesktopView: React.FC = () => {
                   <button
                     key={idx}
                     onClick={() => setHomeSlide(idx)}
+                    aria-label={"Slide " + (idx + 1)}
                     style={{
                       width: homeSlide === idx ? '22px' : '7px',
                       height: '6px',
@@ -1264,7 +1491,7 @@ export const DesktopView: React.FC = () => {
                   Unipath LIVE
                 </h3>
                 <p style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.4, margin: 0 }}>
-                  Giao lưu ban tuyển sinh trực tuyến & giải đáp thắc mắc 1-1
+                  Giao lưu ban tuyển sinh trực tuyến & hỏi đáp trực tiếp trong phòng phát sóng
                 </p>
               </div>
 
@@ -2366,11 +2593,11 @@ export const DesktopView: React.FC = () => {
                 }}
               >
                 <img
-                  src="/images/live_stream_bg.png"
+                  src="/images/advisor_live.png"
                   alt="Live Stage"
                   style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }}
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/images/home_banner_edufair.png';
+                    (e.target as HTMLImageElement).src = '/images/slide_edufair.png';
                   }}
                 />
 

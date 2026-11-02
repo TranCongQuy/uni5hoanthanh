@@ -592,7 +592,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: `bk-${Date.now()}`,
     };
     setBookings((prev) => [newBooking, ...prev]);
-    showToast('Đặt lịch tư vấn 1-1 thành công!');
+    showToast('Đã kết nối với Trợ lý AI Tuyển sinh thành công!');
   };
 
   const upgradePremium = (planName: string) => {

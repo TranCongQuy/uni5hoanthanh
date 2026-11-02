@@ -473,7 +473,7 @@ export const AppFooter: React.FC<{ text?: string }> = ({
         {text}
       </span>
       <div style={{ fontSize: '11px', color: '#2563EB', fontWeight: 700, marginTop: '2px' }}>
-        Phát triển bởi Trần Công Quý • Bản quyền dự án thuộc nhóm UP5 (ĐH Phú Xuân)
+        Phát triển bởi Trần Công Quý • Trưởng nhóm: Dương Đình Phát • Bản quyền thuộc nhóm UP5 (ĐH Phú Xuân)
       </div>
       <span style={{ fontSize: '10px', color: '#94A3B8' }}>
         © 2026 Unipath Education Platform. Bảo lưu mọi quyền.
