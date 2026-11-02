@@ -46,7 +46,7 @@ const MainApp: React.FC = () => {
 
   // Mobile Body Scroll Lock: Prevents background scrolling when any modal/drawer is open
   const isAnyModalOpen =
-    showOnboarding ||
+    (viewMode === 'mobile' && showOnboarding) ||
     isChatBotOpen ||
     isNotificationsOpen ||
     selectedUniIdForDetail !== null ||

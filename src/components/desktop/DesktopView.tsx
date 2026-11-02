@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  Smartphone,
   Sparkles,
   Compass,
   Home,
@@ -82,7 +81,6 @@ export const DesktopView: React.FC = () => {
   const {
     activeTab,
     setActiveTab,
-    setViewMode,
     user,
     profile,
     isLoggedIn,
@@ -580,176 +578,15 @@ export const DesktopView: React.FC = () => {
             })}
           </nav>
 
-          {/* Search bar & Action Buttons */}
+          {/* Action Buttons: Notifications, AI Assistant, User Profile */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '10px',
               flexShrink: 0,
             }}
           >
-            {/* Quick search input */}
-            <div style={{ position: 'relative', width: '170px' }}>
-              <Search
-                size={14}
-                style={{
-                  position: 'absolute',
-                  left: '10px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: '#94A3B8',
-                }}
-              />
-              <input
-                type="text"
-                value={desktopSearch}
-                onChange={(e) => {
-                  setDesktopSearch(e.target.value);
-                  setSearchKeyword(e.target.value);
-                }}
-                placeholder="Tìm trường..."
-                style={{
-                  width: '100%',
-                  height: '35px',
-                  paddingLeft: '30px',
-                  paddingRight: desktopSearch ? '26px' : '10px',
-                  borderRadius: '10px',
-                  border: '1px solid #E2E8F0',
-                  backgroundColor: '#F8FAFC',
-                  fontSize: '12.5px',
-                  outline: 'none',
-                  whiteSpace: 'nowrap',
-                  transition: 'width 0.2s ease, border-color 0.2s ease, background-color 0.2s ease',
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#93C5FD';
-                  e.currentTarget.style.backgroundColor = '#FFFFFF';
-                  if (e.currentTarget.parentElement) {
-                    e.currentTarget.parentElement.style.width = '210px';
-                  }
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = '#E2E8F0';
-                  e.currentTarget.style.backgroundColor = '#F8FAFC';
-                  if (e.currentTarget.parentElement) {
-                    e.currentTarget.parentElement.style.width = '170px';
-                  }
-                }}
-              />
-              {desktopSearch && (
-                <button
-                  onClick={() => {
-                    setDesktopSearch('');
-                    setSearchKeyword('');
-                  }}
-                  style={{
-                    position: 'absolute',
-                    right: '8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: '#94A3B8',
-                    cursor: 'pointer',
-                    padding: 0,
-                  }}
-                >
-                  <X size={13} />
-                </button>
-              )}
-
-              {/* Autocomplete dropdown */}
-              {searchMatches.length > 0 && desktopSearch.trim() && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '40px',
-                    left: 0,
-                    width: '260px',
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '12px',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                    border: '1px solid #E2E8F0',
-                    zIndex: 100,
-                    overflow: 'hidden',
-                  }}
-                >
-                  {searchMatches.map((m) => (
-                    <div
-                      key={m.id}
-                      onClick={() => {
-                        openUniDetail(m.id);
-                        setDesktopSearch('');
-                        setSearchKeyword('');
-                      }}
-                      style={{
-                        padding: '8px 12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        cursor: 'pointer',
-                        borderBottom: '1px solid #F1F5F9',
-                        fontSize: '12px',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#EFF6FF';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#FFFFFF';
-                      }}
-                    >
-                      <strong style={{ color: '#2563EB', flexShrink: 0 }}>{m.code}</strong>
-                      <span
-                        style={{
-                          color: '#1E293B',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {m.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* 1-CLICK TOGGLE BUTTON TO SWITCH TO MOBILE */}
-            <button
-              onClick={() => setViewMode('mobile')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '7px 12px',
-                borderRadius: '10px',
-                backgroundColor: '#0F172A',
-                color: '#FFFFFF',
-                border: 'none',
-                fontSize: '12px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)',
-                transition: 'all 0.15s ease',
-              }}
-              title="Nhấn để chuyển sang giao diện điện thoại (Mobile View)"
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#1E293B';
-                e.currentTarget.style.transform = 'translateY(-1px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#0F172A';
-                e.currentTarget.style.transform = 'translateY(0px)';
-              }}
-            >
-              <Smartphone size={14} />
-              <span style={{ whiteSpace: 'nowrap' }}>Chuyển sang Mobile 📱</span>
-            </button>
-
             {/* Notification Bell */}
             <button
               onClick={openNotifications}
@@ -1374,7 +1211,7 @@ export const DesktopView: React.FC = () => {
               style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(4, 1fr)',
-                gap: '16px',
+                gap: '18px',
                 marginBottom: '32px',
               }}
             >
@@ -1383,17 +1220,22 @@ export const DesktopView: React.FC = () => {
                 onClick={() => setActiveTab(1)}
                 style={{
                   backgroundColor: '#FFFFFF',
-                  borderRadius: '18px',
-                  padding: '20px',
-                  border: '1px solid #E2E8F0',
+                  borderRadius: '20px',
+                  padding: '22px',
+                  border: '1.5px solid #E2E8F0',
                   boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-3px)';
-                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(37,99,235,0.1)';
-                  e.currentTarget.style.borderColor = '#BFDBFE';
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                  e.currentTarget.style.boxShadow = '0 12px 28px rgba(37,99,235,0.12)';
+                  e.currentTarget.style.borderColor = '#93C5FD';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0px)';
@@ -1401,20 +1243,26 @@ export const DesktopView: React.FC = () => {
                   e.currentTarget.style.borderColor = '#E2E8F0';
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Compass size={22} />
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                    <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(37,99,235,0.12)' }}>
+                      <Compass size={22} />
+                    </div>
+                    <span style={{ fontSize: '11px', fontWeight: 800, color: '#2563EB', backgroundColor: '#EFF6FF', padding: '3px 8px', borderRadius: '6px' }}>
+                      HOT
+                    </span>
                   </div>
-                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#2563EB', backgroundColor: '#EFF6FF', padding: '3px 8px', borderRadius: '6px' }}>
-                    HOT
-                  </span>
+                  <h3 style={{ fontSize: '16.5px', fontWeight: 800, color: '#1E293B', marginBottom: '6px' }}>
+                    Trắc nghiệm RIASEC
+                  </h3>
+                  <p style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.5, margin: 0 }}>
+                    Holland 6 nhóm tính cách & định hướng ngành học phù hợp
+                  </p>
                 </div>
-                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1E293B', marginBottom: '6px' }}>
-                  Trắc nghiệm RIASEC
-                </h3>
-                <p style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.4, margin: 0 }}>
-                  Holland 6 nhóm tính cách & định hướng ngành học phù hợp
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: '#2563EB', marginTop: '16px' }}>
+                  <span>Làm bài test</span>
+                  <ArrowRight size={14} />
+                </div>
               </div>
 
               {/* Card 2: AI Matching */}
@@ -1422,17 +1270,22 @@ export const DesktopView: React.FC = () => {
                 onClick={() => setActiveTab(2)}
                 style={{
                   backgroundColor: '#FFFFFF',
-                  borderRadius: '18px',
-                  padding: '20px',
-                  border: '1px solid #E2E8F0',
+                  borderRadius: '20px',
+                  padding: '22px',
+                  border: '1.5px solid #E2E8F0',
                   boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-3px)';
-                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(16,185,129,0.1)';
-                  e.currentTarget.style.borderColor = '#A7F3D0';
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                  e.currentTarget.style.boxShadow = '0 12px 28px rgba(16,185,129,0.14)';
+                  e.currentTarget.style.borderColor = '#6EE7B7';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0px)';
@@ -1440,20 +1293,26 @@ export const DesktopView: React.FC = () => {
                   e.currentTarget.style.borderColor = '#E2E8F0';
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#ECFDF5', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Sparkles size={22} />
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                    <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#ECFDF5', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(16,185,129,0.12)' }}>
+                      <Sparkles size={22} />
+                    </div>
+                    <span style={{ fontSize: '11px', fontWeight: 800, color: '#10B981', backgroundColor: '#ECFDF5', padding: '3px 8px', borderRadius: '6px' }}>
+                      AI 2026
+                    </span>
                   </div>
-                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#10B981', backgroundColor: '#ECFDF5', padding: '3px 8px', borderRadius: '6px' }}>
-                    AI 2026
-                  </span>
+                  <h3 style={{ fontSize: '16.5px', fontWeight: 800, color: '#1E293B', marginBottom: '6px' }}>
+                    AI Matching 2026
+                  </h3>
+                  <p style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.5, margin: 0 }}>
+                    Dự đoán xác suất trúng tuyển 30 trường theo điểm & học phí
+                  </p>
                 </div>
-                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1E293B', marginBottom: '6px' }}>
-                  AI Matching 2026
-                </h3>
-                <p style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.4, margin: 0 }}>
-                  Dự đoán xác suất trúng tuyển 30 trường theo điểm & học phí
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: '#10B981', marginTop: '16px' }}>
+                  <span>Đối soát điểm</span>
+                  <ArrowRight size={14} />
+                </div>
               </div>
 
               {/* Card 3: Unipath LIVE */}
@@ -1461,17 +1320,22 @@ export const DesktopView: React.FC = () => {
                 onClick={() => setActiveTab(3)}
                 style={{
                   backgroundColor: '#FFFFFF',
-                  borderRadius: '18px',
-                  padding: '20px',
-                  border: '1px solid #E2E8F0',
+                  borderRadius: '20px',
+                  padding: '22px',
+                  border: '1.5px solid #E2E8F0',
                   boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-3px)';
-                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(239,68,68,0.1)';
-                  e.currentTarget.style.borderColor = '#FECACA';
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                  e.currentTarget.style.boxShadow = '0 12px 28px rgba(239,68,68,0.12)';
+                  e.currentTarget.style.borderColor = '#FCA5A5';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0px)';
@@ -1479,20 +1343,26 @@ export const DesktopView: React.FC = () => {
                   e.currentTarget.style.borderColor = '#E2E8F0';
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#FEF2F2', color: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Radio size={22} />
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                    <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#FEF2F2', color: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(239,68,68,0.12)' }}>
+                      <Radio size={22} />
+                    </div>
+                    <span style={{ fontSize: '11px', fontWeight: 800, color: '#EF4444', backgroundColor: '#FEF2F2', padding: '3px 8px', borderRadius: '6px' }}>
+                      LIVE NOW
+                    </span>
                   </div>
-                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#EF4444', backgroundColor: '#FEF2F2', padding: '3px 8px', borderRadius: '6px' }}>
-                    LIVE NOW
-                  </span>
+                  <h3 style={{ fontSize: '16.5px', fontWeight: 800, color: '#1E293B', marginBottom: '6px' }}>
+                    Unipath LIVE
+                  </h3>
+                  <p style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.5, margin: 0 }}>
+                    Giao lưu ban tuyển sinh trực tuyến & hỏi đáp trực tiếp trong phòng phát sóng
+                  </p>
                 </div>
-                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1E293B', marginBottom: '6px' }}>
-                  Unipath LIVE
-                </h3>
-                <p style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.4, margin: 0 }}>
-                  Giao lưu ban tuyển sinh trực tuyến & hỏi đáp trực tiếp trong phòng phát sóng
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: '#EF4444', marginTop: '16px' }}>
+                  <span>Vào phòng Live</span>
+                  <ArrowRight size={14} />
+                </div>
               </div>
 
               {/* Card 4: Lộ trình THPT */}
@@ -1500,17 +1370,22 @@ export const DesktopView: React.FC = () => {
                 onClick={() => openCareerPath()}
                 style={{
                   backgroundColor: '#FFFFFF',
-                  borderRadius: '18px',
-                  padding: '20px',
-                  border: '1px solid #E2E8F0',
+                  borderRadius: '20px',
+                  padding: '22px',
+                  border: '1.5px solid #E2E8F0',
                   boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-3px)';
-                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(147,51,234,0.1)';
-                  e.currentTarget.style.borderColor = '#E9D5FF';
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                  e.currentTarget.style.boxShadow = '0 12px 28px rgba(147,51,234,0.14)';
+                  e.currentTarget.style.borderColor = '#D8B4FE';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0px)';
@@ -1518,20 +1393,228 @@ export const DesktopView: React.FC = () => {
                   e.currentTarget.style.borderColor = '#E2E8F0';
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#FAF5FF', color: '#9333EA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <GraduationCap size={22} />
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                    <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#FAF5FF', color: '#9333EA', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(147,51,234,0.12)' }}>
+                      <GraduationCap size={22} />
+                    </div>
+                    <span style={{ fontSize: '11px', fontWeight: 800, color: '#9333EA', backgroundColor: '#FAF5FF', padding: '3px 8px', borderRadius: '6px' }}>
+                      THPT 2026
+                    </span>
                   </div>
-                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#9333EA', backgroundColor: '#FAF5FF', padding: '3px 8px', borderRadius: '6px' }}>
-                    THPT 2026
-                  </span>
+                  <h3 style={{ fontSize: '16.5px', fontWeight: 800, color: '#1E293B', marginBottom: '6px' }}>
+                    Lộ trình Phát triển THPT
+                  </h3>
+                  <p style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.5, margin: 0 }}>
+                    Khung năng lực, kỹ năng nghề nghiệp và bản đồ 4 năm ĐH
+                  </p>
                 </div>
-                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1E293B', marginBottom: '6px' }}>
-                  Lộ trình Phát triển THPT
-                </h3>
-                <p style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.4, margin: 0 }}>
-                  Khung năng lực, kỹ năng nghề nghiệp và bản đồ 4 năm ĐH
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: '#9333EA', marginTop: '16px' }}>
+                  <span>Xem chi tiết</span>
+                  <ArrowRight size={14} />
+                </div>
+              </div>
+            </div>
+
+            {/* PROMINENT UNIVERSITY SEARCH EXPLORER (MOVED DOWN FROM HEADER FOR OPTIMAL ERGONOMICS) */}
+            <div
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '20px',
+                padding: '20px 24px',
+                border: '1.5px solid #E2E8F0',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
+                marginBottom: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '16px',
+                position: 'relative',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, position: 'relative' }}>
+                <div
+                  style={{
+                    width: '46px',
+                    height: '46px',
+                    borderRadius: '14px',
+                    backgroundColor: '#EFF6FF',
+                    color: '#2563EB',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    boxShadow: '0 2px 8px rgba(37,99,235,0.15)',
+                  }}
+                >
+                  <Search size={22} />
+                </div>
+                <div style={{ flex: 1, position: 'relative' }}>
+                  <input
+                    type="text"
+                    value={desktopSearch}
+                    onChange={(e) => {
+                      setDesktopSearch(e.target.value);
+                      setSearchKeyword(e.target.value);
+                    }}
+                    placeholder="Tìm trường đại học theo tên (Bách Khoa, FTU, NEU...), mã trường, khu vực..."
+                    style={{
+                      width: '100%',
+                      height: '46px',
+                      paddingLeft: '16px',
+                      paddingRight: desktopSearch ? '40px' : '16px',
+                      borderRadius: '12px',
+                      border: '1.5px solid #E2E8F0',
+                      backgroundColor: '#F8FAFC',
+                      fontSize: '14.5px',
+                      fontWeight: 600,
+                      color: '#0F172A',
+                      outline: 'none',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#2563EB';
+                      e.currentTarget.style.backgroundColor = '#FFFFFF';
+                      e.currentTarget.style.boxShadow = '0 0 0 4px rgba(37, 99, 235, 0.12)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = '#E2E8F0';
+                      e.currentTarget.style.backgroundColor = '#F8FAFC';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  />
+                  {desktopSearch && (
+                    <button
+                      onClick={() => {
+                        setDesktopSearch('');
+                        setSearchKeyword('');
+                      }}
+                      style={{
+                        position: 'absolute',
+                        right: '14px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        color: '#94A3B8',
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                      title="Xóa tìm kiếm"
+                    >
+                      <X size={18} />
+                    </button>
+                  )}
+
+                  {/* Instant Autocomplete Suggestions */}
+                  {searchMatches.length > 0 && desktopSearch.trim() && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '54px',
+                        left: 0,
+                        right: 0,
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '16px',
+                        boxShadow: '0 14px 40px rgba(0,0,0,0.16)',
+                        border: '1px solid #E2E8F0',
+                        zIndex: 100,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div
+                        style={{
+                          padding: '10px 18px',
+                          backgroundColor: '#F8FAFC',
+                          borderBottom: '1px solid #F1F5F9',
+                          fontSize: '11.5px',
+                          fontWeight: 800,
+                          color: '#64748B',
+                          letterSpacing: '0.4px',
+                        }}
+                      >
+                        GỢI Ý TRƯỜNG ĐẠI HỌC PHÙ HỢP ({searchMatches.length} KẾT QUẢ)
+                      </div>
+                      {searchMatches.map((m) => (
+                        <div
+                          key={m.id}
+                          onClick={() => {
+                            openUniDetail(m.id);
+                            setDesktopSearch('');
+                            setSearchKeyword('');
+                          }}
+                          style={{
+                            padding: '12px 18px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            cursor: 'pointer',
+                            borderBottom: '1px solid #F8FAFC',
+                            transition: 'background-color 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#EFF6FF';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#FFFFFF';
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <UniversityAvatar code={m.code} size={36} />
+                            <div>
+                              <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>
+                                <span style={{ color: '#2563EB', marginRight: '6px' }}>[{m.code}]</span>
+                                {m.name}
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
+                                {m.loc} • Điểm chuẩn 2024: <strong style={{ color: '#2563EB' }}>{m.score2024}đ</strong> • Học phí: <strong style={{ color: '#059669' }}>{m.tuitionMin}tr/năm</strong>
+                              </div>
+                            </div>
+                          </div>
+                          <span style={{ fontSize: '12.5px', color: '#2563EB', fontWeight: 700 }}>Xem thông tin trường →</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Status pill or compare trigger */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                {desktopSearch && (
+                  <span style={{ fontSize: '13px', color: '#1E293B', backgroundColor: '#F1F5F9', padding: '8px 14px', borderRadius: '10px', fontWeight: 600 }}>
+                    Đang lọc: <strong style={{ color: '#2563EB' }}>"{desktopSearch}"</strong> ({filteredUnis.length} trường)
+                  </span>
+                )}
+                {compareIds.length > 0 && (
+                  <button
+                    onClick={openCompareModal}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 18px',
+                      borderRadius: '12px',
+                      backgroundColor: '#2563EB',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      fontSize: '13px',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 14px rgba(37,99,235,0.25)',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0px)';
+                    }}
+                  >
+                    <Scale size={16} />
+                    <span>So sánh ({compareIds.length})</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -3095,22 +3178,7 @@ export const DesktopView: React.FC = () => {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
             <span>Đang ở chế độ: 💻 Màn hình Laptop / Desktop</span>
-            <button
-              onClick={() => setViewMode('mobile')}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#2563EB',
-                fontWeight: 800,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                textDecoration: 'underline',
-              }}
-            >
-              <span>Chuyển sang giao diện Mobile 📱</span>
-            </button>
+            <span style={{ fontSize: "12px", color: "#64748B" }}>Chế độ: 💻 Máy tính / Laptop</span>
           </div>
         </div>
       </footer>
