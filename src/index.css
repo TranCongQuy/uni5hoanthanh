@@ -41,15 +41,39 @@ html, body {
 
 #root {
   width: 100%;
-  max-width: 520px;
   min-height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  transition: max-width 0.25s ease, background-color 0.25s ease;
+}
+
+/* Mobile View Container (Phone frame on wide screens) */
+#root.mode-mobile,
+body.mode-mobile #root {
+  max-width: 520px;
   margin: 0 auto;
   background-color: var(--bg-app);
   box-shadow: 0 0 35px rgba(0, 0, 0, 0.08);
-  position: relative;
   overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
+}
+
+/* Desktop View Container (Full width laptop / PC) */
+#root.mode-desktop,
+body.mode-desktop #root {
+  max-width: 100%;
+  margin: 0;
+  background-color: #F8FAFC;
+  box-shadow: none;
+  overflow-x: hidden;
+}
+
+/* Default fallback before JS initializes */
+#root:not(.mode-desktop):not(.mode-mobile) {
+  max-width: 520px;
+  margin: 0 auto;
+  background-color: var(--bg-app);
+  box-shadow: 0 0 35px rgba(0, 0, 0, 0.08);
 }
 
 /* Scrollbar customization */

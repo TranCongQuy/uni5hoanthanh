@@ -123,3 +123,5 @@ export interface AIMatchState {
   analyzedAt?: string;
 }
 
+export type ViewMode = 'mobile' | 'desktop';
+

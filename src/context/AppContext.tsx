@@ -6,6 +6,7 @@ import type {
   HollandCode,
   University,
   UserProfile,
+  ViewMode,
 } from '../types';
 
 interface HollandResult {
@@ -116,6 +117,11 @@ interface AppContextType {
   // AI Match persistence (remembers latest analysis across tabs)
   aiMatchState: AIMatchState;
   saveAIMatchState: (state: Partial<AIMatchState>) => void;
+
+  // View mode (Mobile vs Desktop / Laptop)
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
+  toggleViewMode: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -319,6 +325,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState<string>('');
 
+  // --- View Mode State (Mobile vs Desktop / Laptop) ---
+  const [viewMode, setViewModeState] = useState<ViewMode>(() => {
+    try {
+      const saved = localStorage.getItem('unipath_view_mode');
+      if (saved === 'desktop' || saved === 'mobile') {
+        return saved;
+      }
+    } catch {
+      // ignore
+    }
+    return 'mobile';
+  });
+
   // --- Toast Helper ---
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -326,6 +345,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setToastMessage((prev) => (prev === msg ? null : prev));
     }, 2800);
   };
+
+  const setViewMode = (mode: ViewMode) => {
+    setViewModeState(mode);
+    try {
+      localStorage.setItem('unipath_view_mode', mode);
+    } catch {
+      // ignore
+    }
+    showToast(mode === 'desktop' ? 'Đã chuyển sang giao diện Laptop / Desktop 💻' : 'Đã chuyển sang giao diện Điện thoại 📱');
+  };
+
+  const toggleViewMode = () => {
+    const nextMode = viewMode === 'desktop' ? 'mobile' : 'desktop';
+    setViewMode(nextMode);
+  };
+
+  useEffect(() => {
+    const root = document.getElementById('root');
+    if (viewMode === 'desktop') {
+      document.body.classList.add('mode-desktop');
+      document.body.classList.remove('mode-mobile');
+      root?.classList.add('mode-desktop');
+      root?.classList.remove('mode-mobile');
+    } else {
+      document.body.classList.add('mode-mobile');
+      document.body.classList.remove('mode-desktop');
+      root?.classList.add('mode-mobile');
+      root?.classList.remove('mode-desktop');
+    }
+  }, [viewMode]);
 
   // --- Sync Effects to LocalStorage (Only for registered non-demo accounts) ---
   const isDemoOrGuest = user.email === DEMO_EMAIL || isGuest || !isLoggedIn;
@@ -851,6 +900,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSearchKeyword,
         aiMatchState,
         saveAIMatchState,
+        viewMode,
+        setViewMode,
+        toggleViewMode,
       }}
     >
       {children}

@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
-import { HomeTab } from './components/tabs/HomeTab';
-import { QuizTab } from './components/tabs/QuizTab';
-import { MatchingTab } from './components/tabs/MatchingTab';
-import { LiveTab } from './components/tabs/LiveTab';
-import { ProfileTab } from './components/tabs/ProfileTab';
-import { BottomNavigation } from './components/navigation/BottomNavigation';
+import { MobileView } from './components/mobile/MobileView';
+import { DesktopView } from './components/desktop/DesktopView';
+import { ViewModeToggle } from './components/common/ViewModeToggle';
 import { UniversityDetailModal } from './components/modals/UniversityDetailModal';
 import { CompareModal } from './components/modals/CompareModal';
 import { ChatBotModal } from './components/modals/ChatBotModal';
@@ -24,7 +21,7 @@ import './App.css';
 
 const MainApp: React.FC = () => {
   const {
-    activeTab,
+    viewMode,
     toastMessage,
     isChatBotOpen,
     isNotificationsOpen,
@@ -85,18 +82,28 @@ const MainApp: React.FC = () => {
     };
   }, [isAnyModalOpen]);
 
-  // 1. GATEWAY: MANDATORY AUTHENTICATION BEFORE ENTERING APP
-  if (!isLoggedIn) {
+  // 1. DESKTOP / LAPTOP INTERFACE (When user clicks switch to desktop mode)
+  if (viewMode === 'desktop') {
     return (
       <>
-        {/* Onboarding Flow: Shown every time app is opened, with "Bỏ qua" at top */}
-        <OnboardingModal
-          isOpen={showOnboarding}
-          onFinish={handleFinishOnboarding}
-        />
+        {/* Dedicated Desktop View with requested 'Hello' test screen */}
+        <DesktopView />
 
-        {/* Full Authentication Screen (Login, Register & Demo account Tran Cong Quy) */}
-        <AuthScreen />
+        {/* Global Modals & Dialogs */}
+        <UniversityDetailModal />
+        <CompareModal />
+        <ChatBotModal />
+        <CareerPathModal />
+        <EditProfileModal />
+        <SettingsModal />
+        <ApplyDemoModal />
+        <ViewApplicationModal />
+        <AllApplicationsModal />
+        <NotificationsModal />
+        <AuthModal />
+
+        {/* Floating One-Click Mode Toggle Widget */}
+        <ViewModeToggle />
 
         {/* System Toast Notification */}
         <Toast message={toastMessage} />
@@ -104,7 +111,29 @@ const MainApp: React.FC = () => {
     );
   }
 
-  // 2. MAIN APPLICATION (Accessible once logged in)
+  // 2. MOBILE INTERFACE: GATEWAY (Mandatory auth on mobile before entering full tabs)
+  if (!isLoggedIn) {
+    return (
+      <>
+        {/* Onboarding Flow */}
+        <OnboardingModal
+          isOpen={showOnboarding}
+          onFinish={handleFinishOnboarding}
+        />
+
+        {/* Full Authentication Screen */}
+        <AuthScreen />
+
+        {/* Floating One-Click Mode Toggle Widget so user can switch to Desktop with 1 click */}
+        <ViewModeToggle />
+
+        {/* System Toast Notification */}
+        <Toast message={toastMessage} />
+      </>
+    );
+  }
+
+  // 3. MOBILE INTERFACE: MAIN APP (When logged in on mobile)
   return (
     <>
       {/* Onboarding if opened in session */}
@@ -114,18 +143,9 @@ const MainApp: React.FC = () => {
       />
 
       {/* Main Tab Screen View */}
-      <main style={{ flex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        {activeTab === 0 && <HomeTab />}
-        {activeTab === 1 && <QuizTab />}
-        {activeTab === 2 && <MatchingTab />}
-        {activeTab === 3 && <LiveTab />}
-        {activeTab === 4 && <ProfileTab />}
-      </main>
+      <MobileView />
 
-      {/* Fixed Bottom Navigation */}
-      <BottomNavigation />
-
-      {/* Global Modals & Dialogs (Zero 1-1 consultation, 100% AI powered) */}
+      {/* Global Modals & Dialogs */}
       <UniversityDetailModal />
       <CompareModal />
       <ChatBotModal />
@@ -137,6 +157,9 @@ const MainApp: React.FC = () => {
       <AllApplicationsModal />
       <NotificationsModal />
       <AuthModal />
+
+      {/* Floating One-Click Mode Toggle Widget */}
+      <ViewModeToggle />
 
       {/* System Toast Notification */}
       <Toast message={toastMessage} />

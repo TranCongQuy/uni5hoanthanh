@@ -8,6 +8,8 @@ import {
   Info,
   Trash2,
   ChevronRight,
+  Laptop,
+  Smartphone,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../common/UI';
@@ -21,6 +23,8 @@ export const SettingsModal: React.FC = () => {
     notifications,
     toggleNotifications,
     resetAllData,
+    viewMode,
+    toggleViewMode,
   } = useApp();
 
   const [showGuide, setShowGuide] = useState(false);
@@ -156,6 +160,48 @@ export const SettingsModal: React.FC = () => {
                   onChange={toggleReduceMotion}
                   style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#2563EB' }}
                 />
+              </div>
+
+              {/* View Mode Toggle (Mobile / Laptop) */}
+              <div
+                style={{
+                  padding: '14px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderBottom: '1px solid #F1F5F9',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  {viewMode === 'desktop' ? (
+                    <Laptop size={20} color="#2563EB" />
+                  ) : (
+                    <Smartphone size={20} color="#2563EB" />
+                  )}
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>
+                      Giao diện hiển thị
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748B' }}>
+                      {viewMode === 'desktop' ? 'Đang bật: Laptop / Desktop (Màn hình lớn)' : 'Đang bật: Điện thoại (Mobile)'}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={toggleViewMode}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #CBD5E1',
+                    backgroundColor: viewMode === 'desktop' ? '#EFF6FF' : '#F8FAFC',
+                    color: viewMode === 'desktop' ? '#2563EB' : '#1E293B',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {viewMode === 'desktop' ? '📱 Sang Mobile' : '💻 Sang Desktop'}
+                </button>
               </div>
 
               {/* Language */}
