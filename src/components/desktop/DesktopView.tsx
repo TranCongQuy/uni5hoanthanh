@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Laptop,
   Smartphone,
@@ -13,18 +13,71 @@ import {
   Scale,
   GraduationCap,
   MapPin,
-  TrendingUp,
-  Award,
   ArrowRight,
-  BookOpen,
+  ArrowLeft,
+  Heart,
+  ChevronRight,
+  ChevronLeft,
+  X,
+  Star,
+  Users,
+  Send,
+  Sliders,
+  HelpCircle,
+  ThumbsUp,
+  Share2,
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { useApp } from '../../context/AppContext';
-import { UNIVERSITIES } from '../../data/MockData';
-import { UniversityAvatar, Button } from '../common/UI';
-import { QuizTab } from '../tabs/QuizTab';
-import { MatchingTab } from '../tabs/MatchingTab';
-import { LiveTab } from '../tabs/LiveTab';
-import { ProfileTab } from '../tabs/ProfileTab';
+import {
+  UNIVERSITIES,
+  getUniversitiesByRegion,
+  QUIZ_QUESTIONS,
+  HOLLAND_NAMES,
+  HOLLAND_MAJORS,
+  getHollandName,
+} from '../../data/MockData';
+import type { HollandCode, MatchResult, EvaluationGroup } from '../../types';
+import { UniversityAvatar, ImageSafe, Button } from '../common/UI';
+import { RadarChart } from '../charts/RadarChart';
+import { DonutChart } from '../charts/DonutChart';
+import { evaluateMatching } from '../../services/MatchingService';
+
+const QUIZ_OPTIONS = [
+  {
+    title: 'Rất thích / Hoàn toàn đúng',
+    sub: 'Mức độ hứng thú và phù hợp cao nhất (+3)',
+    score: 3,
+    icon: <Star size={18} color="#F59E0B" fill="#F59E0B" />,
+  },
+  {
+    title: 'Khá thích / Đúng phần lớn',
+    sub: 'Phù hợp với sở trường và thói quen (+2)',
+    score: 2,
+    icon: <Sparkles size={18} color="#2563EB" />,
+  },
+  {
+    title: 'Phân vân / Bình thường',
+    sub: 'Chưa rõ ràng hoặc không thường xuyên (+1)',
+    score: 1,
+    icon: <HelpCircle size={18} color="#0D9488" />,
+  },
+  {
+    title: 'Không thích / Không đúng',
+    sub: 'Hoàn toàn không phù hợp (+0)',
+    score: 0,
+    icon: <X size={18} color="#94A3B8" />,
+  },
+];
+
+interface LiveMessage {
+  id: string;
+  author: string;
+  avatar: string;
+  time: string;
+  text: string;
+  isAdvisor?: boolean;
+}
 
 export const DesktopView: React.FC = () => {
   const {
@@ -32,42 +85,310 @@ export const DesktopView: React.FC = () => {
     setActiveTab,
     setViewMode,
     user,
+    profile,
     isLoggedIn,
     loginDemo,
     openNotifications,
     openChatBot,
     openUniDetail,
     openCompareModal,
+    openCareerPath,
+    openEditProfile,
+    openSettings,
+    openAuthModal,
+    openApplicationDetail,
+    openAllApplications,
+    cancelApplication,
     isCompared,
     toggleCompare,
     favoriteIds,
     toggleFavorite,
     searchKeyword,
     setSearchKeyword,
+    compareIds,
+    hollandResult,
+    saveHollandResult,
+    clearHollandResult,
+    applications,
+    aiMatchState,
+    saveAIMatchState,
+    showToast,
+    logout,
   } = useApp();
 
+  // =========================================================================
+  // TAB 0: HOME DESKTOP STATE
+  // =========================================================================
+  const [homeSlide, setHomeSlide] = useState(0);
+  const [isHomeSlideHovered, setIsHomeSlideHovered] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string>('Tất cả');
-  const [localSearch, setLocalSearch] = useState<string>(searchKeyword);
+  const [desktopVisibleCount, setDesktopVisibleCount] = useState<number>(12);
+  const [desktopSearch, setDesktopSearch] = useState<string>(searchKeyword);
 
-  // Filter universities for desktop grid
+  // Auto rotate hero slides
+  useEffect(() => {
+    if (isHomeSlideHovered || activeTab !== 0) return;
+    const timer = setInterval(() => {
+      setHomeSlide((prev) => (prev + 1) % 3);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [isHomeSlideHovered, activeTab]);
+
+  // Sync search input
+  useEffect(() => {
+    setDesktopSearch(searchKeyword);
+  }, [searchKeyword]);
+
+  // Featured 8 universities
+  const featuredUnis = useMemo(() => {
+    return [
+      UNIVERSITIES.find((u) => u.id === 1)!, // BKA
+      UNIVERSITIES.find((u) => u.id === 2)!, // FTU
+      UNIVERSITIES.find((u) => u.id === 3)!, // NEU
+      UNIVERSITIES.find((u) => u.id === 11)!, // PXU
+      UNIVERSITIES.find((u) => u.id === 13)!, // DUT
+      UNIVERSITIES.find((u) => u.id === 21)!, // HCMUT
+      UNIVERSITIES.find((u) => u.id === 23)!, // UEH
+      UNIVERSITIES.find((u) => u.id === 24)!, // UIT
+    ].filter(Boolean);
+  }, []);
+
+  const featuredScrollRef = useRef<HTMLDivElement>(null);
+
+  // Filter universities by region and search
+  const baseList = getUniversitiesByRegion(selectedRegion);
   const filteredUnis = useMemo(() => {
-    return UNIVERSITIES.filter((uni) => {
-      const matchRegion = selectedRegion === 'Tất cả' || uni.region === selectedRegion;
-      const matchQuery =
-        !localSearch.trim() ||
-        uni.name.toLowerCase().includes(localSearch.toLowerCase()) ||
-        uni.code.toLowerCase().includes(localSearch.toLowerCase()) ||
-        uni.loc.toLowerCase().includes(localSearch.toLowerCase()) ||
-        uni.majors.some((m) => m.toLowerCase().includes(localSearch.toLowerCase()));
-      return matchRegion && matchQuery;
+    return baseList.filter((u) => {
+      if (!desktopSearch.trim()) return true;
+      const q = desktopSearch.toLowerCase().trim();
+      return (
+        u.name.toLowerCase().includes(q) ||
+        u.code.toLowerCase().includes(q) ||
+        u.loc.toLowerCase().includes(q) ||
+        u.majors.some((m) => m.toLowerCase().includes(q))
+      );
     });
-  }, [selectedRegion, localSearch]);
+  }, [baseList, desktopSearch]);
+
+  // Live autocomplete matches
+  const searchMatches = useMemo(() => {
+    if (!desktopSearch.trim()) return [];
+    const q = desktopSearch.toLowerCase().trim();
+    return UNIVERSITIES.filter(
+      (u) =>
+        u.name.toLowerCase().includes(q) ||
+        u.code.toLowerCase().includes(q) ||
+        u.loc.toLowerCase().includes(q)
+    ).slice(0, 5);
+  }, [desktopSearch]);
+
+  // =========================================================================
+  // TAB 1: QUIZ (HOLLAND RIASEC) STATE
+  // =========================================================================
+  const [quizMode, setQuizMode] = useState<'intro' | 'taking' | 'result'>(() => {
+    return hollandResult ? 'result' : 'intro';
+  });
+  const [quizIdx, setQuizIdx] = useState(0);
+  const [quizAnswers, setQuizAnswers] = useState<number[]>(new Array(12).fill(-1));
+
+  useEffect(() => {
+    if (!hollandResult) {
+      setQuizMode('intro');
+      setQuizIdx(0);
+      setQuizAnswers(new Array(12).fill(-1));
+    } else {
+      setQuizMode('result');
+    }
+  }, [hollandResult]);
+
+  const handleStartQuiz = () => {
+    setQuizIdx(0);
+    setQuizAnswers(new Array(12).fill(-1));
+    setQuizMode('taking');
+  };
+
+  const handleSelectQuizOption = (optIdx: number) => {
+    const next = [...quizAnswers];
+    next[quizIdx] = optIdx;
+    setQuizAnswers(next);
+  };
+
+  const handleNextQuiz = () => {
+    if (quizAnswers[quizIdx] === -1) return;
+    if (quizIdx < QUIZ_QUESTIONS.length - 1) {
+      setQuizIdx((prev) => prev + 1);
+    } else {
+      // Calculate Holland Scores
+      const scores: Record<HollandCode, number> = { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
+      QUIZ_QUESTIONS.forEach((q, idx) => {
+        const selected = quizAnswers[idx];
+        if (selected >= 0 && selected < QUIZ_OPTIONS.length) {
+          scores[q.category] += QUIZ_OPTIONS[selected].score;
+        }
+      });
+      saveHollandResult(scores);
+      setQuizMode('result');
+      confetti({ particleCount: 90, spread: 80, origin: { y: 0.5 } });
+    }
+  };
+
+  // =========================================================================
+  // TAB 2: AI MATCHING 2026 STATE
+  // =========================================================================
+  const [matchScore, setMatchScore] = useState<number>(aiMatchState.score ?? 15.0);
+  const [matchBudget, setMatchBudget] = useState<number>(aiMatchState.budget ?? 10);
+  const [matchRegion, setMatchRegion] = useState<string>(aiMatchState.region ?? 'Tất cả');
+  const [matchSort, setMatchSort] = useState<'score' | 'budget' | 'location'>(aiMatchState.sortBy ?? 'score');
+  const [hasMatchEvaluated, setHasMatchEvaluated] = useState<boolean>(aiMatchState.hasEvaluated ?? false);
+  const [isMatchLoading, setIsMatchLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    setMatchScore(aiMatchState.score ?? 15.0);
+    setMatchBudget(aiMatchState.budget ?? 10);
+    setMatchRegion(aiMatchState.region ?? 'Tất cả');
+    setMatchSort(aiMatchState.sortBy ?? 'score');
+    setHasMatchEvaluated(aiMatchState.hasEvaluated ?? false);
+  }, [aiMatchState]);
+
+  const evaluation: EvaluationGroup = useMemo(() => {
+    return evaluateMatching(matchScore, matchBudget, hollandResult?.primaryCode || '', matchRegion);
+  }, [matchScore, matchBudget, hollandResult, matchRegion]);
+
+  const handleEvaluateMatching = () => {
+    setIsMatchLoading(true);
+    setTimeout(() => {
+      setIsMatchLoading(false);
+      setHasMatchEvaluated(true);
+      saveAIMatchState({
+        hasEvaluated: true,
+        score: matchScore,
+        budget: matchBudget,
+        region: matchRegion,
+        sortBy: matchSort,
+        analyzedAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      });
+      showToast('Đã hoàn tất phân tích cơ hội trúng tuyển 30 trường!');
+    }, 600);
+  };
+
+  const sortResults = (list: MatchResult[]) => {
+    return [...list].sort((a, b) => {
+      if (matchSort === 'score') return b.matchingPercent - a.matchingPercent;
+      if (matchSort === 'budget') return a.university.tuitionMin - b.university.tuitionMin;
+      return a.university.region.localeCompare(b.university.region);
+    });
+  };
+
+  // =========================================================================
+  // TAB 3: LIVE STREAM (EDUFAIR) STATE
+  // =========================================================================
+  const [liveChatInput, setLiveChatInput] = useState('');
+  const [liveReactions, setLiveReactions] = useState({ like: 342, heart: 518, clap: 189 });
+  const liveChatContainerRef = useRef<HTMLDivElement>(null);
+  const [liveMessages, setLiveMessages] = useState<LiveMessage[]>([
+    {
+      id: 'm1',
+      author: 'TS. Lê Thành Trung',
+      avatar: '/images/advisor_avatar.png',
+      time: '14:28',
+      text: 'Chào các em học sinh 2k8! Ban tư vấn tuyển sinh sẵn sàng giải đáp về chỉ tiêu xét tuyển học bạ đợt 1.',
+      isAdvisor: true,
+    },
+    {
+      id: 'm2',
+      author: 'Ngọc Lan (Huế)',
+      avatar: '/images/speaker_2.png',
+      time: '14:30',
+      text: 'Thầy cho em hỏi chính sách học bổng OJT và cam kết việc làm của Đại học Phú Xuân năm nay thế nào ạ?',
+    },
+    {
+      id: 'm3',
+      author: 'Ban Tuyển sinh PXU',
+      avatar: '/images/advisor_avatar.png',
+      time: '14:31',
+      text: 'Chào Lan! PXU cam kết 100% sinh viên CNTT được thực tập doanh nghiệp có lương và học bổng 50-100%!',
+      isAdvisor: true,
+    },
+    {
+      id: 'm4',
+      author: 'Quốc Huy (Đà Nẵng)',
+      avatar: '/images/avatar_user.png',
+      time: '14:32',
+      text: 'Cho em hỏi điểm chuẩn ngành Trí tuệ nhân tạo dự kiến năm 2026 khoảng bao nhiêu điểm ạ?',
+    },
+  ]);
+
+  // Rolling chat simulator
+  useEffect(() => {
+    if (activeTab !== 3) return;
+    const pool = [
+      { author: 'Trần Minh Quân (Đà Nẵng)', text: 'Em được 24.5đ khối A00 có cơ hội đỗ CNTT không ạ?' },
+      { author: 'Ban Tư vấn Tuyển sinh', text: 'Chào Quân! 24.5đ em hoàn toàn yên tâm nộp nguyện vọng 1 nhé!', isAdvisor: true },
+      { author: 'Lê Hoàng Yến (Quảng Trị)', text: 'Thầy cho em hỏi học phí ngành Kinh tế đối ngoại có tăng không ạ?' },
+      { author: 'TS. Lê Thành Trung', text: 'Chào Yến! Học phí được giữ ổn định và cam kết không tăng quá 8%/năm!', isAdvisor: true },
+      { author: 'Nguyễn Đăng Khoa (Hà Nội)', text: 'Có thể xét đồng thời kết quả thi ĐGNL và điểm thi tốt nghiệp không thầy?' },
+      { author: 'Phạm Thu Trang (Nghệ An)', text: 'Hồ sơ xét tuyển sớm bao gồm những giấy tờ gì cần công chứng ạ?' },
+    ];
+    let poolIdx = 0;
+    const interval = setInterval(() => {
+      const item = pool[poolIdx % pool.length];
+      poolIdx++;
+      const now = new Date();
+      const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      const newMsg: LiveMessage = {
+        id: `m-${Date.now()}`,
+        author: item.author,
+        avatar: item.isAdvisor ? '/images/advisor_avatar.png' : '/images/avatar_user.png',
+        time: timeStr,
+        text: item.text,
+        isAdvisor: item.isAdvisor,
+      };
+      setLiveMessages((prev) => [...prev.slice(-7), newMsg]);
+      if (liveChatContainerRef.current) {
+        liveChatContainerRef.current.scrollTop = liveChatContainerRef.current.scrollHeight;
+      }
+    }, 4500);
+    return () => clearInterval(interval);
+  }, [activeTab]);
+
+  const handleSendLiveMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!liveChatInput.trim()) return;
+    const now = new Date();
+    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const userMsg: LiveMessage = {
+      id: `m-usr-${Date.now()}`,
+      author: user.name || 'Trần Công Quý',
+      avatar: '/images/avatar_user.png',
+      time: timeStr,
+      text: liveChatInput.trim(),
+    };
+    setLiveMessages((prev) => [...prev.slice(-7), userMsg]);
+    setLiveChatInput('');
+    showToast('Đã gửi bình luận vào phòng trực tiếp!');
+    if (liveChatContainerRef.current) {
+      setTimeout(() => {
+        if (liveChatContainerRef.current) {
+          liveChatContainerRef.current.scrollTop = liveChatContainerRef.current.scrollHeight;
+        }
+      }, 50);
+    }
+  };
+
+  // =========================================================================
+  // TAB 4: PROFILE & APPLICATIONS STATE
+  // =========================================================================
+  const [appFilterStatus, setAppFilterStatus] = useState<string>('Tất cả');
+  const filteredApps = useMemo(() => {
+    if (appFilterStatus === 'Tất cả') return applications;
+    return applications.filter((app) => app.status === appFilterStatus);
+  }, [applications, appFilterStatus]);
 
   const navLinks = [
     { id: 0, label: 'Trang chủ', icon: <Home size={18} /> },
     { id: 1, label: 'Khảo sát Holland', icon: <Compass size={18} /> },
-    { id: 2, label: 'AI Matching', icon: <Sparkles size={18} /> },
-    { id: 3, label: 'Sự kiện & Live', icon: <Radio size={18} /> },
+    { id: 2, label: 'AI Matching 2026', icon: <Sparkles size={18} /> },
+    { id: 3, label: 'Unipath LIVE', icon: <Radio size={18} /> },
     { id: 4, label: 'Hồ sơ xét tuyển', icon: <User size={18} /> },
   ];
 
@@ -82,7 +403,9 @@ export const DesktopView: React.FC = () => {
         flexDirection: 'column',
       }}
     >
-      {/* 1. TOP HEADER & NAVIGATION BAR */}
+      {/* ===================================================================== */}
+      {/* 1. TOP STICKY HEADER & NAVIGATION BAR                                */}
+      {/* ===================================================================== */}
       <header
         style={{
           position: 'sticky',
@@ -95,16 +418,16 @@ export const DesktopView: React.FC = () => {
       >
         <div
           style={{
-            maxWidth: '1360px',
+            maxWidth: '1380px',
             margin: '0 auto',
             padding: '12px 24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: '20px',
+            gap: '16px',
           }}
         >
-          {/* Logo & Edition Tag */}
+          {/* Brand Logo & Edition Badge */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div
               onClick={() => setActiveTab(0)}
@@ -117,10 +440,10 @@ export const DesktopView: React.FC = () => {
             >
               <div
                 style={{
-                  width: '40px',
-                  height: '40px',
+                  width: '42px',
+                  height: '42px',
                   borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                  background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -128,14 +451,14 @@ export const DesktopView: React.FC = () => {
                   boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
                 }}
               >
-                <GraduationCap size={22} />
+                <GraduationCap size={24} />
               </div>
               <div>
-                <div style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.5px', color: '#1E293B', lineHeight: 1.1 }}>
+                <div style={{ fontSize: '21px', fontWeight: 900, letterSpacing: '-0.5px', color: '#0F172A', lineHeight: 1.1 }}>
                   Uni<span style={{ color: '#2563EB' }}>Path</span>
                 </div>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748B', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
-                  Phiên bản Laptop & Desktop
+                <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#64748B', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
+                  Hệ Sinh Thái Tuyển Sinh 2.0
                 </div>
               </div>
             </div>
@@ -148,7 +471,7 @@ export const DesktopView: React.FC = () => {
                 padding: '4px 10px',
                 borderRadius: '8px',
                 fontSize: '11px',
-                fontWeight: 700,
+                fontWeight: 800,
                 display: 'flex',
                 alignItems: 'center',
                 gap: '5px',
@@ -160,7 +483,7 @@ export const DesktopView: React.FC = () => {
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <nav style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             {navLinks.map((tab) => {
               const active = activeTab === tab.id;
               return (
@@ -180,7 +503,7 @@ export const DesktopView: React.FC = () => {
                     backgroundColor: active ? '#EFF6FF' : 'transparent',
                     color: active ? '#2563EB' : '#475569',
                     fontSize: '13.5px',
-                    fontWeight: active ? 700 : 600,
+                    fontWeight: active ? 800 : 600,
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
                   }}
@@ -193,27 +516,30 @@ export const DesktopView: React.FC = () => {
                 >
                   {tab.icon}
                   <span>{tab.label}</span>
+                  {tab.id === 2 && (
+                    <span style={{ backgroundColor: '#DBEAFE', color: '#1D4ED8', fontSize: '10px', padding: '1px 6px', borderRadius: '6px', fontWeight: 800 }}>
+                      AI
+                    </span>
+                  )}
+                  {tab.id === 3 && (
+                    <span style={{ backgroundColor: '#FEE2E2', color: '#DC2626', fontSize: '10px', padding: '1px 6px', borderRadius: '6px', fontWeight: 800 }}>
+                      LIVE
+                    </span>
+                  )}
                 </button>
               );
             })}
           </nav>
 
-          {/* Search bar & Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Search bar & Action Buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             {/* Quick search input */}
-            <div
-              style={{
-                position: 'relative',
-                width: '240px',
-                display: 'none',
-              }}
-              className="desktop-search-wrapper"
-            >
+            <div style={{ position: 'relative', width: '220px' }}>
               <Search
-                size={16}
+                size={15}
                 style={{
                   position: 'absolute',
-                  left: '12px',
+                  left: '10px',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   color: '#94A3B8',
@@ -221,17 +547,17 @@ export const DesktopView: React.FC = () => {
               />
               <input
                 type="text"
-                value={localSearch}
+                value={desktopSearch}
                 onChange={(e) => {
-                  setLocalSearch(e.target.value);
+                  setDesktopSearch(e.target.value);
                   setSearchKeyword(e.target.value);
                 }}
-                placeholder="Tìm trường, ngành..."
+                placeholder="Tìm trường, mã trường..."
                 style={{
                   width: '100%',
-                  height: '38px',
-                  paddingLeft: '36px',
-                  paddingRight: '12px',
+                  height: '36px',
+                  paddingLeft: '32px',
+                  paddingRight: desktopSearch ? '28px' : '10px',
                   borderRadius: '10px',
                   border: '1px solid #E2E8F0',
                   backgroundColor: '#F8FAFC',
@@ -239,37 +565,107 @@ export const DesktopView: React.FC = () => {
                   outline: 'none',
                 }}
               />
+              {desktopSearch && (
+                <button
+                  onClick={() => {
+                    setDesktopSearch('');
+                    setSearchKeyword('');
+                  }}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: '#94A3B8',
+                    cursor: 'pointer',
+                    padding: 0,
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              )}
+
+              {/* Autocomplete dropdown */}
+              {searchMatches.length > 0 && desktopSearch.trim() && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '42px',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '12px',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                    border: '1px solid #E2E8F0',
+                    zIndex: 100,
+                    overflow: 'hidden',
+                  }}
+                >
+                  {searchMatches.map((m) => (
+                    <div
+                      key={m.id}
+                      onClick={() => {
+                        openUniDetail(m.id);
+                        setDesktopSearch('');
+                        setSearchKeyword('');
+                      }}
+                      style={{
+                        padding: '8px 12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid #F1F5F9',
+                        fontSize: '12.5px',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#EFF6FF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#FFFFFF';
+                      }}
+                    >
+                      <strong style={{ color: '#2563EB' }}>{m.code}</strong>
+                      <span style={{ color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {m.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* ONE-CLICK BUTTON TO SWITCH BACK TO MOBILE */}
+            {/* 1-CLICK TOGGLE BUTTON TO SWITCH TO MOBILE */}
             <button
               onClick={() => setViewMode('mobile')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
+                gap: '7px',
+                padding: '8px 15px',
                 borderRadius: '10px',
-                backgroundColor: '#1E293B',
+                backgroundColor: '#0F172A',
                 color: '#FFFFFF',
                 border: 'none',
-                fontSize: '13px',
+                fontSize: '12.5px',
                 fontWeight: 700,
                 cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
-                transition: 'all 0.2s',
+                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)',
+                transition: 'all 0.15s ease',
               }}
-              title="Nhấn để chuyển sang màn hình điện thoại"
+              title="Nhấn để chuyển sang giao diện điện thoại (Mobile View)"
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#0F172A';
+                e.currentTarget.style.backgroundColor = '#1E293B';
                 e.currentTarget.style.transform = 'translateY(-1px)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#1E293B';
+                e.currentTarget.style.backgroundColor = '#0F172A';
                 e.currentTarget.style.transform = 'translateY(0px)';
               }}
             >
-              <Smartphone size={16} />
+              <Smartphone size={15} />
               <span>Chuyển sang Mobile 📱</span>
             </button>
 
@@ -278,8 +674,8 @@ export const DesktopView: React.FC = () => {
               onClick={openNotifications}
               aria-label="Thông báo"
               style={{
-                width: '38px',
-                height: '38px',
+                width: '36px',
+                height: '36px',
                 borderRadius: '10px',
                 backgroundColor: '#F1F5F9',
                 border: '1px solid #E2E8F0',
@@ -291,12 +687,12 @@ export const DesktopView: React.FC = () => {
                 position: 'relative',
               }}
             >
-              <Bell size={18} />
+              <Bell size={17} />
               <span
                 style={{
                   position: 'absolute',
-                  top: '8px',
-                  right: '8px',
+                  top: '7px',
+                  right: '7px',
                   width: '7px',
                   height: '7px',
                   borderRadius: '50%',
@@ -305,13 +701,13 @@ export const DesktopView: React.FC = () => {
               />
             </button>
 
-            {/* AI Chatbot */}
+            {/* AI Assistant Chatbot */}
             <button
               onClick={openChatBot}
-              aria-label="UniPath AI Assistant"
+              aria-label="Trợ lý AI UniPath"
               style={{
-                width: '38px',
-                height: '38px',
+                width: '36px',
+                height: '36px',
                 borderRadius: '10px',
                 backgroundColor: '#EFF6FF',
                 border: '1px solid #BFDBFE',
@@ -321,8 +717,9 @@ export const DesktopView: React.FC = () => {
                 cursor: 'pointer',
                 color: '#2563EB',
               }}
+              title="Mở Trợ lý AI Tuyển sinh 24/7"
             >
-              <Bot size={18} />
+              <Bot size={17} />
             </button>
 
             {/* User Profile or Demo Login */}
@@ -332,60 +729,80 @@ export const DesktopView: React.FC = () => {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '9px',
+                  gap: '8px',
                   padding: '4px 10px',
                   borderRadius: '10px',
                   backgroundColor: '#F8FAFC',
                   border: '1px solid #E2E8F0',
                   cursor: 'pointer',
                 }}
+                title="Xem hồ sơ thí sinh"
               >
                 <div
                   style={{
-                    width: '30px',
-                    height: '30px',
+                    width: '28px',
+                    height: '28px',
                     borderRadius: '8px',
                     backgroundColor: '#2563EB',
                     color: '#FFFFFF',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontWeight: 700,
-                    fontSize: '13px',
+                    fontWeight: 800,
+                    fontSize: '12px',
                   }}
                 >
                   {user.name.charAt(0)}
                 </div>
                 <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
                   <div style={{ fontSize: '12px', fontWeight: 700, color: '#1E293B' }}>{user.name}</div>
-                  <div style={{ fontSize: '10px', color: '#64748B' }}>Thí sinh THPT</div>
+                  <div style={{ fontSize: '10px', color: '#64748B' }}>{profile.school || 'THPT Quốc Học Huế'}</div>
                 </div>
               </div>
             ) : (
-              <button
-                onClick={loginDemo}
-                style={{
-                  padding: '7px 14px',
-                  borderRadius: '10px',
-                  backgroundColor: '#2563EB',
-                  color: '#FFFFFF',
-                  border: 'none',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
-              >
-                Đăng nhập Demo
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <button
+                  onClick={loginDemo}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: '#2563EB',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  ⚡ Đăng nhập Demo
+                </button>
+                <button
+                  onClick={openAuthModal}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: '#FFFFFF',
+                    color: '#1E293B',
+                    border: '1px solid #E2E8F0',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Đăng nhập
+                </button>
+              </div>
             )}
           </div>
         </div>
       </header>
 
-      {/* 2. DESKTOP MAIN CONTAINER */}
-      <div
+      {/* ===================================================================== */}
+      {/* 2. MAIN DESKTOP BODY CONTAINER                                       */}
+      {/* ===================================================================== */}
+      <main
         style={{
-          maxWidth: '1360px',
+          maxWidth: '1380px',
           margin: '0 auto',
           padding: '24px',
           width: '100%',
@@ -393,544 +810,626 @@ export const DesktopView: React.FC = () => {
           flex: 1,
         }}
       >
-        {/* Render Tab Contents or Dedicated Desktop Home */}
-        {activeTab === 0 ? (
+        {/* =================================================================== */}
+        {/* TAB 0: TRANG CHỦ DESKTOP                                            */}
+        {/* =================================================================== */}
+        {activeTab === 0 && (
           <div>
-            {/* ============================================================== */}
-            {/* HERO TEST BANNER WITH THE REQUESTED "HELLO" MESSAGE           */}
-            {/* ============================================================== */}
-            <section
-              style={{
-                borderRadius: '20px',
-                background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 50%, #3B82F6 100%)',
-                color: '#FFFFFF',
-                padding: '36px 40px',
-                boxShadow: '0 12px 36px rgba(37, 99, 235, 0.25)',
-                position: 'relative',
-                overflow: 'hidden',
-                marginBottom: '32px',
-              }}
-            >
-              {/* Background ambient accents */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '-40px',
-                  right: '-40px',
-                  width: '260px',
-                  height: '260px',
-                  borderRadius: '50%',
-                  background: 'radial-gradient(circle, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 70%)',
-                  pointerEvents: 'none',
-                }}
-              />
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '-50px',
-                  left: '20%',
-                  width: '200px',
-                  height: '200px',
-                  borderRadius: '50%',
-                  background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%)',
-                  pointerEvents: 'none',
-                }}
-              />
-
-              <div style={{ position: 'relative', zIndex: 2, maxWidth: '850px' }}>
-                {/* Hello test badge */}
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '6px 14px',
-                    borderRadius: '999px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-                    backdropFilter: 'blur(8px)',
-                    border: '1px solid rgba(255, 255, 255, 0.3)',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    marginBottom: '16px',
-                  }}
-                >
-                  <Sparkles size={16} />
-                  <span>DESKTOP MODE TEST: ACTIVE</span>
-                </div>
-
-                {/* THE PROMINENT "HELLO" HEADLINE */}
-                <h1
-                  style={{
-                    fontSize: '34px',
-                    fontWeight: 900,
-                    letterSpacing: '-0.8px',
-                    lineHeight: 1.25,
-                    marginBottom: '14px',
-                    color: '#FFFFFF',
-                  }}
-                >
-                  👋 Hello! Chào mừng bạn đến với Giao diện Desktop / Laptop
-                </h1>
-
-                <p
-                  style={{
-                    fontSize: '16px',
-                    lineHeight: 1.6,
-                    color: '#E0E7FF',
-                    marginBottom: '24px',
-                    fontWeight: 400,
-                  }}
-                >
-                  Bạn đã kích hoạt thành công chế độ màn hình lớn dành riêng cho máy tính và laptop.
-                  Tại đây, dữ liệu được trình bày dạng lưới rộng rãi, tối ưu cho việc tra cứu thông tin trường đại học,
-                  làm khảo sát hướng nghiệp Holland và phân tích cơ hội trúng tuyển bằng AI.
-                </p>
-
-                {/* Test Action Buttons */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '14px' }}>
-                  {/* Button to toggle back to mobile */}
-                  <button
-                    onClick={() => setViewMode('mobile')}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '9px',
-                      padding: '12px 22px',
-                      borderRadius: '12px',
-                      backgroundColor: '#FFFFFF',
-                      color: '#1E3A8A',
-                      border: 'none',
-                      fontSize: '14px',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
-                      transition: 'transform 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0px)';
-                    }}
-                  >
-                    <Smartphone size={18} />
-                    <span>📱 Thử bấm chuyển về Mobile</span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab(1)}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '9px',
-                      padding: '12px 22px',
-                      borderRadius: '12px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.16)',
-                      color: '#FFFFFF',
-                      border: '1px solid rgba(255, 255, 255, 0.4)',
-                      fontSize: '14px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      backdropFilter: 'blur(8px)',
-                    }}
-                  >
-                    <Compass size={18} />
-                    <span>Làm trắc nghiệm Holland</span>
-                  </button>
-
-                  <button
-                    onClick={openChatBot}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '9px',
-                      padding: '12px 22px',
-                      borderRadius: '12px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.16)',
-                      color: '#FFFFFF',
-                      border: '1px solid rgba(255, 255, 255, 0.4)',
-                      fontSize: '14px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      backdropFilter: 'blur(8px)',
-                    }}
-                  >
-                    <Bot size={18} />
-                    <span>Mở Trợ lý AI Unipath</span>
-                  </button>
-                </div>
-              </div>
-            </section>
-
-            {/* 3. DESKTOP METRIC CARDS (4 COLUMNS) */}
+            {/* 1. HERO SLIDER BANNER (3 SLIDES - WIDESCREEN OPTIMIZED) */}
             <div
+              onMouseEnter={() => setIsHomeSlideHovered(true)}
+              onMouseLeave={() => setIsHomeSlideHovered(false)}
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-                gap: '18px',
-                marginBottom: '36px',
+                position: 'relative',
+                height: '240px',
+                borderRadius: '24px',
+                overflow: 'hidden',
+                boxShadow: '0 10px 30px rgba(37, 99, 235, 0.16)',
+                marginBottom: '28px',
               }}
             >
-              {/* Metric 1 */}
+              {/* Slide 1: AI Test */}
               <div
                 style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '16px',
-                  padding: '20px',
-                  border: '1px solid #E2E8F0',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '16px',
-                }}
-              >
-                <div
-                  style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '12px',
-                    backgroundColor: '#EFF6FF',
-                    color: '#2563EB',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Award size={24} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '24px', fontWeight: 800, color: '#1E293B' }}>100+</div>
-                  <div style={{ fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Trường Đại học chuẩn hóa</div>
-                </div>
-              </div>
-
-              {/* Metric 2 */}
-              <div
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '16px',
-                  padding: '20px',
-                  border: '1px solid #E2E8F0',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '16px',
-                }}
-              >
-                <div
-                  style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '12px',
-                    backgroundColor: '#ECFDF5',
-                    color: '#10B981',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <TrendingUp size={24} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '24px', fontWeight: 800, color: '#1E293B' }}>94.8%</div>
-                  <div style={{ fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Tỉ lệ việc làm sau tốt nghiệp</div>
-                </div>
-              </div>
-
-              {/* Metric 3 */}
-              <div
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '16px',
-                  padding: '20px',
-                  border: '1px solid #E2E8F0',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '16px',
-                }}
-              >
-                <div
-                  style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '12px',
-                    backgroundColor: '#FFFBEB',
-                    color: '#F59E0B',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Compass size={24} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '24px', fontWeight: 800, color: '#1E293B' }}>6 Nhóm</div>
-                  <div style={{ fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Định hướng nghề RIASEC</div>
-                </div>
-              </div>
-
-              {/* Metric 4 */}
-              <div
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '16px',
-                  padding: '20px',
-                  border: '1px solid #E2E8F0',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '16px',
-                }}
-              >
-                <div
-                  style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '12px',
-                    backgroundColor: '#FAF5FF',
-                    color: '#9333EA',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Sparkles size={24} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '24px', fontWeight: 800, color: '#1E293B' }}>AI Match</div>
-                  <div style={{ fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Phân tích điểm chuẩn tự động</div>
-                </div>
-              </div>
-            </div>
-
-            {/* 4. DESKTOP UNIVERSITY EXPLORER */}
-            <div style={{ marginBottom: '28px' }}>
-              <div
-                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 55%, #06B6D4 100%)',
+                  padding: '28px 40px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  gap: '16px',
-                  marginBottom: '20px',
+                  gap: '24px',
+                  opacity: homeSlide === 0 ? 1 : 0,
+                  pointerEvents: homeSlide === 0 ? 'auto' : 'none',
+                  transition: 'opacity 0.5s ease',
                 }}
               >
-                <div>
-                  <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#1E293B', marginBottom: '4px' }}>
-                    Danh sách các trường Đại học tiêu biểu
-                  </h2>
-                  <p style={{ fontSize: '14px', color: '#64748B' }}>
-                    Hiển thị {filteredUnis.length} trường đại học hàng đầu Việt Nam
-                  </p>
-                </div>
-
-                {/* Region filters & Search */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                  {/* Search input in toolbar */}
-                  <div style={{ position: 'relative', width: '220px' }}>
-                    <Search
-                      size={15}
-                      style={{
-                        position: 'absolute',
-                        left: '10px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        color: '#94A3B8',
-                      }}
-                    />
-                    <input
-                      type="text"
-                      value={localSearch}
-                      onChange={(e) => setLocalSearch(e.target.value)}
-                      placeholder="Tìm trường, mã trường..."
-                      style={{
-                        width: '100%',
-                        height: '36px',
-                        paddingLeft: '32px',
-                        paddingRight: '10px',
-                        borderRadius: '8px',
-                        border: '1px solid #CBD5E1',
-                        fontSize: '13px',
-                        outline: 'none',
-                        boxSizing: 'border-box',
-                      }}
-                    />
-                  </div>
-
-                  {/* Region pills */}
-                  {['Tất cả', 'Bắc', 'Trung', 'Nam'].map((reg) => (
-                    <button
-                      key={reg}
-                      onClick={() => setSelectedRegion(reg)}
-                      style={{
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        border: selectedRegion === reg ? '1px solid #2563EB' : '1px solid #CBD5E1',
-                        backgroundColor: selectedRegion === reg ? '#2563EB' : '#FFFFFF',
-                        color: selectedRegion === reg ? '#FFFFFF' : '#475569',
-                        fontSize: '13px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      {reg === 'Tất cả' ? 'Toàn quốc' : `Miền ${reg}`}
-                    </button>
-                  ))}
-
-                  {/* Open compare modal button */}
-                  <button
-                    onClick={openCompareModal}
+                <div style={{ flex: 1, maxWidth: '680px', zIndex: 2 }}>
+                  <div
                     style={{
-                      display: 'flex',
+                      display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      border: '1px solid #E2E8F0',
+                      backgroundColor: 'rgba(255,255,255,0.2)',
+                      backdropFilter: 'blur(6px)',
+                      color: '#FFFFFF',
+                      padding: '4px 12px',
+                      borderRadius: '12px',
+                      fontSize: '11.5px',
+                      fontWeight: 800,
+                      marginBottom: '10px',
+                    }}
+                  >
+                    <Sparkles size={14} />
+                    <span>AI HƯỚNG NGHIỆP ĐỘT PHÁ 2026</span>
+                  </div>
+                  <h2
+                    style={{
+                      fontSize: '24px',
+                      fontWeight: 900,
+                      color: '#FFFFFF',
+                      lineHeight: 1.25,
+                      margin: '0 0 8px',
+                      letterSpacing: '-0.3px',
+                    }}
+                  >
+                    Khám phá Ngành học Chuẩn Tương lai cùng AI
+                  </h2>
+                  <p style={{ margin: '0 0 16px', fontSize: '14px', color: '#E0F2FE', lineHeight: 1.5 }}>
+                    Thuật toán tâm lý học Holland RIASEC kết hợp trí tuệ nhân tạo đối soát 30 trường Đại học danh tiếng.
+                  </p>
+                  <button
+                    onClick={() => setActiveTab(1)}
+                    style={{
+                      height: '40px',
+                      padding: '0 20px',
+                      borderRadius: '20px',
                       backgroundColor: '#FFFFFF',
-                      color: '#2563EB',
+                      color: '#1D4ED8',
+                      border: 'none',
+                      fontWeight: 800,
                       fontSize: '13px',
-                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+                    }}
+                  >
+                    <span>Bắt đầu làm bài test</span>
+                    <ArrowRight size={15} />
+                  </button>
+                </div>
+
+                <div
+                  style={{
+                    width: '160px',
+                    height: '150px',
+                    borderRadius: '18px',
+                    overflow: 'hidden',
+                    border: '2px solid rgba(255,255,255,0.4)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                    flexShrink: 0,
+                  }}
+                >
+                  <img
+                    src="/images/home_hero_art.png"
+                    alt="AI Hướng nghiệp"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/images/career_header.png';
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Slide 2: Virtual EduFair */}
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'linear-gradient(135deg, #7C3AED 0%, #4F46E5 55%, #06B6D4 100%)',
+                  padding: '28px 40px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '24px',
+                  opacity: homeSlide === 1 ? 1 : 0,
+                  pointerEvents: homeSlide === 1 ? 'auto' : 'none',
+                  transition: 'opacity 0.5s ease',
+                }}
+              >
+                <div style={{ flex: 1, maxWidth: '680px', zIndex: 2 }}>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      backgroundColor: '#EF4444',
+                      color: '#FFFFFF',
+                      padding: '4px 12px',
+                      borderRadius: '12px',
+                      fontSize: '11.5px',
+                      fontWeight: 800,
+                      marginBottom: '10px',
+                    }}
+                  >
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#FFFFFF' }} />
+                    <span>TRỰC TIẾP HÔM NAY</span>
+                  </div>
+                  <h2
+                    style={{
+                      fontSize: '24px',
+                      fontWeight: 900,
+                      color: '#FFFFFF',
+                      lineHeight: 1.25,
+                      margin: '0 0 8px',
+                      letterSpacing: '-0.3px',
+                    }}
+                  >
+                    Virtual EduFair 2026: Giao lưu 30 Trường ĐH
+                  </h2>
+                  <p style={{ margin: '0 0 16px', fontSize: '14px', color: '#EDE9FE', lineHeight: 1.5 }}>
+                    Gặp gỡ đại diện 30 trường đại học hàng đầu, tư vấn phương thức xét tuyển sớm và học bổng tới 50%.
+                  </p>
+                  <button
+                    onClick={() => setActiveTab(3)}
+                    style={{
+                      height: '40px',
+                      padding: '0 20px',
+                      borderRadius: '20px',
+                      backgroundColor: '#FFFFFF',
+                      color: '#4F46E5',
+                      border: 'none',
+                      fontWeight: 800,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+                    }}
+                  >
+                    <span>Tham gia phòng Live ngay</span>
+                    <ArrowRight size={15} />
+                  </button>
+                </div>
+
+                <div
+                  style={{
+                    width: '160px',
+                    height: '150px',
+                    borderRadius: '18px',
+                    overflow: 'hidden',
+                    border: '2px solid rgba(255,255,255,0.4)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                    flexShrink: 0,
+                  }}
+                >
+                  <img
+                    src="/images/home_banner_edufair.png"
+                    alt="Virtual EduFair"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/images/career_header.png';
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Slide 3: VIP Membership */}
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'linear-gradient(135deg, #B45309 0%, #D97706 50%, #F59E0B 100%)',
+                  padding: '28px 40px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '24px',
+                  opacity: homeSlide === 2 ? 1 : 0,
+                  pointerEvents: homeSlide === 2 ? 'auto' : 'none',
+                  transition: 'opacity 0.5s ease',
+                }}
+              >
+                <div style={{ flex: 1, maxWidth: '680px', zIndex: 2 }}>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      backgroundColor: 'rgba(255,255,255,0.22)',
+                      backdropFilter: 'blur(6px)',
+                      color: '#FFFFFF',
+                      padding: '4px 12px',
+                      borderRadius: '12px',
+                      fontSize: '11.5px',
+                      fontWeight: 800,
+                      marginBottom: '10px',
+                    }}
+                  >
+                    <span>⭐ ĐẶC QUYỀN HỘI VIÊN VIP</span>
+                  </div>
+                  <h2
+                    style={{
+                      fontSize: '24px',
+                      fontWeight: 900,
+                      color: '#FFFFFF',
+                      lineHeight: 1.25,
+                      margin: '0 0 8px',
+                      letterSpacing: '-0.3px',
+                    }}
+                  >
+                    Trợ lý AI Tuyển sinh Thông minh 24/7
+                  </h2>
+                  <p style={{ margin: '0 0 16px', fontSize: '14px', color: '#FEF3C7', lineHeight: 1.5 }}>
+                    Phân tích điểm chuẩn, giải đáp học phí và gợi ý nguyện vọng xét tuyển chính xác cho từng thí sinh.
+                  </p>
+                  <button
+                    onClick={openChatBot}
+                    style={{
+                      height: '40px',
+                      padding: '0 20px',
+                      borderRadius: '20px',
+                      backgroundColor: '#FFFFFF',
+                      color: '#B45309',
+                      border: 'none',
+                      fontWeight: 800,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+                    }}
+                  >
+                    <span>Mở Trợ lý AI Tuyển sinh</span>
+                    <ArrowRight size={15} />
+                  </button>
+                </div>
+
+                <div
+                  style={{
+                    width: '160px',
+                    height: '150px',
+                    borderRadius: '18px',
+                    overflow: 'hidden',
+                    border: '2px solid rgba(255,255,255,0.4)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                    flexShrink: 0,
+                  }}
+                >
+                  <img
+                    src="/images/home_banner_vip.png"
+                    alt="VIP"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/images/career_header.png';
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Slider Dots */}
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '12px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  display: 'flex',
+                  gap: '6px',
+                  zIndex: 10,
+                }}
+              >
+                {[0, 1, 2].map((idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setHomeSlide(idx)}
+                    style={{
+                      width: homeSlide === idx ? '22px' : '7px',
+                      height: '6px',
+                      borderRadius: '3px',
+                      backgroundColor: homeSlide === idx ? '#FFFFFF' : 'rgba(255,255,255,0.45)',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* 2. FOUR CORE FEATURE CARDS (4-COLUMN GRID) */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: '16px',
+                marginBottom: '32px',
+              }}
+            >
+              {/* Card 1: RIASEC */}
+              <div
+                onClick={() => setActiveTab(1)}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '18px',
+                  padding: '20px',
+                  border: '1px solid #E2E8F0',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-3px)';
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(37,99,235,0.1)';
+                  e.currentTarget.style.borderColor = '#BFDBFE';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0px)';
+                  e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.03)';
+                  e.currentTarget.style.borderColor = '#E2E8F0';
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Compass size={22} />
+                  </div>
+                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#2563EB', backgroundColor: '#EFF6FF', padding: '3px 8px', borderRadius: '6px' }}>
+                    HOT
+                  </span>
+                </div>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1E293B', marginBottom: '6px' }}>
+                  Trắc nghiệm RIASEC
+                </h3>
+                <p style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.4, margin: 0 }}>
+                  Holland 6 nhóm tính cách & định hướng ngành học phù hợp
+                </p>
+              </div>
+
+              {/* Card 2: AI Matching */}
+              <div
+                onClick={() => setActiveTab(2)}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '18px',
+                  padding: '20px',
+                  border: '1px solid #E2E8F0',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-3px)';
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(16,185,129,0.1)';
+                  e.currentTarget.style.borderColor = '#A7F3D0';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0px)';
+                  e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.03)';
+                  e.currentTarget.style.borderColor = '#E2E8F0';
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#ECFDF5', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Sparkles size={22} />
+                  </div>
+                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#10B981', backgroundColor: '#ECFDF5', padding: '3px 8px', borderRadius: '6px' }}>
+                    AI 2026
+                  </span>
+                </div>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1E293B', marginBottom: '6px' }}>
+                  AI Matching 2026
+                </h3>
+                <p style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.4, margin: 0 }}>
+                  Dự đoán xác suất trúng tuyển 30 trường theo điểm & học phí
+                </p>
+              </div>
+
+              {/* Card 3: Unipath LIVE */}
+              <div
+                onClick={() => setActiveTab(3)}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '18px',
+                  padding: '20px',
+                  border: '1px solid #E2E8F0',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-3px)';
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(239,68,68,0.1)';
+                  e.currentTarget.style.borderColor = '#FECACA';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0px)';
+                  e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.03)';
+                  e.currentTarget.style.borderColor = '#E2E8F0';
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#FEF2F2', color: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Radio size={22} />
+                  </div>
+                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#EF4444', backgroundColor: '#FEF2F2', padding: '3px 8px', borderRadius: '6px' }}>
+                    LIVE NOW
+                  </span>
+                </div>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1E293B', marginBottom: '6px' }}>
+                  Unipath LIVE
+                </h3>
+                <p style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.4, margin: 0 }}>
+                  Giao lưu ban tuyển sinh trực tuyến & giải đáp thắc mắc 1-1
+                </p>
+              </div>
+
+              {/* Card 4: Lộ trình THPT */}
+              <div
+                onClick={() => openCareerPath()}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '18px',
+                  padding: '20px',
+                  border: '1px solid #E2E8F0',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-3px)';
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(147,51,234,0.1)';
+                  e.currentTarget.style.borderColor = '#E9D5FF';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0px)';
+                  e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.03)';
+                  e.currentTarget.style.borderColor = '#E2E8F0';
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#FAF5FF', color: '#9333EA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <GraduationCap size={22} />
+                  </div>
+                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#9333EA', backgroundColor: '#FAF5FF', padding: '3px 8px', borderRadius: '6px' }}>
+                    THPT 2026
+                  </span>
+                </div>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1E293B', marginBottom: '6px' }}>
+                  Lộ trình Phát triển THPT
+                </h3>
+                <p style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.4, margin: 0 }}>
+                  Khung năng lực, kỹ năng nghề nghiệp và bản đồ 4 năm ĐH
+                </p>
+              </div>
+            </div>
+
+            {/* 3. "TRƯỜNG GỢI Ý CHO BẠN" SHOWCASE (HORIZONTAL CAROUSEL) */}
+            <div style={{ marginBottom: '36px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '20px' }}>🔥</span>
+                  <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                    Trường gợi ý cho bạn
+                  </h2>
+                  <span style={{ fontSize: '12px', color: '#64748B', marginLeft: '6px' }}>
+                    (Top 8 trường tiêu biểu 3 miền)
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => {
+                      if (featuredScrollRef.current) {
+                        featuredScrollRef.current.scrollBy({ left: -320, behavior: 'smooth' });
+                      }
+                    }}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      backgroundColor: '#FFFFFF',
+                      border: '1px solid #E2E8F0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       cursor: 'pointer',
                     }}
                   >
-                    <Scale size={15} />
-                    <span>So sánh trường</span>
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (featuredScrollRef.current) {
+                        featuredScrollRef.current.scrollBy({ left: 320, behavior: 'smooth' });
+                      }
+                    }}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      backgroundColor: '#FFFFFF',
+                      border: '1px solid #E2E8F0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <ChevronRight size={16} />
                   </button>
                 </div>
               </div>
 
-              {/* Desktop University Grid (3 columns on widescreen) */}
+              {/* Scrollable track */}
               <div
+                ref={featuredScrollRef}
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))',
-                  gap: '20px',
+                  display: 'flex',
+                  gap: '16px',
+                  overflowX: 'auto',
+                  paddingBottom: '8px',
+                  scrollbarWidth: 'none',
                 }}
               >
-                {filteredUnis.slice(0, 9).map((uni) => {
+                {featuredUnis.map((uni) => {
                   const compared = isCompared(uni.id);
-                  const isFav = favoriteIds.includes(uni.id);
-
                   return (
                     <div
                       key={uni.id}
                       style={{
+                        minWidth: '290px',
+                        width: '290px',
                         backgroundColor: '#FFFFFF',
                         borderRadius: '16px',
                         border: '1px solid #E2E8F0',
-                        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.04)',
-                        padding: '20px',
+                        boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
+                        padding: '16px',
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'space-between',
-                        gap: '14px',
-                        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-3px)';
-                        e.currentTarget.style.boxShadow = '0 10px 24px rgba(0, 0, 0, 0.08)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0px)';
-                        e.currentTarget.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.04)';
+                        flexShrink: 0,
                       }}
                     >
-                      {/* Top Header of Card */}
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-                        <UniversityAvatar code={uni.code} name={uni.name} size={50} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                        <UniversityAvatar code={uni.code} size={42} />
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                            <span
-                              style={{
-                                backgroundColor: '#EFF6FF',
-                                color: '#2563EB',
-                                fontSize: '11px',
-                                fontWeight: 800,
-                                padding: '2px 8px',
-                                borderRadius: '6px',
-                              }}
-                            >
-                              {uni.code}
-                            </span>
-                            <span style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                              <MapPin size={12} />
-                              {uni.loc}
-                            </span>
-                          </div>
-                          <h3
-                            style={{
-                              fontSize: '15.5px',
-                              fontWeight: 700,
-                              color: '#1E293B',
-                              lineHeight: 1.3,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
+                          <div style={{ fontSize: '11px', color: '#2563EB', fontWeight: 800 }}>{uni.code} • {uni.region}</div>
+                          <div style={{ fontSize: '14px', fontWeight: 800, color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {uni.name}
-                          </h3>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Info snippet */}
-                      <p
-                        style={{
-                          fontSize: '13px',
-                          color: '#64748B',
-                          lineHeight: 1.45,
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {uni.desc}
-                      </p>
-
-                      {/* Specs pills */}
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '12px',
-                          padding: '10px 12px',
-                          backgroundColor: '#F8FAFC',
-                          borderRadius: '10px',
-                          fontSize: '12px',
-                        }}
-                      >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', padding: '8px 10px', backgroundColor: '#F8FAFC', borderRadius: '10px', marginBottom: '12px' }}>
                         <div>
-                          <span style={{ color: '#64748B' }}>Điểm chuẩn 2024: </span>
-                          <strong style={{ color: '#2563EB' }}>{uni.score2024} điểm</strong>
+                          <span style={{ color: '#64748B' }}>Điểm chuẩn: </span>
+                          <strong style={{ color: '#2563EB' }}>{uni.score2024}đ</strong>
                         </div>
-                        <div style={{ width: '1px', height: '14px', backgroundColor: '#CBD5E1' }} />
                         <div>
-                          <span style={{ color: '#64748B' }}>Học phí: </span>
-                          <strong style={{ color: '#059669' }}>{uni.tuitionMin}-{uni.tuitionMax} tr/năm</strong>
+                          <span style={{ color: '#64748B' }}>Đánh giá: </span>
+                          <strong style={{ color: '#F59E0B' }}>⭐ {uni.rating}</strong>
                         </div>
                       </div>
 
-                      {/* Card Action Buttons */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
                         <Button
                           variant="primary"
                           size="S"
+                          fullWidth
                           onClick={() => openUniDetail(uni.id)}
-                          style={{ flex: 1 }}
                         >
                           Xem chi tiết
                         </Button>
-
                         <button
                           onClick={() => toggleCompare(uni.id)}
                           style={{
-                            padding: '8px 12px',
+                            padding: '6px 12px',
                             borderRadius: '8px',
-                            border: compared ? '1px solid #2563EB' : '1px solid #CBD5E1',
+                            border: compared ? '1px solid #2563EB' : '1px solid #E2E8F0',
                             backgroundColor: compared ? '#EFF6FF' : '#FFFFFF',
                             color: compared ? '#2563EB' : '#475569',
                             fontSize: '12px',
@@ -940,22 +1439,6 @@ export const DesktopView: React.FC = () => {
                         >
                           {compared ? 'Đã thêm' : 'So sánh'}
                         </button>
-
-                        <button
-                          onClick={() => toggleFavorite(uni.id)}
-                          aria-label="Thêm vào yêu thích"
-                          style={{
-                            padding: '8px 10px',
-                            borderRadius: '8px',
-                            border: isFav ? '1px solid #FCA5A5' : '1px solid #CBD5E1',
-                            backgroundColor: isFav ? '#FEF2F2' : '#FFFFFF',
-                            color: isFav ? '#EF4444' : '#64748B',
-                            fontSize: '12px',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {isFav ? '❤️' : '🤍'}
-                        </button>
                       </div>
                     </div>
                   );
@@ -963,186 +1446,1443 @@ export const DesktopView: React.FC = () => {
               </div>
             </div>
 
-            {/* 5. BOTTOM DESKTOP NOTICE BAR */}
-            <div
-              style={{
-                backgroundColor: '#EFF6FF',
-                border: '1px solid #BFDBFE',
-                borderRadius: '16px',
-                padding: '20px 24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '16px',
-                marginTop: '16px',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                <div
-                  style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '10px',
-                    backgroundColor: '#2563EB',
-                    color: '#FFFFFF',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <BookOpen size={20} />
-                </div>
+            {/* 4. ALL 30 UNIVERSITIES DIRECTORY (WIDESCREEN 3-COLUMN GRID) */}
+            <div>
+              {/* Toolbar & Filters */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '16px',
+                  marginBottom: '20px',
+                  paddingBottom: '16px',
+                  borderBottom: '1px solid #E2E8F0',
+                }}
+              >
                 <div>
-                  <h4 style={{ fontSize: '15px', fontWeight: 800, color: '#1E3A8A', marginBottom: '2px' }}>
-                    UniPath - Nền tảng tư vấn tuyển sinh đại học hàng đầu
-                  </h4>
-                  <p style={{ fontSize: '13px', color: '#3B82F6' }}>
-                    Hỗ trợ chuyển đổi giao diện linh hoạt giữa Laptop / PC và Điện thoại chỉ với 1 nút bấm.
+                  <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A', margin: '0 0 4px' }}>
+                    Danh sách 30 Trường Đại học tiêu biểu
+                  </h2>
+                  <p style={{ margin: 0, fontSize: '13.5px', color: '#64748B' }}>
+                    Tìm thấy {filteredUnis.length} trường theo bộ lọc hiện tại
                   </p>
                 </div>
-              </div>
 
-              <button
-                onClick={() => setViewMode('mobile')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 20px',
-                  borderRadius: '10px',
-                  backgroundColor: '#2563EB',
-                  color: '#FFFFFF',
-                  border: 'none',
-                  fontSize: '13.5px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
-              >
-                <Smartphone size={16} />
-                <span>Chuyển về giao diện Điện thoại 📱</span>
-              </button>
-            </div>
-          </div>
-        ) : (
-          /* Render the active tab inside wide desktop layout wrapper */
-          <div
-            style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: '20px',
-              border: '1px solid #E2E8F0',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
-              padding: '28px',
-              minHeight: '75vh',
-            }}
-          >
-            {/* Header for current active tab */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '24px',
-                paddingBottom: '16px',
-                borderBottom: '1px solid #F1F5F9',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div
-                  style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '10px',
-                    backgroundColor: '#EFF6FF',
-                    color: '#2563EB',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {navLinks.find((t) => t.id === activeTab)?.icon}
-                </div>
-                <div>
-                  <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#1E293B' }}>
-                    {navLinks.find((t) => t.id === activeTab)?.label}
-                  </h2>
-                  <span style={{ fontSize: '12px', color: '#64748B' }}>
-                    Chế độ hiển thị màn hình rộng (Desktop View)
-                  </span>
+                {/* Region Filter Buttons */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {[
+                    { key: 'Tất cả', label: 'Toàn quốc (30)' },
+                    { key: 'Bắc', label: 'Miền Bắc (10)' },
+                    { key: 'Trung', label: 'Miền Trung (10)' },
+                    { key: 'Nam', label: 'Miền Nam (10)' },
+                  ].map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setSelectedRegion(tab.key)}
+                      style={{
+                        padding: '7px 16px',
+                        borderRadius: '10px',
+                        border: selectedRegion === tab.key ? '1px solid #2563EB' : '1px solid #E2E8F0',
+                        backgroundColor: selectedRegion === tab.key ? '#2563EB' : '#FFFFFF',
+                        color: selectedRegion === tab.key ? '#FFFFFF' : '#475569',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+
+                  {compareIds.length > 0 && (
+                    <button
+                      onClick={openCompareModal}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '7px 16px',
+                        borderRadius: '10px',
+                        backgroundColor: '#EFF6FF',
+                        border: '1px solid #BFDBFE',
+                        color: '#2563EB',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Scale size={15} />
+                      <span>So sánh ({compareIds.length})</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
-              <button
-                onClick={() => setActiveTab(0)}
+              {/* University Cards Grid (3 Columns) */}
+              <div
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '6px 14px',
-                  borderRadius: '8px',
-                  border: '1px solid #E2E8F0',
-                  backgroundColor: '#F8FAFC',
-                  color: '#475569',
-                  fontSize: '12.5px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '20px',
+                  marginBottom: '28px',
                 }}
               >
-                <span>Về Trang chủ Desktop</span>
-                <ArrowRight size={14} />
-              </button>
-            </div>
+                {filteredUnis.slice(0, desktopVisibleCount).map((uni) => {
+                  const compared = isCompared(uni.id);
+                  const isFav = favoriteIds.includes(uni.id);
 
-            {/* Tab Body */}
-            <div>
-              {activeTab === 1 && <QuizTab />}
-              {activeTab === 2 && <MatchingTab />}
-              {activeTab === 3 && <LiveTab />}
-              {activeTab === 4 && <ProfileTab />}
+                  return (
+                    <div
+                      key={uni.id}
+                      style={{
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '20px',
+                        border: '1px solid #E2E8F0',
+                        boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-3px)';
+                        e.currentTarget.style.boxShadow = '0 10px 24px rgba(0,0,0,0.07)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0px)';
+                        e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.03)';
+                      }}
+                    >
+                      {/* Campus Cover Image */}
+                      <div style={{ height: '140px', position: 'relative', backgroundColor: '#CBD5E1' }}>
+                        <ImageSafe
+                          src={`/images/campus_${uni.code.toLowerCase()}.jpg`}
+                          fallbackSrc="/images/campus_default.png"
+                          altText={uni.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                        {/* Region & Code badge overlay */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: '12px',
+                            left: '12px',
+                            backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                            backdropFilter: 'blur(4px)',
+                            color: '#FFFFFF',
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                          }}
+                        >
+                          {uni.code} • Miền {uni.region}
+                        </div>
+
+                        {/* Favorite button */}
+                        <button
+                          onClick={() => toggleFavorite(uni.id)}
+                          aria-label="Yêu thích"
+                          style={{
+                            position: 'absolute',
+                            top: '10px',
+                            right: '10px',
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            backgroundColor: '#FFFFFF',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            color: isFav ? '#EF4444' : '#64748B',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                          }}
+                        >
+                          <Heart size={16} fill={isFav ? '#EF4444' : 'none'} />
+                        </button>
+                      </div>
+
+                      {/* Content Info */}
+                      <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                          <UniversityAvatar code={uni.code} size={36} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <h3
+                              style={{
+                                margin: 0,
+                                fontSize: '15.5px',
+                                fontWeight: 800,
+                                color: '#0F172A',
+                                lineHeight: 1.3,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {uni.name}
+                            </h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#64748B' }}>
+                              <MapPin size={12} color="#94A3B8" />
+                              <span>{uni.loc}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Metric pills */}
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(3, 1fr)',
+                            gap: '6px',
+                            backgroundColor: '#F8FAFC',
+                            borderRadius: '12px',
+                            padding: '8px',
+                            textAlign: 'center',
+                            margin: '10px 0 14px',
+                            border: '1px solid #E2E8F0',
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#2563EB' }}>
+                              {uni.score2024}đ
+                            </div>
+                            <div style={{ fontSize: '10.5px', color: '#64748B' }}>Điểm chuẩn</div>
+                          </div>
+                          <div style={{ borderLeft: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0' }}>
+                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#059669' }}>
+                              {uni.tuitionMin}tr
+                            </div>
+                            <div style={{ fontSize: '10.5px', color: '#64748B' }}>Học phí/năm</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#F59E0B' }}>
+                              ⭐ {uni.rating}
+                            </div>
+                            <div style={{ fontSize: '10.5px', color: '#64748B' }}>Đánh giá</div>
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>
+                          <Button
+                            variant="primary"
+                            size="M"
+                            fullWidth
+                            onClick={() => openUniDetail(uni.id)}
+                          >
+                            Chi tiết trường
+                          </Button>
+                          <button
+                            onClick={() => toggleCompare(uni.id)}
+                            style={{
+                              padding: '8px 14px',
+                              borderRadius: '10px',
+                              border: compared ? '1.5px solid #2563EB' : '1px solid #E2E8F0',
+                              backgroundColor: compared ? '#EFF6FF' : '#FFFFFF',
+                              color: compared ? '#2563EB' : '#475569',
+                              fontSize: '12.5px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {compared ? 'Đã thêm' : 'So sánh'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Pagination control */}
+              {desktopVisibleCount < filteredUnis.length && (
+                <div style={{ textAlign: 'center', margin: '20px 0 32px' }}>
+                  <button
+                    onClick={() => setDesktopVisibleCount((prev) => prev + 12)}
+                    style={{
+                      padding: '12px 28px',
+                      borderRadius: '14px',
+                      backgroundColor: '#FFFFFF',
+                      border: '1.5px solid #CBD5E1',
+                      color: '#1E293B',
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+                    }}
+                  >
+                    Xem thêm 12 trường tiếp theo ({filteredUnis.length - desktopVisibleCount} trường còn lại) ↓
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
-      </div>
 
-      {/* 6. DESKTOP FOOTER */}
+        {/* =================================================================== */}
+        {/* TAB 1: KHẢO SÁT HOLLAND RIASEC DESKTOP                               */}
+        {/* =================================================================== */}
+        {activeTab === 1 && (
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '24px',
+              border: '1px solid #E2E8F0',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+              padding: '32px',
+              minHeight: '70vh',
+            }}
+          >
+            {/* Mode 1: Intro */}
+            {quizMode === 'intro' && (
+              <div style={{ maxWidth: '960px', margin: '0 auto', textAlign: 'center' }}>
+                <div
+                  style={{
+                    width: '140px',
+                    height: '140px',
+                    margin: '0 auto 20px',
+                    borderRadius: '28px',
+                    overflow: 'hidden',
+                    boxShadow: '0 10px 24px rgba(37,99,235,0.18)',
+                  }}
+                >
+                  <img
+                    src="/images/career_header.png"
+                    alt="Holland RIASEC"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </div>
+                <h1 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', marginBottom: '8px' }}>
+                  Khám phá Tính cách & Hướng nghiệp RIASEC
+                </h1>
+                <p style={{ fontSize: '15px', color: '#64748B', maxWidth: '640px', margin: '0 auto 28px', lineHeight: 1.6 }}>
+                  Bài trắc nghiệm tâm lý học chuẩn Hoa Kỳ 12 câu hỏi giúp bạn xác định xu hướng nghề nghiệp nổi trội và tìm ra những ngành học, ngôi trường đại học phù hợp nhất.
+                </p>
+
+                {/* 3 Metric Pills */}
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '36px' }}>
+                  <div style={{ backgroundColor: '#F8FAFC', padding: '16px 28px', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
+                    <div style={{ fontSize: '22px', fontWeight: 900, color: '#2563EB' }}>12</div>
+                    <div style={{ fontSize: '13px', color: '#64748B' }}>Câu hỏi tiêu chuẩn</div>
+                  </div>
+                  <div style={{ backgroundColor: '#F8FAFC', padding: '16px 28px', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
+                    <div style={{ fontSize: '22px', fontWeight: 900, color: '#10B981' }}>5</div>
+                    <div style={{ fontSize: '13px', color: '#64748B' }}>Phút hoàn thành</div>
+                  </div>
+                  <div style={{ backgroundColor: '#F8FAFC', padding: '16px 28px', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
+                    <div style={{ fontSize: '22px', fontWeight: 900, color: '#F59E0B' }}>6</div>
+                    <div style={{ fontSize: '13px', color: '#64748B' }}>Nhóm RIASEC</div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleStartQuiz}
+                  style={{
+                    padding: '14px 36px',
+                    borderRadius: '16px',
+                    backgroundColor: '#2563EB',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    fontSize: '16px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 16px rgba(37,99,235,0.3)',
+                  }}
+                >
+                  Bắt đầu làm bài trắc nghiệm ngay →
+                </button>
+              </div>
+            )}
+
+            {/* Mode 2: Taking Quiz */}
+            {quizMode === 'taking' && (
+              <div style={{ maxWidth: '820px', margin: '0 auto' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                  <button
+                    onClick={() => {
+                      if (quizIdx > 0) setQuizIdx((prev) => prev - 1);
+                      else setQuizMode('intro');
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'none',
+                      border: 'none',
+                      color: '#64748B',
+                      fontSize: '13.5px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <ArrowLeft size={16} />
+                    <span>Quay lại</span>
+                  </button>
+                  <span style={{ fontSize: '14px', fontWeight: 800, color: '#2563EB' }}>
+                    Câu {quizIdx + 1} / {QUIZ_QUESTIONS.length}
+                  </span>
+                </div>
+
+                {/* Progress bar */}
+                <div style={{ height: '8px', backgroundColor: '#F1F5F9', borderRadius: '4px', overflow: 'hidden', marginBottom: '28px' }}>
+                  <div
+                    style={{
+                      width: `${((quizIdx + 1) / QUIZ_QUESTIONS.length) * 100}%`,
+                      height: '100%',
+                      backgroundColor: '#2563EB',
+                      transition: 'width 0.3s ease',
+                    }}
+                  />
+                </div>
+
+                {/* Question */}
+                <div style={{ backgroundColor: '#F8FAFC', borderRadius: '20px', padding: '24px 28px', border: '1px solid #E2E8F0', marginBottom: '24px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 800, color: '#2563EB', backgroundColor: '#EFF6FF', padding: '3px 10px', borderRadius: '6px' }}>
+                    Nhóm Holland: {QUIZ_QUESTIONS[quizIdx].category}
+                  </span>
+                  <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', marginTop: '12px', lineHeight: 1.4 }}>
+                    {QUIZ_QUESTIONS[quizIdx].question}
+                  </h2>
+                </div>
+
+                {/* 4 Options Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px', marginBottom: '28px' }}>
+                  {QUIZ_OPTIONS.map((opt, optIdx) => {
+                    const isSelected = quizAnswers[quizIdx] === optIdx;
+                    return (
+                      <div
+                        key={optIdx}
+                        onClick={() => handleSelectQuizOption(optIdx)}
+                        style={{
+                          backgroundColor: isSelected ? '#EFF6FF' : '#FFFFFF',
+                          border: isSelected ? '2px solid #2563EB' : '1px solid #E2E8F0',
+                          borderRadius: '16px',
+                          padding: '16px 20px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <div style={{ flexShrink: 0 }}>{opt.icon}</div>
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: isSelected ? '#1D4ED8' : '#1E293B' }}>
+                            {opt.title}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
+                            {opt.sub}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Action button */}
+                <div style={{ textAlign: 'right' }}>
+                  <button
+                    disabled={quizAnswers[quizIdx] === -1}
+                    onClick={handleNextQuiz}
+                    style={{
+                      padding: '12px 28px',
+                      borderRadius: '12px',
+                      backgroundColor: quizAnswers[quizIdx] === -1 ? '#CBD5E1' : '#2563EB',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      fontSize: '14px',
+                      fontWeight: 800,
+                      cursor: quizAnswers[quizIdx] === -1 ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {quizIdx === QUIZ_QUESTIONS.length - 1 ? 'Hoàn thành bài khảo sát 🎉' : 'Câu tiếp theo →'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Mode 3: Result */}
+            {quizMode === 'result' && hollandResult && (
+              <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: '32px', alignItems: 'start' }}>
+                {/* Left: Radar Chart */}
+                <div style={{ backgroundColor: '#F8FAFC', borderRadius: '20px', padding: '24px', border: '1px solid #E2E8F0', textAlign: 'center' }}>
+                  <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#0F172A', marginBottom: '12px' }}>
+                    Biểu đồ Radar 6 nhóm tính cách
+                  </h3>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+                    <RadarChart scores={hollandResult.scores} size={300} />
+                  </div>
+
+                  <div style={{ backgroundColor: '#EFF6FF', borderRadius: '12px', padding: '12px', marginBottom: '16px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 900, color: '#1D4ED8' }}>
+                      Mã {hollandResult.primaryCode} — {getHollandName(hollandResult.primaryCode)}
+                    </div>
+                    <div style={{ fontSize: '12.5px', color: '#64748B', marginTop: '4px' }}>
+                      Top 3 nhóm nổi trội: {hollandResult.topCodes.join(' - ')}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <Button
+                      variant="primary"
+                      size="M"
+                      fullWidth
+                      onClick={() => openCareerPath(hollandResult.primaryCode)}
+                    >
+                      Xem lộ trình phát triển nghề nghiệp
+                    </Button>
+                    <button
+                      onClick={clearHollandResult}
+                      style={{
+                        padding: '10px',
+                        borderRadius: '10px',
+                        border: '1px solid #E2E8F0',
+                        backgroundColor: '#FFFFFF',
+                        color: '#64748B',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Làm lại bài khảo sát
+                    </button>
+                  </div>
+                </div>
+
+                {/* Right: Scores breakdown & Recommended Majors */}
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', marginBottom: '16px' }}>
+                    Chi tiết điểm số 6 nhóm Holland
+                  </h3>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
+                    {(['R', 'I', 'A', 'S', 'E', 'C'] as HollandCode[]).map((code) => {
+                      const score = hollandResult.scores[code];
+                      const isTop = hollandResult.topCodes.includes(code);
+                      return (
+                        <div
+                          key={code}
+                          style={{
+                            padding: '12px 16px',
+                            borderRadius: '12px',
+                            backgroundColor: isTop ? '#EFF6FF' : '#F8FAFC',
+                            border: isTop ? '1.5px solid #93C5FD' : '1px solid #E2E8F0',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 800, color: isTop ? '#1D4ED8' : '#1E293B' }}>
+                              {code} - {HOLLAND_NAMES[code]}
+                            </span>
+                            <strong style={{ fontSize: '13px', color: isTop ? '#1D4ED8' : '#64748B' }}>{score}/6 điểm</strong>
+                          </div>
+                          <div style={{ height: '6px', backgroundColor: '#E2E8F0', borderRadius: '3px', overflow: 'hidden' }}>
+                            <div style={{ width: `${(score / 6) * 100}%`, height: '100%', backgroundColor: isTop ? '#2563EB' : '#94A3B8' }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', marginBottom: '12px' }}>
+                    Chuyên ngành & Trường ĐH gợi ý cho bạn
+                  </h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
+                    {HOLLAND_MAJORS[hollandResult.primaryCode]?.map((major, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          backgroundColor: '#F1F5F9',
+                          color: '#334155',
+                          padding: '6px 14px',
+                          borderRadius: '20px',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          border: '1px solid #E2E8F0',
+                        }}
+                      >
+                        {major}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div style={{ padding: '16px 20px', borderRadius: '16px', backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 800, color: '#166534' }}>
+                        Khám phá ngay cơ hội trúng tuyển cùng AI
+                      </div>
+                      <div style={{ fontSize: '12.5px', color: '#15803D' }}>
+                        Dùng kết quả tính cách này để phân loại 30 trường phù hợp với mức điểm của bạn
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab(2)}
+                      style={{
+                        padding: '8px 18px',
+                        borderRadius: '10px',
+                        backgroundColor: '#16A34A',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Sang AI Match →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* =================================================================== */}
+        {/* TAB 2: AI MATCHING 2026 DESKTOP                                     */}
+        {/* =================================================================== */}
+        {activeTab === 2 && (
+          <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '28px', alignItems: 'start' }}>
+            {/* Left Column: Controls & Sliders */}
+            <div
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '20px',
+                border: '1px solid #E2E8F0',
+                padding: '24px',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+                position: 'sticky',
+                top: '80px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px' }}>
+                <Sliders size={20} color="#2563EB" />
+                <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                  Thiết lập thông số phân tích
+                </h3>
+              </div>
+
+              {/* Điểm thi dự kiến */}
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>Điểm thi THPT dự kiến</label>
+                  <strong style={{ fontSize: '16px', fontWeight: 900, color: '#2563EB' }}>{matchScore.toFixed(1)} đ</strong>
+                </div>
+                <input
+                  type="range"
+                  min="15.0"
+                  max="30.0"
+                  step="0.25"
+                  value={matchScore}
+                  onChange={(e) => setMatchScore(parseFloat(e.target.value))}
+                  style={{ width: '100%', accentColor: '#2563EB' }}
+                />
+                <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                  {[18, 21, 24, 27, 29].map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setMatchScore(p)}
+                      style={{
+                        flex: 1,
+                        padding: '4px 0',
+                        borderRadius: '6px',
+                        border: matchScore === p ? '1px solid #2563EB' : '1px solid #E2E8F0',
+                        backgroundColor: matchScore === p ? '#EFF6FF' : '#F8FAFC',
+                        color: matchScore === p ? '#2563EB' : '#64748B',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {p}đ
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ngân sách học phí */}
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>Ngân sách học phí tối đa</label>
+                  <strong style={{ fontSize: '16px', fontWeight: 900, color: '#059669' }}>{matchBudget} tr/năm</strong>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="60"
+                  step="5"
+                  value={matchBudget}
+                  onChange={(e) => setMatchBudget(parseInt(e.target.value))}
+                  style={{ width: '100%', accentColor: '#059669' }}
+                />
+                <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                  {[15, 25, 35, 50].map((b) => (
+                    <button
+                      key={b}
+                      onClick={() => setMatchBudget(b)}
+                      style={{
+                        flex: 1,
+                        padding: '4px 0',
+                        borderRadius: '6px',
+                        border: matchBudget === b ? '1px solid #059669' : '1px solid #E2E8F0',
+                        backgroundColor: matchBudget === b ? '#ECFDF5' : '#F8FAFC',
+                        color: matchBudget === b ? '#059669' : '#64748B',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {b}tr
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Khu vực ưu tiên */}
+              <div style={{ marginBottom: '22px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '8px' }}>
+                  Khu vực ưu tiên
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                  {['Tất cả', 'Bắc', 'Trung', 'Nam'].map((reg) => (
+                    <button
+                      key={reg}
+                      onClick={() => setMatchRegion(reg)}
+                      style={{
+                        padding: '6px 0',
+                        borderRadius: '8px',
+                        border: matchRegion === reg ? '1px solid #2563EB' : '1px solid #E2E8F0',
+                        backgroundColor: matchRegion === reg ? '#2563EB' : '#F8FAFC',
+                        color: matchRegion === reg ? '#FFFFFF' : '#475569',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {reg}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Submit analyze button */}
+              <button
+                disabled={isMatchLoading}
+                onClick={handleEvaluateMatching}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '12px',
+                  backgroundColor: '#2563EB',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  fontSize: '14px',
+                  fontWeight: 800,
+                  cursor: isMatchLoading ? 'wait' : 'pointer',
+                  boxShadow: '0 4px 14px rgba(37,99,235,0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                }}
+              >
+                <Sparkles size={16} />
+                <span>{isMatchLoading ? 'Đang đối soát 30 trường...' : 'Phân tích cơ hội trúng tuyển ngay'}</span>
+              </button>
+            </div>
+
+            {/* Right Column: AI Results Display */}
+            <div>
+              {!hasMatchEvaluated ? (
+                <div
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '20px',
+                    border: '1px solid #E2E8F0',
+                    padding: '48px 32px',
+                    textAlign: 'center',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+                  }}
+                >
+                  <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                    <Sparkles size={32} />
+                  </div>
+                  <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', marginBottom: '8px' }}>
+                    Chưa có dữ liệu phân tích
+                  </h3>
+                  <p style={{ fontSize: '14px', color: '#64748B', maxWidth: '480px', margin: '0 auto 20px', lineHeight: 1.5 }}>
+                    Vui lòng điều chỉnh mức điểm thi dự kiến và ngân sách học phí ở bảng bên trái, sau đó nhấn nút <strong>"Phân tích cơ hội trúng tuyển ngay"</strong>.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  {/* Summary bar */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', padding: '14px 20px', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
+                    <div style={{ fontSize: '14px', color: '#1E293B' }}>
+                      Đối soát: <strong style={{ color: '#2563EB' }}>{matchScore}đ</strong> • Học phí: <strong style={{ color: '#059669' }}>{matchBudget}tr/năm</strong>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#64748B' }}>Sắp xếp:</span>
+                      <select
+                        value={matchSort}
+                        onChange={(e) => setMatchSort(e.target.value as 'score' | 'budget' | 'location')}
+                        style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '12.5px' }}
+                      >
+                        <option value="score">Tỷ lệ trúng tuyển cao nhất</option>
+                        <option value="budget">Học phí thấp nhất</option>
+                        <option value="location">Khu vực</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Group 1: An Toàn (>85%) */}
+                  <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1.5px solid #BBF7D0', padding: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#10B981' }} />
+                        <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#166534' }}>
+                          🟢 Nhóm An Toàn (Tỷ lệ trúng tuyển &gt; 85%)
+                        </h3>
+                      </div>
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: '#166534', backgroundColor: '#DCFCE7', padding: '2px 8px', borderRadius: '6px' }}>
+                        {evaluation.safeList.length} trường
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                      {sortResults(evaluation.safeList).map((res) => (
+                        <div key={res.university.id} style={{ padding: '14px', borderRadius: '14px', backgroundColor: '#F0FDF4', border: '1px solid #DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <DonutChart percent={res.matchingPercent} size={44} strokeWidth={4.5} />
+                            <div>
+                              <strong style={{ fontSize: '14px', color: '#14532D' }}>{res.university.code}</strong>
+                              <div style={{ fontSize: '12px', color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>
+                                {res.university.name}
+                              </div>
+                            </div>
+                          </div>
+                          <Button variant="primary" size="S" onClick={() => openUniDetail(res.university.id)}>
+                            Chi tiết
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Group 2: Vừa Sức (65% - 85%) */}
+                  <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1.5px solid #FDE68A', padding: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#F59E0B' }} />
+                        <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#92400E' }}>
+                          🟡 Nhóm Vừa Sức (Tỷ lệ 65% - 85%)
+                        </h3>
+                      </div>
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: '#92400E', backgroundColor: '#FEF3C7', padding: '2px 8px', borderRadius: '6px' }}>
+                        {evaluation.moderateList.length} trường
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                      {sortResults(evaluation.moderateList).map((res) => (
+                        <div key={res.university.id} style={{ padding: '14px', borderRadius: '14px', backgroundColor: '#FFFBEB', border: '1px solid #FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <DonutChart percent={res.matchingPercent} size={44} strokeWidth={4.5} />
+                            <div>
+                              <strong style={{ fontSize: '14px', color: '#78350F' }}>{res.university.code}</strong>
+                              <div style={{ fontSize: '12px', color: '#92400E', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>
+                                {res.university.name}
+                              </div>
+                            </div>
+                          </div>
+                          <Button variant="primary" size="S" onClick={() => openUniDetail(res.university.id)}>
+                            Chi tiết
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Group 3: Thử Thách (<65%) */}
+                  <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1.5px solid #FECACA', padding: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#EF4444' }} />
+                        <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#991B1B' }}>
+                          🔴 Nhóm Thử Thách (Tỷ lệ &lt; 65%)
+                        </h3>
+                      </div>
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: '#991B1B', backgroundColor: '#FEE2E2', padding: '2px 8px', borderRadius: '6px' }}>
+                        {evaluation.challengingList.length} trường
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                      {sortResults(evaluation.challengingList).map((res) => (
+                        <div key={res.university.id} style={{ padding: '14px', borderRadius: '14px', backgroundColor: '#FEF2F2', border: '1px solid #FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <DonutChart percent={res.matchingPercent} size={44} strokeWidth={4.5} />
+                            <div>
+                              <strong style={{ fontSize: '14px', color: '#7F1D1D' }}>{res.university.code}</strong>
+                              <div style={{ fontSize: '12px', color: '#991B1B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>
+                                {res.university.name}
+                              </div>
+                            </div>
+                          </div>
+                          <Button variant="primary" size="S" onClick={() => openUniDetail(res.university.id)}>
+                            Chi tiết
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* =================================================================== */}
+        {/* TAB 3: UNIPATH LIVE (EDUFAIR STREAM) DESKTOP                        */}
+        {/* =================================================================== */}
+        {activeTab === 3 && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '24px', alignItems: 'start' }}>
+            {/* Left: Video Stage & Information */}
+            <div>
+              {/* 16:9 Video Canvas */}
+              <div
+                style={{
+                  position: 'relative',
+                  aspectRatio: '16/9',
+                  backgroundColor: '#0F172A',
+                  borderRadius: '24px',
+                  overflow: 'hidden',
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
+                  marginBottom: '18px',
+                }}
+              >
+                <img
+                  src="/images/live_stream_bg.png"
+                  alt="Live Stage"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/images/home_banner_edufair.png';
+                  }}
+                />
+
+                {/* Overlays */}
+                <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#EF4444', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 800 }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#FFFFFF' }} />
+                    <span>TRỰC TIẾP</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: 'rgba(0,0,0,0.6)', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 700 }}>
+                    <Users size={12} />
+                    <span>2,480 người xem</span>
+                  </div>
+                </div>
+
+                {/* Bottom title inside player */}
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '20px', background: 'linear-gradient(transparent, rgba(0,0,0,0.8))', color: '#FFFFFF' }}>
+                  <h2 style={{ margin: '0 0 4px', fontSize: '20px', fontWeight: 800 }}>
+                    Virtual EduFair 2026: Giải mã Cơ hội Xét tuyển Sớm & Học bổng 30 Trường ĐH
+                  </h2>
+                  <div style={{ fontSize: '13px', opacity: 0.9 }}>
+                    Diễn giả: TS. Lê Thành Trung • Đại diện Ban Tuyển sinh
+                  </div>
+                </div>
+              </div>
+
+              {/* Interaction bar */}
+              <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', padding: '16px 20px', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => setLiveReactions((prev) => ({ ...prev, like: prev.like + 1 }))}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}
+                  >
+                    <ThumbsUp size={15} color="#2563EB" />
+                    <span>Thích ({liveReactions.like})</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setLiveReactions((prev) => ({ ...prev, heart: prev.heart + 1 }));
+                      confetti({ particleCount: 30, spread: 50, origin: { x: 0.3, y: 0.6 } });
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}
+                  >
+                    <span>❤️ Thả tim ({liveReactions.heart})</span>
+                  </button>
+                  <button
+                    onClick={() => setLiveReactions((prev) => ({ ...prev, clap: prev.clap + 1 }))}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}
+                  >
+                    <span>👏 Vỗ tay ({liveReactions.clap})</span>
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(window.location.href);
+                    showToast('Đã sao chép liên kết phòng Live!');
+                  }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF', color: '#475569', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}
+                >
+                  <Share2 size={15} />
+                  <span>Chia sẻ</span>
+                </button>
+              </div>
+
+              {/* Participating Universities in EduFair */}
+              <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '20px', border: '1px solid #E2E8F0' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', marginBottom: '14px' }}>
+                  Gian hàng trực tuyến các trường tham gia hôm nay
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                  {UNIVERSITIES.slice(0, 8).map((u) => (
+                    <div
+                      key={u.id}
+                      onClick={() => openUniDetail(u.id)}
+                      style={{
+                        padding: '10px',
+                        borderRadius: '12px',
+                        border: '1px solid #F1F5F9',
+                        backgroundColor: '#F8FAFC',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <UniversityAvatar code={u.code} size={30} />
+                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12px', fontWeight: 700, color: '#1E293B' }}>
+                        {u.code}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Real-time Live Comments Chat */}
+            <div
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '24px',
+                border: '1px solid #E2E8F0',
+                display: 'flex',
+                flexDirection: 'column',
+                height: '620px',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>
+                  Bình luận trực tiếp ({liveMessages.length})
+                </div>
+                <span style={{ fontSize: '11px', color: '#10B981', fontWeight: 700 }}>● Đang kết nối</span>
+              </div>
+
+              {/* Messages container */}
+              <div
+                ref={liveChatContainerRef}
+                style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  padding: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                }}
+              >
+                {liveMessages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: '12px',
+                      backgroundColor: msg.isAdvisor ? '#EFF6FF' : '#F8FAFC',
+                      border: msg.isAdvisor ? '1px solid #BFDBFE' : '1px solid #E2E8F0',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <strong style={{ fontSize: '12.5px', color: msg.isAdvisor ? '#1D4ED8' : '#1E293B' }}>
+                        {msg.author}
+                      </strong>
+                      <span style={{ fontSize: '10.5px', color: '#94A3B8' }}>{msg.time}</span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '12.5px', color: '#334155', lineHeight: 1.4 }}>
+                      {msg.text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Chat Input */}
+              <form
+                onSubmit={handleSendLiveMessage}
+                style={{
+                  padding: '12px 16px',
+                  borderTop: '1px solid #F1F5F9',
+                  display: 'flex',
+                  gap: '8px',
+                  backgroundColor: '#FFFFFF',
+                }}
+              >
+                <input
+                  type="text"
+                  value={liveChatInput}
+                  onChange={(e) => setLiveChatInput(e.target.value)}
+                  placeholder="Đặt câu hỏi cho diễn giả..."
+                  style={{
+                    flex: 1,
+                    height: '38px',
+                    padding: '0 12px',
+                    borderRadius: '10px',
+                    border: '1px solid #CBD5E1',
+                    fontSize: '13px',
+                    outline: 'none',
+                  }}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    backgroundColor: '#2563EB',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Send size={16} />
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* =================================================================== */}
+        {/* TAB 4: HỒ SƠ XÉT TUYỂN & CÁ NHÂN DESKTOP                            */}
+        {/* =================================================================== */}
+        {activeTab === 4 && (
+          <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '28px', alignItems: 'start' }}>
+            {/* Left Column: Candidate Card */}
+            <div
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '20px',
+                border: '1px solid #E2E8F0',
+                padding: '24px',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+              }}
+            >
+              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                <div
+                  style={{
+                    width: '80px',
+                    height: '80px',
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    margin: '0 auto 12px',
+                    border: '3px solid #2563EB',
+                  }}
+                >
+                  <img
+                    src="/images/avatar_user.png"
+                    alt="Trần Công Quý"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </div>
+                <h3 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 900, color: '#0F172A' }}>
+                  {user.name || 'Trần Công Quý'}
+                </h3>
+                <div style={{ fontSize: '13px', color: '#64748B' }}>
+                  {profile.grade} • {profile.school || 'THPT Chuyên Quốc Học Huế'}
+                </div>
+                <div style={{ fontSize: '12px', color: '#94A3B8' }}>{profile.province || 'Thừa Thiên Huế'}</div>
+              </div>
+
+              {/* Stats */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '8px',
+                  backgroundColor: '#F8FAFC',
+                  borderRadius: '14px',
+                  padding: '12px 8px',
+                  textAlign: 'center',
+                  marginBottom: '20px',
+                  border: '1px solid #E2E8F0',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#2563EB' }}>
+                    {applications.length}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#64748B' }}>Hồ sơ nộp</div>
+                </div>
+                <div style={{ borderLeft: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0' }}>
+                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#10B981' }}>
+                    {favoriteIds.length}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#64748B' }}>Yêu thích</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#F59E0B' }}>
+                    {profile.expectedScore || 24.5}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#64748B' }}>Điểm dự kiến</div>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <button
+                  onClick={openEditProfile}
+                  style={{
+                    padding: '10px',
+                    borderRadius: '10px',
+                    backgroundColor: '#EFF6FF',
+                    color: '#2563EB',
+                    border: '1px solid #BFDBFE',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Chỉnh sửa thông tin hồ sơ
+                </button>
+                <button
+                  onClick={openSettings}
+                  style={{
+                    padding: '10px',
+                    borderRadius: '10px',
+                    backgroundColor: '#F8FAFC',
+                    color: '#334155',
+                    border: '1px solid #E2E8F0',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cài đặt & Bản quyền nhóm UP5
+                </button>
+                <button
+                  onClick={logout}
+                  style={{
+                    padding: '10px',
+                    borderRadius: '10px',
+                    backgroundColor: '#FEF2F2',
+                    color: '#DC2626',
+                    border: '1px solid #FECACA',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Đăng xuất tài khoản
+                </button>
+              </div>
+            </div>
+
+            {/* Right Column: Applications Manager */}
+            <div>
+              <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '24px', border: '1px solid #E2E8F0', boxShadow: '0 4px 16px rgba(0,0,0,0.03)', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
+                  <div>
+                    <h3 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800, color: '#0F172A' }}>
+                      Hồ sơ xét tuyển trực tuyến ({applications.length})
+                    </h3>
+                    <div style={{ fontSize: '13px', color: '#64748B' }}>
+                      Theo dõi tiến độ duyệt hồ sơ xét tuyển sớm đại học năm 2026
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={openAllApplications}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: '#EFF6FF',
+                      color: '#2563EB',
+                      border: '1px solid #BFDBFE',
+                      fontSize: '12.5px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Xem tất cả hồ sơ ({applications.length})
+                  </button>
+                </div>
+
+                {/* Status filter pills */}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '18px', flexWrap: 'wrap' }}>
+                  {['Tất cả', 'Đang xét duyệt', 'Hồ sơ hợp lệ', 'Thiếu hồ sơ', 'Đã hủy'].map((st) => (
+                    <button
+                      key={st}
+                      onClick={() => setAppFilterStatus(st)}
+                      style={{
+                        padding: '5px 12px',
+                        borderRadius: '8px',
+                        border: appFilterStatus === st ? '1px solid #2563EB' : '1px solid #E2E8F0',
+                        backgroundColor: appFilterStatus === st ? '#2563EB' : '#F8FAFC',
+                        color: appFilterStatus === st ? '#FFFFFF' : '#475569',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {st}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Applications list */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {filteredApps.map((app) => (
+                    <div
+                      key={app.id}
+                      style={{
+                        padding: '16px',
+                        borderRadius: '14px',
+                        border: '1px solid #E2E8F0',
+                        backgroundColor: '#F8FAFC',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <UniversityAvatar code={app.uniCode} size={42} />
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <strong style={{ fontSize: '14.5px', color: '#0F172A' }}>{app.uniName}</strong>
+                            <span style={{ fontSize: '11px', color: '#64748B' }}>Mã: {app.code}</span>
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#2563EB', fontWeight: 600, marginTop: '2px' }}>
+                            Ngành: {app.major}
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: '#94A3B8', marginTop: '2px' }}>
+                            Ngày nộp: {app.submittedAt}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span
+                          style={{
+                            fontSize: '12px',
+                            fontWeight: 800,
+                            padding: '4px 10px',
+                            borderRadius: '8px',
+                            backgroundColor:
+                              app.status === 'Đang xét duyệt'
+                                ? '#FEF3C7'
+                                : app.status === 'Hồ sơ hợp lệ'
+                                ? '#DCFCE7'
+                                : app.status === 'Thiếu hồ sơ'
+                                ? '#DBEAFE'
+                                : '#F1F5F9',
+                            color: app.statusColor || '#1E293B',
+                          }}
+                        >
+                          {app.status}
+                        </span>
+
+                        <Button
+                          variant="tonal"
+                          size="S"
+                          onClick={() => openApplicationDetail(app)}
+                        >
+                          Chi tiết
+                        </Button>
+
+                        {app.status === 'Đang xét duyệt' && (
+                          <button
+                            onClick={() => {
+                              if (window.confirm('Bạn có chắc chắn muốn hủy hồ sơ xét tuyển này không?')) {
+                                cancelApplication(app.id);
+                              }
+                            }}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: '8px',
+                              border: '1px solid #FECACA',
+                              backgroundColor: '#FEF2F2',
+                              color: '#DC2626',
+                              fontSize: '11.5px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Hủy hồ sơ
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* ===================================================================== */}
+      {/* 3. DESKTOP FOOTER                                                     */}
+      {/* ===================================================================== */}
       <footer
         style={{
           backgroundColor: '#FFFFFF',
           borderTop: '1px solid #E2E8F0',
-          padding: '24px',
+          padding: '24px 32px',
           marginTop: 'auto',
         }}
       >
         <div
           style={{
-            maxWidth: '1360px',
+            maxWidth: '1380px',
             margin: '0 auto',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
-            gap: '12px',
+            gap: '16px',
             fontSize: '13px',
             color: '#64748B',
           }}
         >
           <div>
-            © 2026 <strong>UniPath Vietnam</strong>. Hệ thống hỗ trợ định hướng & tuyển sinh Đại học thế hệ mới.
+            © 2026 <strong>UniPath Vietnam</strong>. Phát triển bởi <strong style={{ color: '#2563EB' }}>Trần Công Quý</strong> • Trưởng nhóm: <strong>Dương Đình Phát</strong> • Bản quyền thuộc <strong>Nhóm UP5 — Trường Đại học Phú Xuân (PXU)</strong>.
           </div>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-            <span>Đang xem: 💻 Giao diện Laptop / Desktop</span>
+            <span>Đang ở chế độ: 💻 Màn hình Laptop / Desktop</span>
             <button
               onClick={() => setViewMode('mobile')}
               style={{
                 background: 'none',
                 border: 'none',
                 color: '#2563EB',
-                fontWeight: 700,
+                fontWeight: 800,
                 cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
                 textDecoration: 'underline',
               }}
             >
-              Chuyển sang giao diện Mobile 📱
+              <span>Chuyển sang giao diện Mobile 📱</span>
             </button>
           </div>
         </div>

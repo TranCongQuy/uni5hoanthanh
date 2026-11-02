@@ -4,7 +4,7 @@ import { useApp } from '../../context/AppContext';
 import { Button } from '../common/UI';
 
 export const AuthScreen: React.FC = () => {
-  const { login, register, loginDemo } = useApp();
+  const { login, register, loginDemo, setViewMode } = useApp();
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [showPassword, setShowPassword] = useState(false);
@@ -82,6 +82,49 @@ export const AuthScreen: React.FC = () => {
         boxSizing: 'border-box',
       }}
     >
+      {/* Quick switcher to Desktop Mode */}
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '460px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '12px',
+        }}
+      >
+        <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 700 }}>
+          📱 Đang ở Chế độ Điện thoại (Mobile)
+        </span>
+        <button
+          type="button"
+          onClick={() => setViewMode('desktop')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            backgroundColor: '#0F172A',
+            color: '#FFFFFF',
+            border: 'none',
+            borderRadius: '20px',
+            padding: '5px 12px',
+            fontSize: '11.5px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#1E293B';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#0F172A';
+          }}
+        >
+          <span>💻 Sang màn hình Laptop</span>
+        </button>
+      </div>
+
       <div
         style={{
           width: '100%',

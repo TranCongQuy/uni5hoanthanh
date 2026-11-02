@@ -68,9 +68,10 @@ Dự án được xây dựng và hoàn thiện bởi **Nhóm UP5** thuộc **Tr
   - Theo dõi tiến độ hồ sơ theo 5 trạng thái phân định: **Đang xét duyệt**, **Hồ sơ hợp lệ**, **Thiếu hồ sơ**, **Đã hủy bởi thí sinh**, **Bị từ chối xét tuyển**.
   - Tính năng **Hủy hồ sơ xét tuyển** chủ động và an toàn khi hồ sơ đang trong trạng thái chờ duyệt.
 
-### 7. 📱 Trải nghiệm Mobile-First Chuẩn App Di Động
-- Thiết kế chuẩn tỉ lệ vàng công thái học cho điện thoại thông minh: Safe-area padding, Bottom Navigation Bar nổi bật, Slide-up Modals, Touch gestures.
-- Màn hình Khám phá (**Onboarding 3 bước**) giới thiệu các tính năng chủ đạo ngay khi truy cập.
+### 7. 📱 Trải nghiệm Đa Nền tảng: Mobile-First & Desktop Widescreen (1-Click Toggle)
+- **Chuyển đổi linh hoạt chỉ với 1 nút bấm:** Hỗ trợ nút chuyển đổi tức thì giữa giao diện Điện thoại (Mobile) và Laptop / Máy tính (Desktop Widescreen) bất kỳ lúc nào.
+- **Giao diện Mobile Chuẩn App:** Safe-area padding, Bottom Navigation Bar nổi bật, Slide-up Modals, Onboarding 3 bước và thao tác chạm vuốt công thái học.
+- **Giao diện Desktop Hoàn Thiện 100%:** Bố cục dạng lưới widescreen (3-4 cột), Hero Banner Slider full độ phân giải, bảng điều khiển AI Match 2 cột, sân khấu livestream 16:9 kèm chat tương tác thời gian thực, quản lý hồ sơ xét tuyển chi tiết.
 - Tính năng đăng nhập nhanh với **Tài khoản Demo thử nghiệm Trần Công Quý** tiện lợi cho ban giám khảo và người dùng trải nghiệm tức thì.
 
 ---
