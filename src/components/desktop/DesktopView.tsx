@@ -24,6 +24,7 @@ import {
   HelpCircle,
   ThumbsUp,
   Share2,
+  CheckCircle2,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useApp } from '../../context/AppContext';
@@ -75,6 +76,120 @@ interface LiveMessage {
   time: string;
   text: string;
   isAdvisor?: boolean;
+}
+
+interface FloatingParticle {
+  id: number;
+  emoji: string;
+  xOffset: number;
+  rotation: number;
+}
+
+// ==========================================
+// Web Audio API Synthesizer for Live Stream Reactions
+// ==========================================
+class SoundFX {
+  private static ctx: AudioContext | null = null;
+
+  private static getContext(): AudioContext | null {
+    try {
+      if (!this.ctx) {
+        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        this.ctx = new AudioCtx();
+      }
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+      return this.ctx;
+    } catch {
+      return null;
+    }
+  }
+
+  // Realistic hand clap: 2 quick noise bursts with bandpass filter
+  static playClap() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    [0, 0.045].forEach((delay) => {
+      const bufferSize = ctx.sampleRate * 0.08;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1100, now + delay);
+      filter.Q.setValueAtTime(3.0, now + delay);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.7, now + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.075);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      noise.start(now + delay);
+      noise.stop(now + delay + 0.08);
+    });
+  }
+
+  // Heart chime chord: sweet multi-tone arpeggio
+  static playHeart() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const freqs = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+
+    freqs.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const startTime = now + idx * 0.04;
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, startTime);
+
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.2, startTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.36);
+    });
+  }
+
+  // Like sound: upward cheerful pop
+  static playLike() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(350, now);
+    osc.frequency.exponentialRampToValueAtTime(800, now + 0.12);
+
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.16);
+  }
 }
 
 export const DesktopView: React.FC = () => {
@@ -232,12 +347,32 @@ export const DesktopView: React.FC = () => {
   // =========================================================================
   // TAB 2: AI MATCHING 2026 STATE
   // =========================================================================
+  interface EvaluatedMatchData {
+    score: number;
+    budget: number;
+    region: string;
+    time: string;
+    evaluation: EvaluationGroup;
+  }
+
   const [matchScore, setMatchScore] = useState<number>(aiMatchState.score ?? 15.0);
   const [matchBudget, setMatchBudget] = useState<number>(aiMatchState.budget ?? 10);
   const [matchRegion, setMatchRegion] = useState<string>(aiMatchState.region ?? 'Tất cả');
   const [matchSort, setMatchSort] = useState<'score' | 'budget' | 'location'>(aiMatchState.sortBy ?? 'score');
   const [hasMatchEvaluated, setHasMatchEvaluated] = useState<boolean>(aiMatchState.hasEvaluated ?? false);
   const [isMatchLoading, setIsMatchLoading] = useState<boolean>(false);
+  const [lastMatchEvaluatedData, setLastMatchEvaluatedData] = useState<EvaluatedMatchData | null>(() => {
+    if (aiMatchState.hasEvaluated) {
+      return {
+        score: aiMatchState.score,
+        budget: aiMatchState.budget,
+        region: aiMatchState.region,
+        time: aiMatchState.analyzedAt || '10:30',
+        evaluation: evaluateMatching(aiMatchState.score, aiMatchState.budget, hollandResult?.primaryCode || '', aiMatchState.region),
+      };
+    }
+    return null;
+  });
 
   useEffect(() => {
     setMatchScore(aiMatchState.score ?? 15.0);
@@ -245,24 +380,65 @@ export const DesktopView: React.FC = () => {
     setMatchRegion(aiMatchState.region ?? 'Tất cả');
     setMatchSort(aiMatchState.sortBy ?? 'score');
     setHasMatchEvaluated(aiMatchState.hasEvaluated ?? false);
-  }, [aiMatchState]);
+    if (aiMatchState.hasEvaluated) {
+      setLastMatchEvaluatedData({
+        score: aiMatchState.score,
+        budget: aiMatchState.budget,
+        region: aiMatchState.region,
+        time: aiMatchState.analyzedAt || '10:30',
+        evaluation: evaluateMatching(aiMatchState.score, aiMatchState.budget, hollandResult?.primaryCode || '', aiMatchState.region),
+      });
+    } else {
+      setLastMatchEvaluatedData(null);
+    }
+  }, [aiMatchState, hollandResult]);
 
-  const evaluation: EvaluationGroup = useMemo(() => {
-    return evaluateMatching(matchScore, matchBudget, hollandResult?.primaryCode || '', matchRegion);
-  }, [matchScore, matchBudget, hollandResult, matchRegion]);
+  // Handlers that reset evaluation when sliders/parameters change
+  const handleScoreChange = (val: number) => {
+    setMatchScore(val);
+    if (hasMatchEvaluated) {
+      setHasMatchEvaluated(false);
+      setLastMatchEvaluatedData(null);
+    }
+  };
+
+  const handleBudgetChange = (val: number) => {
+    setMatchBudget(val);
+    if (hasMatchEvaluated) {
+      setHasMatchEvaluated(false);
+      setLastMatchEvaluatedData(null);
+    }
+  };
+
+  const handleRegionChange = (val: string) => {
+    setMatchRegion(val);
+    if (hasMatchEvaluated) {
+      setHasMatchEvaluated(false);
+      setLastMatchEvaluatedData(null);
+    }
+  };
 
   const handleEvaluateMatching = () => {
     setIsMatchLoading(true);
     setTimeout(() => {
-      setIsMatchLoading(false);
+      const res = evaluateMatching(matchScore, matchBudget, hollandResult?.primaryCode || '', matchRegion);
+      const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      setLastMatchEvaluatedData({
+        score: matchScore,
+        budget: matchBudget,
+        region: matchRegion,
+        time: timeStr,
+        evaluation: res,
+      });
       setHasMatchEvaluated(true);
+      setIsMatchLoading(false);
       saveAIMatchState({
         hasEvaluated: true,
         score: matchScore,
         budget: matchBudget,
         region: matchRegion,
         sortBy: matchSort,
-        analyzedAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        analyzedAt: timeStr,
       });
       showToast('Đã hoàn tất phân tích cơ hội trúng tuyển 30 trường!');
     }, 600);
@@ -281,7 +457,45 @@ export const DesktopView: React.FC = () => {
   // =========================================================================
   const [liveChatInput, setLiveChatInput] = useState('');
   const [liveReactions, setLiveReactions] = useState({ like: 342, heart: 518, clap: 189 });
+  const [floatingReactions, setFloatingReactions] = useState<FloatingParticle[]>([]);
   const liveChatContainerRef = useRef<HTMLDivElement>(null);
+
+  const triggerReaction = (type: 'like' | 'heart' | 'clap') => {
+    // 1. Play sound & increment counter
+    if (type === 'clap') {
+      SoundFX.playClap();
+      setLiveReactions((prev) => ({ ...prev, clap: prev.clap + 1 }));
+    } else if (type === 'heart') {
+      SoundFX.playHeart();
+      setLiveReactions((prev) => ({ ...prev, heart: prev.heart + 1 }));
+      confetti({ particleCount: 30, spread: 60, origin: { x: 0.35, y: 0.65 } });
+    } else {
+      SoundFX.playLike();
+      setLiveReactions((prev) => ({ ...prev, like: prev.like + 1 }));
+    }
+
+    // 2. Spawn 4 floating emojis
+    const emojisMap = {
+      clap: ['👏', '👏', '🎉', '🙌'],
+      heart: ['❤️', '💖', '🥰', '💕'],
+      like: ['👍', '👍', '✨', '🔥'],
+    };
+    const list = emojisMap[type];
+    const newParticles: FloatingParticle[] = list.map((emoji) => ({
+      id: Date.now() + Math.random(),
+      emoji,
+      xOffset: (Math.random() - 0.5) * 80,
+      rotation: (Math.random() - 0.5) * 36,
+    }));
+
+    setFloatingReactions((prev) => [...prev, ...newParticles]);
+
+    // 3. Remove particles after animation finishes (1.25s)
+    setTimeout(() => {
+      const idsToRemove = new Set(newParticles.map((p) => p.id));
+      setFloatingReactions((prev) => prev.filter((p) => !idsToRemove.has(p.id)));
+    }, 1250);
+  };
   const [liveMessages, setLiveMessages] = useState<LiveMessage[]>([
     {
       id: 'm1',
@@ -876,22 +1090,26 @@ export const DesktopView: React.FC = () => {
 
                 <div
                   style={{
-                    width: '210px',
-                    height: '160px',
+                    width: '260px',
+                    height: '170px',
                     borderRadius: '18px',
                     overflow: 'hidden',
                     border: '2px solid rgba(255,255,255,0.4)',
                     boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
                     flexShrink: 0,
-                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    backgroundColor: 'rgba(255,255,255,0.08)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '6px',
                   }}
                 >
                   <img
                     src="/images/home_hero_art.png"
                     alt="AI Hướng nghiệp"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/images/career_header.png';
+                      (e.target as HTMLImageElement).src = '/images/quiz_intro_art.png';
                     }}
                   />
                 </div>
@@ -979,20 +1197,24 @@ export const DesktopView: React.FC = () => {
 
                 <div
                   style={{
-                    width: '210px',
-                    height: '160px',
+                    width: '280px',
+                    height: '170px',
                     borderRadius: '18px',
                     overflow: 'hidden',
                     border: '2px solid rgba(255,255,255,0.4)',
                     boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
                     flexShrink: 0,
-                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    backgroundColor: 'rgba(0,0,0,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '6px',
                   }}
                 >
                   <img
                     src="/images/slide_edufair.png"
                     alt="Virtual EduFair"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/images/banner_edufair.png';
                     }}
@@ -1083,22 +1305,26 @@ export const DesktopView: React.FC = () => {
 
                 <div
                   style={{
-                    width: '210px',
-                    height: '160px',
+                    width: '280px',
+                    height: '170px',
                     borderRadius: '18px',
                     overflow: 'hidden',
                     border: '2px solid rgba(255,255,255,0.3)',
                     boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
                     flexShrink: 0,
-                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    backgroundColor: 'rgba(0,0,0,0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '6px',
                   }}
                 >
                   <img
                     src="/images/slide_premium.png"
                     alt="VIP AI"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/images/career_header.png';
+                      (e.target as HTMLImageElement).src = '/images/quiz_intro_art.png';
                     }}
                   />
                 </div>
@@ -2054,18 +2280,27 @@ export const DesktopView: React.FC = () => {
               <div style={{ maxWidth: '960px', margin: '0 auto', textAlign: 'center' }}>
                 <div
                   style={{
-                    width: '140px',
-                    height: '140px',
+                    width: '180px',
+                    height: '180px',
                     margin: '0 auto 20px',
-                    borderRadius: '28px',
+                    borderRadius: '32px',
                     overflow: 'hidden',
-                    boxShadow: '0 10px 24px rgba(37,99,235,0.18)',
+                    boxShadow: '0 12px 28px rgba(37,99,235,0.18)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: '#EFF6FF',
+                    border: '3px solid #DBEAFE',
+                    padding: '8px',
                   }}
                 >
                   <img
-                    src="/images/career_header.png"
+                    src="/images/quiz_intro_art.png"
                     alt="Holland RIASEC"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/images/onboarding_1.png';
+                    }}
                   />
                 </div>
                 <h1 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', marginBottom: '8px' }}>
@@ -2388,14 +2623,14 @@ export const DesktopView: React.FC = () => {
                   max="30.0"
                   step="0.25"
                   value={matchScore}
-                  onChange={(e) => setMatchScore(parseFloat(e.target.value))}
+                  onChange={(e) => handleScoreChange(parseFloat(e.target.value))}
                   style={{ width: '100%', accentColor: '#2563EB' }}
                 />
                 <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
                   {[18, 21, 24, 27, 29].map((p) => (
                     <button
                       key={p}
-                      onClick={() => setMatchScore(p)}
+                      onClick={() => handleScoreChange(p)}
                       style={{
                         flex: 1,
                         padding: '4px 0',
@@ -2426,14 +2661,14 @@ export const DesktopView: React.FC = () => {
                   max="60"
                   step="5"
                   value={matchBudget}
-                  onChange={(e) => setMatchBudget(parseInt(e.target.value))}
+                  onChange={(e) => handleBudgetChange(parseInt(e.target.value))}
                   style={{ width: '100%', accentColor: '#059669' }}
                 />
                 <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
                   {[15, 25, 35, 50].map((b) => (
                     <button
                       key={b}
-                      onClick={() => setMatchBudget(b)}
+                      onClick={() => handleBudgetChange(b)}
                       style={{
                         flex: 1,
                         padding: '4px 0',
@@ -2461,7 +2696,7 @@ export const DesktopView: React.FC = () => {
                   {['Tất cả', 'Bắc', 'Trung', 'Nam'].map((reg) => (
                     <button
                       key={reg}
-                      onClick={() => setMatchRegion(reg)}
+                      onClick={() => handleRegionChange(reg)}
                       style={{
                         padding: '6px 0',
                         borderRadius: '8px',
@@ -2507,7 +2742,7 @@ export const DesktopView: React.FC = () => {
 
             {/* Right Column: AI Results Display */}
             <div>
-              {!hasMatchEvaluated ? (
+              {!hasMatchEvaluated || !lastMatchEvaluatedData ? (
                 <div
                   style={{
                     backgroundColor: '#FFFFFF',
@@ -2529,11 +2764,49 @@ export const DesktopView: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                  {/* Summary bar */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* 1. Confirmation summary card */}
+                  <div
+                    style={{
+                      backgroundColor: '#F0FDF4',
+                      border: '1.5px solid #86EFAC',
+                      borderRadius: '16px',
+                      padding: '16px 20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      boxShadow: '0 4px 14px rgba(16, 185, 129, 0.08)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        backgroundColor: '#DCFCE7',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#16A34A',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <CheckCircle2 size={22} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '15px', fontWeight: 800, color: '#166534', marginBottom: '3px' }}>
+                        ✅ Đã phân tích cơ hội trúng tuyển theo thông số của bạn!
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#15803D', lineHeight: 1.5 }}>
+                        Điểm thi THPT: <strong>{lastMatchEvaluatedData.score.toFixed(1)} điểm</strong> • Ngân sách học phí: <strong>≤ {lastMatchEvaluatedData.budget} tr/năm</strong> • Khu vực: <strong>{lastMatchEvaluatedData.region === 'Tất cả' ? 'Toàn quốc' : `Miền ${lastMatchEvaluatedData.region}`}</strong> (Phân tích lúc {lastMatchEvaluatedData.time})
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. Summary & Sort bar */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', padding: '14px 20px', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
                     <div style={{ fontSize: '14px', color: '#1E293B' }}>
-                      Đối soát: <strong style={{ color: '#2563EB' }}>{matchScore}đ</strong> • Học phí: <strong style={{ color: '#059669' }}>{matchBudget}tr/năm</strong>
+                      Đối soát: <strong style={{ color: '#2563EB' }}>{lastMatchEvaluatedData.score.toFixed(1)}đ</strong> • Học phí: <strong style={{ color: '#059669' }}>≤ {lastMatchEvaluatedData.budget}tr/năm</strong> • Khu vực: <strong style={{ color: '#475569' }}>{lastMatchEvaluatedData.region === 'Tất cả' ? 'Toàn quốc' : `Miền ${lastMatchEvaluatedData.region}`}</strong>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '12px', color: '#64748B' }}>Sắp xếp:</span>
@@ -2559,12 +2832,12 @@ export const DesktopView: React.FC = () => {
                         </h3>
                       </div>
                       <span style={{ fontSize: '13px', fontWeight: 800, color: '#166534', backgroundColor: '#DCFCE7', padding: '2px 8px', borderRadius: '6px' }}>
-                        {evaluation.safeList.length} trường
+                        {lastMatchEvaluatedData.evaluation.safeList.length} trường
                       </span>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-                      {sortResults(evaluation.safeList).map((res) => (
+                      {sortResults(lastMatchEvaluatedData.evaluation.safeList).map((res) => (
                         <div key={res.university.id} style={{ padding: '14px', borderRadius: '14px', backgroundColor: '#F0FDF4', border: '1px solid #DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <DonutChart percent={res.matchingPercent} size={44} strokeWidth={4.5} />
@@ -2593,12 +2866,12 @@ export const DesktopView: React.FC = () => {
                         </h3>
                       </div>
                       <span style={{ fontSize: '13px', fontWeight: 800, color: '#92400E', backgroundColor: '#FEF3C7', padding: '2px 8px', borderRadius: '6px' }}>
-                        {evaluation.moderateList.length} trường
+                        {lastMatchEvaluatedData.evaluation.moderateList.length} trường
                       </span>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-                      {sortResults(evaluation.moderateList).map((res) => (
+                      {sortResults(lastMatchEvaluatedData.evaluation.moderateList).map((res) => (
                         <div key={res.university.id} style={{ padding: '14px', borderRadius: '14px', backgroundColor: '#FFFBEB', border: '1px solid #FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <DonutChart percent={res.matchingPercent} size={44} strokeWidth={4.5} />
@@ -2627,12 +2900,12 @@ export const DesktopView: React.FC = () => {
                         </h3>
                       </div>
                       <span style={{ fontSize: '13px', fontWeight: 800, color: '#991B1B', backgroundColor: '#FEE2E2', padding: '2px 8px', borderRadius: '6px' }}>
-                        {evaluation.challengingList.length} trường
+                        {lastMatchEvaluatedData.evaluation.challengingList.length} trường
                       </span>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-                      {sortResults(evaluation.challengingList).map((res) => (
+                      {sortResults(lastMatchEvaluatedData.evaluation.challengingList).map((res) => (
                         <div key={res.university.id} style={{ padding: '14px', borderRadius: '14px', backgroundColor: '#FEF2F2', border: '1px solid #FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <DonutChart percent={res.matchingPercent} size={44} strokeWidth={4.5} />
@@ -2708,27 +2981,102 @@ export const DesktopView: React.FC = () => {
               </div>
 
               {/* Interaction bar */}
-              <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', padding: '16px 20px', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', padding: '16px 20px', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', position: 'relative' }}>
+                <div style={{ display: 'flex', gap: '10px', position: 'relative' }}>
+                  {/* Floating reaction particles */}
+                  {floatingReactions.map((p) => (
+                    <div
+                      key={p.id}
+                      style={{
+                        position: 'absolute',
+                        top: '-15px',
+                        left: `calc(50% + ${p.xOffset}px)`,
+                        fontSize: '28px',
+                        pointerEvents: 'none',
+                        zIndex: 99,
+                        animation: 'floatReactionUp 1.25s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+                        transform: `rotate(${p.rotation}deg)`,
+                      }}
+                    >
+                      {p.emoji}
+                    </div>
+                  ))}
+
                   <button
-                    onClick={() => setLiveReactions((prev) => ({ ...prev, like: prev.like + 1 }))}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}
+                    onClick={() => triggerReaction('like')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 16px',
+                      borderRadius: '10px',
+                      border: '1px solid #E2E8F0',
+                      backgroundColor: '#F8FAFC',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      transition: 'all 0.15s ease',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                    }}
+                    onMouseDown={(e) => {
+                      e.currentTarget.style.transform = 'scale(0.93)';
+                    }}
+                    onMouseUp={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
                   >
                     <ThumbsUp size={15} color="#2563EB" />
                     <span>Thích ({liveReactions.like})</span>
                   </button>
+
                   <button
-                    onClick={() => {
-                      setLiveReactions((prev) => ({ ...prev, heart: prev.heart + 1 }));
-                      confetti({ particleCount: 30, spread: 50, origin: { x: 0.3, y: 0.6 } });
+                    onClick={() => triggerReaction('heart')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 16px',
+                      borderRadius: '10px',
+                      border: '1px solid #E2E8F0',
+                      backgroundColor: '#F8FAFC',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      transition: 'all 0.15s ease',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
                     }}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}
+                    onMouseDown={(e) => {
+                      e.currentTarget.style.transform = 'scale(0.93)';
+                    }}
+                    onMouseUp={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
                   >
                     <span>❤️ Thả tim ({liveReactions.heart})</span>
                   </button>
+
                   <button
-                    onClick={() => setLiveReactions((prev) => ({ ...prev, clap: prev.clap + 1 }))}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}
+                    onClick={() => triggerReaction('clap')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 16px',
+                      borderRadius: '10px',
+                      border: '1px solid #E2E8F0',
+                      backgroundColor: '#F8FAFC',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      transition: 'all 0.15s ease',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                    }}
+                    onMouseDown={(e) => {
+                      e.currentTarget.style.transform = 'scale(0.93)';
+                    }}
+                    onMouseUp={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
                   >
                     <span>👏 Vỗ tay ({liveReactions.clap})</span>
                   </button>

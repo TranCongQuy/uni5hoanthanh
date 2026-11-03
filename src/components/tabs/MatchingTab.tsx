@@ -5,6 +5,7 @@ import {
   Sparkles,
   ArrowRight,
   HelpCircle,
+  CheckCircle2,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { evaluateMatching, GROUP_META } from '../../services/MatchingService';
@@ -22,6 +23,14 @@ export const MatchingTab: React.FC = () => {
     saveAIMatchState,
   } = useApp();
 
+  interface EvaluatedData {
+    score: number;
+    budget: number;
+    region: string;
+    analyzedAt: string;
+    evaluation: EvaluationGroup;
+  }
+
   // Initial parameters: load from latest remembered analysis or default to min
   const [score, setScore] = useState<number>(aiMatchState.score ?? 15.0); // Min: 15.0
   const [budget, setBudget] = useState<number>(aiMatchState.budget ?? 10); // Min: 10 Triệu / năm
@@ -31,6 +40,23 @@ export const MatchingTab: React.FC = () => {
   const [hasEvaluated, setHasEvaluated] = useState<boolean>(aiMatchState.hasEvaluated ?? false);
   const [isEditingParams, setIsEditingParams] = useState<boolean>(!aiMatchState.hasEvaluated);
   const [loading, setLoading] = useState<boolean>(false);
+  const [evaluatedData, setEvaluatedData] = useState<EvaluatedData | null>(() => {
+    if (aiMatchState.hasEvaluated) {
+      return {
+        score: aiMatchState.score,
+        budget: aiMatchState.budget,
+        region: aiMatchState.region,
+        analyzedAt: aiMatchState.analyzedAt || '10:30',
+        evaluation: evaluateMatching(
+          aiMatchState.score,
+          aiMatchState.budget,
+          hollandResult?.primaryCode || '',
+          aiMatchState.region
+        ),
+      };
+    }
+    return null;
+  });
 
   // Synchronize when aiMatchState is reset (e.g. fresh demo login)
   useEffect(() => {
@@ -40,21 +66,68 @@ export const MatchingTab: React.FC = () => {
     setSortBy(aiMatchState.sortBy ?? 'score');
     setHasEvaluated(aiMatchState.hasEvaluated ?? false);
     setIsEditingParams(!aiMatchState.hasEvaluated);
-  }, [aiMatchState]);
+    if (aiMatchState.hasEvaluated) {
+      setEvaluatedData({
+        score: aiMatchState.score,
+        budget: aiMatchState.budget,
+        region: aiMatchState.region,
+        analyzedAt: aiMatchState.analyzedAt || '10:30',
+        evaluation: evaluateMatching(
+          aiMatchState.score,
+          aiMatchState.budget,
+          hollandResult?.primaryCode || '',
+          aiMatchState.region
+        ),
+      });
+    } else {
+      setEvaluatedData(null);
+    }
+  }, [aiMatchState, hollandResult]);
 
-  // Evaluate matching results
-  const evaluation: EvaluationGroup = evaluateMatching(
-    score,
-    budget,
-    hollandResult?.primaryCode || '',
-    region
-  );
+  // Handlers that reset evaluation when sliders/parameters change
+  const handleScoreChange = (val: number) => {
+    setScore(val);
+    if (hasEvaluated) {
+      setHasEvaluated(false);
+      setEvaluatedData(null);
+    }
+  };
+
+  const handleBudgetChange = (val: number) => {
+    setBudget(val);
+    if (hasEvaluated) {
+      setHasEvaluated(false);
+      setEvaluatedData(null);
+    }
+  };
+
+  const handleRegionChange = (val: string) => {
+    setRegion(val);
+    if (hasEvaluated) {
+      setHasEvaluated(false);
+      setEvaluatedData(null);
+    }
+  };
 
   const handleEvaluate = () => {
     setLoading(true);
     setTimeout(() => {
-      setLoading(false);
+      const evalRes = evaluateMatching(
+        score,
+        budget,
+        hollandResult?.primaryCode || '',
+        region
+      );
+      const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      setEvaluatedData({
+        score,
+        budget,
+        region,
+        analyzedAt: timeStr,
+        evaluation: evalRes,
+      });
       setHasEvaluated(true);
+      setLoading(false);
       setIsEditingParams(false);
       saveAIMatchState({
         hasEvaluated: true,
@@ -62,7 +135,7 @@ export const MatchingTab: React.FC = () => {
         budget,
         region,
         sortBy,
-        analyzedAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        analyzedAt: timeStr,
       });
     }, 600);
   };
@@ -301,7 +374,7 @@ export const MatchingTab: React.FC = () => {
               max={30}
               step={0.1}
               value={score}
-              onChange={(e) => setScore(parseFloat(e.target.value))}
+              onChange={(e) => handleScoreChange(parseFloat(e.target.value))}
               style={{
                 width: '100%',
                 height: '10px',
@@ -326,7 +399,7 @@ export const MatchingTab: React.FC = () => {
                 <button
                   key={p}
                   type="button"
-                  onClick={() => setScore(p)}
+                  onClick={() => handleScoreChange(p)}
                   style={{
                     border: score === p ? '1.5px solid #2563EB' : '1px solid #E2E8F0',
                     backgroundColor: score === p ? '#EFF6FF' : '#F8FAFC',
@@ -370,7 +443,7 @@ export const MatchingTab: React.FC = () => {
               max={60}
               step={1}
               value={budget}
-              onChange={(e) => setBudget(parseInt(e.target.value))}
+              onChange={(e) => handleBudgetChange(parseInt(e.target.value))}
               style={{
                 width: '100%',
                 height: '10px',
@@ -395,7 +468,7 @@ export const MatchingTab: React.FC = () => {
                 <button
                   key={b}
                   type="button"
-                  onClick={() => setBudget(b)}
+                  onClick={() => handleBudgetChange(b)}
                   style={{
                     border: budget === b ? '1.5px solid #10B981' : '1px solid #E2E8F0',
                     backgroundColor: budget === b ? '#ECFDF5' : '#F8FAFC',
@@ -433,7 +506,7 @@ export const MatchingTab: React.FC = () => {
                 return (
                   <button
                     key={reg}
-                    onClick={() => setRegion(reg)}
+                    onClick={() => handleRegionChange(reg)}
                     style={{
                       height: '36px',
                       borderRadius: '12px',
@@ -461,13 +534,13 @@ export const MatchingTab: React.FC = () => {
             loading={loading}
             onClick={handleEvaluate}
           >
-            {hasEvaluated ? 'Cập nhật phân tích mới →' : '🚀 Phân tích cơ hội trúng tuyển ngay →'}
+            {loading ? 'Đang đối soát 30 trường...' : '🚀 Phân tích cơ hội trúng tuyển ngay →'}
           </Button>
         </div>
       )}
 
       {/* Conditionally show results only after user clicks analyze */}
-      {!hasEvaluated ? (
+      {!hasEvaluated || !evaluatedData ? (
         <div
           style={{
             padding: '36px 20px',
@@ -502,6 +575,45 @@ export const MatchingTab: React.FC = () => {
         </div>
       ) : (
         <>
+          {/* Confirmation summary banner */}
+          <div
+            style={{
+              backgroundColor: '#F0FDF4',
+              border: '1.5px solid #86EFAC',
+              borderRadius: '20px',
+              padding: '14px 16px',
+              marginBottom: '18px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              boxShadow: '0 2px 10px rgba(16, 185, 129, 0.08)',
+            }}
+          >
+            <div
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                backgroundColor: '#DCFCE7',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#16A34A',
+                flexShrink: 0,
+              }}
+            >
+              <CheckCircle2 size={20} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#166534' }}>
+                ✅ Đã phân tích cơ hội trúng tuyển 30 trường!
+              </div>
+              <div style={{ fontSize: '12px', color: '#15803D', marginTop: '2px', lineHeight: 1.4 }}>
+                Điểm thi: <strong>{evaluatedData.score.toFixed(1)}đ</strong> • Học phí: <strong>≤ {evaluatedData.budget}tr</strong> • {evaluatedData.region === 'Tất cả' ? 'Toàn quốc' : `Miền ${evaluatedData.region}`} (Lúc {evaluatedData.analyzedAt})
+              </div>
+            </div>
+          </div>
+
           {/* 4. Sorting Tabs (Điểm số / Ngân sách / Vị trí) */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748B' }}>
@@ -542,9 +654,9 @@ export const MatchingTab: React.FC = () => {
 
           {/* 5. Results by 3 Probability Groups */}
           {[
-            { type: 'SAFE' as GroupType, list: sortResults(evaluation.safeList) },
-            { type: 'MODERATE' as GroupType, list: sortResults(evaluation.moderateList) },
-            { type: 'CHALLENGING' as GroupType, list: sortResults(evaluation.challengingList) },
+            { type: 'SAFE' as GroupType, list: sortResults(evaluatedData.evaluation.safeList) },
+            { type: 'MODERATE' as GroupType, list: sortResults(evaluatedData.evaluation.moderateList) },
+            { type: 'CHALLENGING' as GroupType, list: sortResults(evaluatedData.evaluation.challengingList) },
           ].map(({ type, list }) => {
             const meta = GROUP_META[type];
 

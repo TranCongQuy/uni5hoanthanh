@@ -182,6 +182,26 @@ body.mode-desktop #root {
   }
 }
 
+/* Floating Live Reaction Particles */
+@keyframes floatReactionUp {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(0.6) rotate(0deg);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-35px) scale(1.25) rotate(-6deg);
+  }
+  70% {
+    opacity: 0.9;
+    transform: translateY(-75px) scale(1.15) rotate(8deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-120px) scale(1.3) rotate(-10deg);
+  }
+}
+
 /* Prevent modal background scroll bleed on iOS Safari & Android Chrome */
 body.modal-open, html.modal-open {
   overflow: hidden !important;
