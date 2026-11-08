@@ -3,10 +3,13 @@ import {
   Radio,
   Users,
   Send,
+  Share2,
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { useApp } from '../../context/AppContext';
 import { UNIVERSITIES } from '../../data/MockData';
 import { Button, UniversityAvatar, ImageSafe, AppFooter } from '../common/UI';
+import { SoundFX } from '../../utils/sound';
 
 interface LiveChatMessage {
   id: string;
@@ -180,6 +183,44 @@ export const LiveTab: React.FC = () => {
       });
     }
   }, [messages]);
+
+  // Reactions state & particles
+  const [liveReactions, setLiveReactions] = useState<{ like: number; heart: number; clap: number }>({
+    like: 343,
+    heart: 519,
+    clap: 190,
+  });
+  const [floatingParticles, setFloatingParticles] = useState<{ id: number; emoji: string; xOffset: number }[]>([]);
+
+  const triggerReaction = (type: 'like' | 'heart' | 'clap') => {
+    if (type === 'clap') {
+      SoundFX.playClap();
+      setLiveReactions((prev) => ({ ...prev, clap: prev.clap + 1 }));
+    } else if (type === 'heart') {
+      SoundFX.playHeart();
+      setLiveReactions((prev) => ({ ...prev, heart: prev.heart + 1 }));
+      confetti({ particleCount: 25, spread: 50, origin: { x: 0.5, y: 0.7 } });
+    } else {
+      SoundFX.playLike();
+      setLiveReactions((prev) => ({ ...prev, like: prev.like + 1 }));
+    }
+
+    const emojisMap = {
+      clap: ['👏', '👏', '🎉', '🙌'],
+      heart: ['❤️', '💖', '🥰', '💕'],
+      like: ['👍', '👍', '✨', '🔥'],
+    };
+    const newItems = emojisMap[type].map((emoji) => ({
+      id: Date.now() + Math.random(),
+      emoji,
+      xOffset: (Math.random() - 0.5) * 60,
+    }));
+    setFloatingParticles((prev) => [...prev, ...newItems]);
+    setTimeout(() => {
+      const ids = new Set(newItems.map((p) => p.id));
+      setFloatingParticles((prev) => prev.filter((p) => !ids.has(p.id)));
+    }, 1200);
+  };
 
   const handleSendChat = (e: React.FormEvent) => {
     e.preventDefault();
@@ -550,6 +591,132 @@ export const LiveTab: React.FC = () => {
               Phiên trực tiếp: Giải đáp nguyện vọng tuyển sinh 2026
             </div>
           </div>
+
+          {/* Floating Emoji Particles */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              pointerEvents: 'none',
+              overflow: 'hidden',
+              zIndex: 30,
+            }}
+          >
+            {floatingParticles.map((p) => (
+              <span
+                key={p.id}
+                style={{
+                  position: 'absolute',
+                  bottom: '20px',
+                  right: `calc(35% + ${p.xOffset}px)`,
+                  fontSize: '24px',
+                  animation: 'floatReactionUp 1.2s ease-out forwards',
+                  userSelect: 'none',
+                }}
+              >
+                {p.emoji}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Live Reactions Bar */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '14px',
+            gap: '8px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => triggerReaction('like')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '6px 12px',
+                borderRadius: '10px',
+                border: '1px solid #E2E8F0',
+                backgroundColor: '#FFFFFF',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: 700,
+                color: '#1E293B',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span>👍 Thích ({liveReactions.like})</span>
+            </button>
+
+            <button
+              onClick={() => triggerReaction('heart')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '6px 12px',
+                borderRadius: '10px',
+                border: '1px solid #FECDD3',
+                backgroundColor: '#FFF1F2',
+                color: '#E11D48',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: 700,
+                boxShadow: '0 2px 6px rgba(225,29,72,0.08)',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span>❤️ Thả tim ({liveReactions.heart})</span>
+            </button>
+
+            <button
+              onClick={() => triggerReaction('clap')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '6px 12px',
+                borderRadius: '10px',
+                border: '1px solid #E2E8F0',
+                backgroundColor: '#FFFFFF',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: 700,
+                color: '#1E293B',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span>👏 Vỗ tay ({liveReactions.clap})</span>
+            </button>
+          </div>
+
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.href);
+              showToast('Đã sao chép liên kết phòng Live!');
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '6px 10px',
+              borderRadius: '10px',
+              border: '1px solid #E2E8F0',
+              backgroundColor: '#FFFFFF',
+              color: '#475569',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: 600,
+            }}
+          >
+            <Share2 size={13} />
+            <span>Chia sẻ</span>
+          </button>
         </div>
 
         {/* Live Chat Stream Container */}

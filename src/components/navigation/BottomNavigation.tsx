@@ -12,8 +12,8 @@ const NAV_ITEMS: NavItem[] = [
   { id: 0, label: 'Trang chủ', icon: <Home size={22} /> },
   { id: 1, label: 'Khảo sát', icon: <Compass size={22} /> },
   { id: 2, label: 'AI Match', icon: <Sparkles size={22} /> },
-  { id: 3, label: 'Sự kiện', icon: <Radio size={22} /> },
-  { id: 4, label: 'Cá nhân', icon: <User size={22} /> },
+  { id: 3, label: 'EduFair LIVE', icon: <Radio size={22} /> },
+  { id: 4, label: 'Hồ sơ', icon: <User size={22} /> },
 ];
 
 export const BottomNavigation: React.FC = () => {
