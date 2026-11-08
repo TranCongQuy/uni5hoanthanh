@@ -10,8 +10,10 @@ export const AllApplicationsModal: React.FC = () => {
     closeAllApplications,
     applications,
     openApplicationDetail,
+    viewMode,
   } = useApp();
 
+  const isDesktop = viewMode === 'desktop';
   const [activeFilter, setActiveFilter] = useState<'all' | ApplicationStatus>('all');
 
   if (!isAllApplicationsOpen) return null;
@@ -54,25 +56,26 @@ export const AllApplicationsModal: React.FC = () => {
         inset: 0,
         zIndex: 1150,
         backgroundColor: 'rgba(15, 23, 42, 0.65)',
-        backdropFilter: 'blur(6px)',
+        backdropFilter: 'blur(8px)',
         display: 'flex',
-        alignItems: 'flex-end',
+        alignItems: isDesktop ? 'center' : 'flex-end',
         justifyContent: 'center',
+        padding: isDesktop ? '24px' : '0',
       }}
       onClick={closeAllApplications}
     >
       <div
         style={{
           width: '100%',
-          maxWidth: '520px',
-          height: 'min(88dvh, calc(100dvh - 56px))',
-          maxHeight: 'calc(100dvh - 56px)',
+          maxWidth: isDesktop ? '760px' : '520px',
+          height: isDesktop ? 'min(86vh, 800px)' : 'min(88dvh, calc(100dvh - 56px))',
+          maxHeight: isDesktop ? '86vh' : 'calc(100dvh - 56px)',
           backgroundColor: '#F8FAFC',
-          borderRadius: '28px 28px 0 0',
+          borderRadius: isDesktop ? '24px' : '28px 28px 0 0',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 -10px 30px rgba(0,0,0,0.25)',
-          animation: 'slideUp 0.3s ease-out',
+          boxShadow: isDesktop ? '0 25px 60px rgba(0,0,0,0.35)' : '0 -10px 30px rgba(0,0,0,0.25)',
+          animation: isDesktop ? 'fadeIn 0.25s ease-out' : 'slideUp 0.3s ease-out',
           overflow: 'hidden',
           position: 'relative',
         }}

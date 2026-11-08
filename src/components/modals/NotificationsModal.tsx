@@ -40,7 +40,8 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
 ];
 
 export const NotificationsModal: React.FC = () => {
-  const { isNotificationsOpen, closeNotifications } = useApp();
+  const { isNotificationsOpen, closeNotifications, viewMode } = useApp();
+  const isDesktop = viewMode === 'desktop';
   const [list, setList] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
 
   // Lock body scroll when notification modal is open on mobile
@@ -76,25 +77,27 @@ export const NotificationsModal: React.FC = () => {
         inset: 0,
         zIndex: 1500,
         backgroundColor: 'rgba(15, 23, 42, 0.65)',
-        backdropFilter: 'blur(6px)',
+        backdropFilter: 'blur(8px)',
         display: 'flex',
-        alignItems: 'flex-end',
+        alignItems: isDesktop ? 'center' : 'flex-end',
         justifyContent: 'center',
-        touchAction: 'none',
+        padding: isDesktop ? '24px' : '0',
+        touchAction: isDesktop ? 'auto' : 'none',
       }}
       onClick={closeNotifications}
     >
       <div
         style={{
           width: '100%',
-          maxWidth: '520px',
-          maxHeight: 'min(85dvh, calc(100dvh - 56px))',
+          maxWidth: isDesktop ? '580px' : '520px',
+          height: isDesktop ? 'min(82vh, 680px)' : 'auto',
+          maxHeight: isDesktop ? '82vh' : 'min(85dvh, calc(100dvh - 56px))',
           backgroundColor: '#FFFFFF',
-          borderRadius: '28px 28px 0 0',
+          borderRadius: isDesktop ? '24px' : '28px 28px 0 0',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 -10px 40px rgba(0,0,0,0.25)',
-          animation: 'slideUp 0.3s ease-out',
+          boxShadow: isDesktop ? '0 25px 60px rgba(0,0,0,0.35)' : '0 -10px 40px rgba(0,0,0,0.25)',
+          animation: isDesktop ? 'fadeIn 0.25s ease-out' : 'slideUp 0.3s ease-out',
           overflow: 'hidden',
           touchAction: 'pan-y',
         }}

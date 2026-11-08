@@ -14,8 +14,10 @@ export const CompareModal: React.FC = () => {
     toggleCompare,
     clearCompare,
     openUniDetail,
+    viewMode,
   } = useApp();
 
+  const isDesktop = viewMode === 'desktop';
   const [showAddPicker, setShowAddPicker] = useState(false);
   const [compareSearchKeyword, setCompareSearchKeyword] = useState('');
   const [compareFilterRegion, setCompareFilterRegion] = useState('Tất cả');
@@ -54,26 +56,27 @@ export const CompareModal: React.FC = () => {
         position: 'fixed',
         inset: 0,
         zIndex: 1000,
-        backgroundColor: 'rgba(15, 23, 42, 0.6)',
-        backdropFilter: 'blur(6px)',
+        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+        backdropFilter: 'blur(8px)',
         display: 'flex',
-        alignItems: 'flex-end',
+        alignItems: isDesktop ? 'center' : 'flex-end',
         justifyContent: 'center',
+        padding: isDesktop ? '24px' : '0',
       }}
       onClick={closeCompareModal}
     >
       <div
         style={{
           width: '100%',
-          maxWidth: '560px',
-          height: 'min(88dvh, calc(100dvh - 56px))',
-          maxHeight: 'calc(100dvh - 56px)',
+          maxWidth: isDesktop ? '920px' : '560px',
+          height: isDesktop ? 'min(86vh, 840px)' : 'min(88dvh, calc(100dvh - 56px))',
+          maxHeight: isDesktop ? '86vh' : 'calc(100dvh - 56px)',
           backgroundColor: '#FFFFFF',
-          borderRadius: '28px 28px 0 0',
+          borderRadius: isDesktop ? '24px' : '28px 28px 0 0',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 -10px 30px rgba(0,0,0,0.2)',
-          animation: 'slideUp 0.3s ease-out',
+          boxShadow: isDesktop ? '0 25px 60px rgba(0,0,0,0.35)' : '0 -10px 30px rgba(0,0,0,0.2)',
+          animation: isDesktop ? 'fadeIn 0.25s ease-out' : 'slideUp 0.3s ease-out',
           overflow: 'hidden',
         }}
         onClick={(e) => e.stopPropagation()}

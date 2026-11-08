@@ -95,11 +95,12 @@ export const ViewModeToggle: React.FC<ViewModeToggleProps> = ({ variant = 'float
       style={{
         position: 'fixed',
         bottom: isDesktop ? '24px' : '82px', // above bottom navigation on mobile
-        right: '16px',
+        right: isDesktop ? '20px' : 'auto',
+        left: isDesktop ? 'auto' : '16px', // stays on the left on mobile to avoid colliding with compare button
         zIndex: 9999,
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'flex-end',
+        alignItems: isDesktop ? 'flex-end' : 'flex-start',
         gap: '6px',
         pointerEvents: 'none',
       }}
@@ -137,12 +138,12 @@ export const ViewModeToggle: React.FC<ViewModeToggleProps> = ({ variant = 'float
         {isDesktop ? (
           <>
             <Smartphone size={17} strokeWidth={2.5} />
-            <span>📱 Chuyển sang Mobile</span>
+            <span>Chuyển sang Mobile</span>
           </>
         ) : (
           <>
             <Laptop size={17} strokeWidth={2.5} />
-            <span>💻 Chuyển sang Desktop</span>
+            <span>Chuyển sang Desktop</span>
           </>
         )}
       </button>

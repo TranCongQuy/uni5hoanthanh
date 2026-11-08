@@ -27,6 +27,7 @@ export const SettingsModal: React.FC = () => {
     toggleViewMode,
   } = useApp();
 
+  const isDesktop = viewMode === 'desktop';
   const [showGuide, setShowGuide] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -39,26 +40,27 @@ export const SettingsModal: React.FC = () => {
         position: 'fixed',
         inset: 0,
         zIndex: 1000,
-        backgroundColor: 'rgba(15, 23, 42, 0.6)',
-        backdropFilter: 'blur(6px)',
+        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+        backdropFilter: 'blur(8px)',
         display: 'flex',
-        alignItems: 'flex-end',
+        alignItems: isDesktop ? 'center' : 'flex-end',
         justifyContent: 'center',
+        padding: isDesktop ? '24px' : '0',
       }}
       onClick={closeSettings}
     >
       <div
         style={{
           width: '100%',
-          maxWidth: '520px',
-          height: 'min(88dvh, calc(100dvh - 56px))',
-          maxHeight: 'calc(100dvh - 56px)',
+          maxWidth: isDesktop ? '640px' : '520px',
+          height: isDesktop ? 'min(86vh, 760px)' : 'min(88dvh, calc(100dvh - 56px))',
+          maxHeight: isDesktop ? '86vh' : 'calc(100dvh - 56px)',
           backgroundColor: '#FFFFFF',
-          borderRadius: '28px 28px 0 0',
+          borderRadius: isDesktop ? '24px' : '28px 28px 0 0',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 -10px 30px rgba(0,0,0,0.2)',
-          animation: 'slideUp 0.3s ease-out',
+          boxShadow: isDesktop ? '0 25px 60px rgba(0,0,0,0.35)' : '0 -10px 30px rgba(0,0,0,0.2)',
+          animation: isDesktop ? 'fadeIn 0.25s ease-out' : 'slideUp 0.3s ease-out',
           overflow: 'hidden',
           position: 'relative',
         }}

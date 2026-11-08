@@ -25,6 +25,7 @@ import {
   ThumbsUp,
   Share2,
   CheckCircle2,
+  GitCompare,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useApp } from '../../context/AppContext';
@@ -592,6 +593,9 @@ export const DesktopView: React.FC = () => {
   const [appFilterStatus, setAppFilterStatus] = useState<string>('Tất cả');
   const filteredApps = useMemo(() => {
     if (appFilterStatus === 'Tất cả') return applications;
+    if (appFilterStatus === 'Đã bị hủy' || appFilterStatus === 'Đã hủy') {
+      return applications.filter((app) => app.status === 'Đã bị hủy' || app.status === 'Đã hủy');
+    }
     return applications.filter((app) => app.status === appFilterStatus);
   }, [applications, appFilterStatus]);
 
@@ -1746,6 +1750,8 @@ export const DesktopView: React.FC = () => {
                         border: '1px solid #E2E8F0',
                         zIndex: 100,
                         overflow: 'hidden',
+                        maxHeight: '380px',
+                        overflowY: 'auto',
                       }}
                     >
                       <div
@@ -1761,7 +1767,7 @@ export const DesktopView: React.FC = () => {
                       >
                         GỢI Ý TRƯỜNG ĐẠI HỌC PHÙ HỢP ({searchMatches.length} KẾT QUẢ)
                       </div>
-                      {searchMatches.map((m) => (
+                      {searchMatches.slice(0, 3).map((m) => (
                         <div
                           key={m.id}
                           onClick={() => {
@@ -1800,6 +1806,31 @@ export const DesktopView: React.FC = () => {
                           <span style={{ fontSize: '12.5px', color: '#2563EB', fontWeight: 700 }}>Xem thông tin trường →</span>
                         </div>
                       ))}
+                      {searchMatches.length > 3 && (
+                        <div
+                          onClick={() => {
+                            setSearchKeyword(desktopSearch);
+                          }}
+                          style={{
+                            padding: '11px 18px',
+                            backgroundColor: '#F8FAFC',
+                            textAlign: 'center',
+                            fontSize: '12.5px',
+                            fontWeight: 700,
+                            color: '#2563EB',
+                            cursor: 'pointer',
+                            borderTop: '1px solid #E2E8F0',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#EFF6FF';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#F8FAFC';
+                          }}
+                        >
+                          Xem tất cả {searchMatches.length} trường phù hợp bên dưới ({searchMatches.length - 3} trường khác) ↓
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -3232,6 +3263,80 @@ export const DesktopView: React.FC = () => {
         {/* TAB 4: HỒ SƠ XÉT TUYỂN & CÁ NHÂN DESKTOP                            */}
         {/* =================================================================== */}
         {activeTab === 4 && (
+          !isLoggedIn ? (
+            <div
+              style={{
+                maxWidth: '680px',
+                margin: '40px auto',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '24px',
+                border: '1.5px solid #E2E8F0',
+                padding: '48px 36px',
+                textAlign: 'center',
+                boxShadow: '0 8px 30px rgba(0,0,0,0.04)',
+              }}
+            >
+              <div
+                style={{
+                  width: '72px',
+                  height: '72px',
+                  borderRadius: '20px',
+                  backgroundColor: '#EFF6FF',
+                  color: '#2563EB',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 20px',
+                  boxShadow: '0 4px 14px rgba(37,99,235,0.15)',
+                }}
+              >
+                <User size={36} />
+              </div>
+              <h2 style={{ fontSize: '24px', fontWeight: 900, color: '#0F172A', marginBottom: '10px' }}>
+                Đăng nhập để theo dõi hồ sơ xét tuyển
+              </h2>
+              <p style={{ fontSize: '15px', color: '#64748B', maxWidth: '520px', margin: '0 auto 28px', lineHeight: 1.6 }}>
+                Bạn cần đăng nhập để xem tiến độ duyệt hồ sơ xét tuyển sớm đại học năm 2026, danh sách nguyện vọng yêu thích và quản lý thông tin thí sinh.
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={loginDemo}
+                  style={{
+                    padding: '13px 26px',
+                    borderRadius: '14px',
+                    backgroundColor: '#2563EB',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    fontSize: '14.5px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(37,99,235,0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <Sparkles size={18} />
+                  <span>⚡ Trải nghiệm ngay với Demo Trần Công Quý</span>
+                </button>
+                <button
+                  onClick={openAuthModal}
+                  style={{
+                    padding: '13px 24px',
+                    borderRadius: '14px',
+                    backgroundColor: '#FFFFFF',
+                    color: '#1E293B',
+                    border: '1.5px solid #CBD5E1',
+                    fontSize: '14.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Đăng nhập / Đăng ký tài khoản
+                </button>
+              </div>
+            </div>
+          ) : (
           <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '28px', alignItems: 'start' }}>
             {/* Left Column: Candidate Card */}
             <div
@@ -3385,7 +3490,7 @@ export const DesktopView: React.FC = () => {
 
                 {/* Status filter pills */}
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '18px', flexWrap: 'wrap' }}>
-                  {['Tất cả', 'Đang xét duyệt', 'Hồ sơ hợp lệ', 'Thiếu hồ sơ', 'Đã hủy'].map((st) => (
+                  {['Tất cả', 'Đang xét duyệt', 'Hồ sơ hợp lệ', 'Thiếu hồ sơ', 'Đã bị hủy'].map((st) => (
                     <button
                       key={st}
                       onClick={() => setAppFilterStatus(st)}
@@ -3493,7 +3598,7 @@ export const DesktopView: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
+        ))}
       </main>
 
       {/* ===================================================================== */}
@@ -3525,11 +3630,55 @@ export const DesktopView: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-            <span>Đang ở chế độ: 💻 Màn hình Laptop / Desktop</span>
-            <span style={{ fontSize: "12px", color: "#64748B" }}>Chế độ: 💻 Máy tính / Laptop</span>
+            <span style={{ fontSize: '12.5px', color: '#64748B' }}>💻 Phiên bản Màn hình Rộng (Desktop Widescreen)</span>
           </div>
         </div>
       </footer>
+
+      {/* Sticky Floating Compare Bar when universities are selected on Desktop */}
+      {compareIds.length > 0 && (
+        <aside
+          aria-label="So sánh trường đại học"
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '210px',
+            zIndex: 9998,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            animation: 'bounceIn 0.3s ease-out',
+          }}
+        >
+          <button
+            onClick={openCompareModal}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 18px',
+              borderRadius: '999px',
+              background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+              color: '#FFFFFF',
+              border: '2px solid rgba(255, 255, 255, 0.9)',
+              boxShadow: '0 6px 24px rgba(37, 99, 235, 0.35)',
+              fontSize: '13px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.06) translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1) translateY(0px)';
+            }}
+          >
+            <GitCompare size={16} />
+            <span>So sánh ({compareIds.length}/3)</span>
+          </button>
+        </aside>
+      )}
     </div>
   );
 };

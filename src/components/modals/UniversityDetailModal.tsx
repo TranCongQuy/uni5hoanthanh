@@ -26,8 +26,10 @@ export const UniversityDetailModal: React.FC = () => {
     openChatBot,
     openApplyDemo,
     profile,
+    viewMode,
   } = useApp();
 
+  const isDesktop = viewMode === 'desktop';
   const [activeTab, setActiveTab] = useState<'overview' | 'majors' | 'tuition' | 'reviews'>('overview');
 
   if (selectedUniIdForDetail === null) return null;
@@ -81,42 +83,45 @@ export const UniversityDetailModal: React.FC = () => {
         position: 'fixed',
         inset: 0,
         zIndex: 1000,
-        backgroundColor: 'rgba(15, 23, 42, 0.6)',
-        backdropFilter: 'blur(6px)',
+        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+        backdropFilter: 'blur(8px)',
         display: 'flex',
-        alignItems: 'flex-end',
+        alignItems: isDesktop ? 'center' : 'flex-end',
         justifyContent: 'center',
+        padding: isDesktop ? '24px' : '0',
       }}
       onClick={closeUniDetail}
     >
       <div
         style={{
           width: '100%',
-          maxWidth: '520px',
-          height: 'min(88dvh, calc(100dvh - 56px))',
-          maxHeight: 'calc(100dvh - 56px)',
+          maxWidth: isDesktop ? '760px' : '520px',
+          height: isDesktop ? 'min(86vh, 820px)' : 'min(88dvh, calc(100dvh - 56px))',
+          maxHeight: isDesktop ? '86vh' : 'calc(100dvh - 56px)',
           backgroundColor: '#FFFFFF',
-          borderRadius: '28px 28px 0 0',
+          borderRadius: isDesktop ? '24px' : '28px 28px 0 0',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 -10px 30px rgba(0,0,0,0.25)',
-          animation: 'slideUp 0.3s ease-out',
+          boxShadow: isDesktop ? '0 25px 60px rgba(0,0,0,0.35)' : '0 -10px 30px rgba(0,0,0,0.25)',
+          animation: isDesktop ? 'fadeIn 0.25s ease-out' : 'slideUp 0.3s ease-out',
           overflow: 'hidden',
           position: 'relative',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Drag handle */}
-        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '8px', paddingBottom: '4px', backgroundColor: '#FFFFFF' }}>
-          <div
-            style={{
-              width: '40px',
-              height: '4px',
-              borderRadius: '2px',
-              backgroundColor: '#CBD5E1',
-            }}
-          />
-        </div>
+        {/* Drag handle (mobile only) */}
+        {!isDesktop && (
+          <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '8px', paddingBottom: '4px', backgroundColor: '#FFFFFF' }}>
+            <div
+              style={{
+                width: '40px',
+                height: '4px',
+                borderRadius: '2px',
+                backgroundColor: '#CBD5E1',
+              }}
+            />
+          </div>
+        )}
 
         {/* Sticky Top Safe-Area Bar: 100% visible on every phone, never clipped by notch or curve */}
         <div
