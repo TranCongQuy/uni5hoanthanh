@@ -10,6 +10,8 @@ export const AuthModal: React.FC = () => {
     login,
     register,
     loginDemo,
+    loginAdmin,
+    loginPXU,
     loginAsGuest,
   } = useApp();
 
@@ -436,28 +438,49 @@ export const AuthModal: React.FC = () => {
               </form>
             )}
 
-            {/* Demo & Guest Fast Buttons */}
-            <div style={{ margin: '20px 0 10px', textAlign: 'center' }}>
-              <div style={{ position: 'relative', textAlign: 'center', marginBottom: '14px' }}>
+            {/* Demo & Role Fast Buttons */}
+            <div style={{ margin: '18px 0 6px', textAlign: 'center' }}>
+              <div style={{ position: 'relative', textAlign: 'center', marginBottom: '12px' }}>
                 <div style={{ height: '1px', backgroundColor: '#E2E8F0', position: 'absolute', top: '50%', left: 0, right: 0 }} />
-                <span style={{ position: 'relative', backgroundColor: '#FFFFFF', padding: '0 12px', fontSize: '12px', color: '#94A3B8' }}>
-                  hoặc trải nghiệm nhanh
+                <span style={{ position: 'relative', backgroundColor: '#FFFFFF', padding: '0 10px', fontSize: '11px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase' }}>
+                  hoặc chọn vai trò kiểm thử nhanh
                 </span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <Button
-                  variant="tonal"
+                  variant="primary"
                   size="M"
                   fullWidth
                   onClick={loginDemo}
+                  style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', border: 'none', color: '#FFFFFF' }}
                 >
-                  Dùng tài khoản demo (Trần Công Quý)
+                  ⚡ Thí sinh 2k8: Trần Công Quý
                 </Button>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <Button
+                    variant="tonal"
+                    size="S"
+                    onClick={loginAdmin}
+                    style={{ backgroundColor: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE' }}
+                  >
+                    👑 Admin Hệ Thống
+                  </Button>
+
+                  <Button
+                    variant="tonal"
+                    size="S"
+                    onClick={loginPXU}
+                    style={{ backgroundColor: '#ECFDF5', color: '#047857', border: '1px solid #A7F3D0' }}
+                  >
+                    🏛️ ĐH Phú Xuân (PXU)
+                  </Button>
+                </div>
 
                 <Button
                   variant="ghost"
-                  size="M"
+                  size="S"
                   fullWidth
                   onClick={loginAsGuest}
                 >

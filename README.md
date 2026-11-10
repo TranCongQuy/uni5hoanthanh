@@ -1,5 +1,5 @@
 # 🎓 UNIPATH 2.0 - HỆ SINH THÁI HƯỚNG NGHIỆP & TUYỂN SINH ĐẠI HỌC THÔNG MINH
-### 📱 Mobile-First Native Experience & 💻 Desktop Widescreen Mode (1-Click Toggle)
+### 📱 Mobile-First Native (< 1024px) & 💻 Desktop Widescreen (≥ 1024px) Tự Động Thích Ứng
 
 [![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://uni5hoanthanh.vercel.app)
 [![React](https://img.shields.io/badge/React-19.x-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
@@ -7,7 +7,7 @@
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 
 > 🌐 **Trang web chính thức:** [https://uni5hoanthanh.vercel.app](https://uni5hoanthanh.vercel.app)  
-> **UniPath 2.0** là nền tảng số toàn diện hỗ trợ học sinh THPT (đặc biệt là 2k8, 2k9) và quý phụ huynh trên hành trình chọn ngành, chọn trường và kiến tạo tương lai nghề nghiệp vững chắc với công nghệ AI đối soát chuẩn xác, mô hình hướng nghiệp quốc tế RIASEC và dữ liệu điểm chuẩn 30 trường đại học hàng đầu 3 miền Bắc - Trung - Nam.
+> **UniPath 2.0** là nền tảng số toàn diện hỗ trợ học sinh THPT (đặc biệt là 2k8, 2k9) và quý phụ huynh trên hành trình chọn ngành, chọn trường và kiến tạo tương lai nghề nghiệp vững chắc với công nghệ AI đối soát chuẩn xác, mô hình hướng nghiệp quốc tế RIASEC, dữ liệu điểm chuẩn 30 trường đại học hàng đầu 3 miền Bắc - Trung - Nam, cùng hệ thống phân quyền quản trị xét tuyển tuyển sinh thông minh (RBAC).
 
 ---
 
@@ -27,23 +27,50 @@ Dự án được nghiên cứu, thiết kế và phát triển độc quyền b
 
 ---
 
+## 📚 BỘ HỒ SƠ TÀI LIỆU KỸ THUẬT & NGHIỆP VỤ CHÍNH THỨC
+
+Để phục vụ công tác đánh giá, nghiệm thu và chấm đồ án, toàn bộ hệ thống được tài liệu hóa chi tiết qua 4 văn bản chuyên sâu:
+
+1. 📋 **[01-NGHIEP-VU.md](01-NGHIEP-VU.md):** Phân tích nghiệp vụ tuyển sinh, lý thuyết hướng nghiệp quốc tế John Holland (RIASEC 6 nhóm tính cách), thuật toán phân tích trúng tuyển AI Matching 2026, ngày hội ảo EduFair LIVE và quy trình xét tuyển học bạ THPT.
+2. 🎨 **[02-GIAO-DIEN-AI.md](02-GIAO-DIEN-AI.md):** Kiến trúc giao diện thích ứng kép (Dual-Engine Adaptive UI: Mobile View < 1024px & Desktop Widescreen $\ge$ 1024px tự động nhận diện mượt mà không thông báo phiền toái), thiết kế trực quan chống tràn (Zero Overflow), hệ thống biểu đồ SVG thuần (Radar, Donut, Line) và bộ tổng hợp âm thanh Web Audio API (SoundFX Synthesizer).
+3. 💻 **[03-KY-THUAT-FRONTEND.md](03-KY-THUAT-FRONTEND.md):** Kiến trúc kỹ thuật lập trình Frontend với React 19, TypeScript 5, Vite 6, quản trị trạng thái toàn cục qua `AppContext`, kỹ thuật khóa cuộn màn hình chống cuộn kép (Body Scroll Lock), và quy trình đóng gói tối ưu hóa asset.
+4. 🛡️ **[04-KY-THUAT-ADMIN.md](04-KY-THUAT-ADMIN.md):** Ma trận phân quyền vai trò người dùng (RBAC), quy trình phê duyệt hồ sơ tuyển sinh (Approval Workflow), cơ chế phân lập dữ liệu độc quyền cho Trường Đại học Phú Xuân (PXU), và hướng dẫn sử dụng bộ chuyển vai trò kiểm thử 1-click.
+
+---
+
+## 🔐 MA TRẬN TÀI KHOẢN & PHÂN QUYỀN HỆ THỐNG (RBAC)
+
+UniPath 2.0 cung cấp 3 tài khoản mẫu được định cấu hình sẵn, cho phép kiểm thử tức thì qua nút bấm **1-Click**:
+
+| Vai trò (Role) | Email đăng nhập | Mật khẩu mẫu | Quyền hạn cốt lõi | Giới hạn bảo mật |
+| :--- | :--- | :---: | :--- | :--- |
+| **Thí sinh 2k8**<br>(Trần Công Quý) | `quy@unipath.vn` | `123456` | Khảo sát Holland RIASEC, AI Matching 2026, tương tác LIVE, nộp đơn xét tuyển, quản lý hồ sơ cá nhân. | Không xem được hồ sơ thí sinh khác; không được phê duyệt hồ sơ; không chỉnh sửa CSDL trường. |
+| **Admin Hệ Thống**<br>(Quản trị UniPath 2.0) | `admin@unipath.vn` | `admin123` | Toàn quyền quản trị hệ thống, xem và duyệt hồ sơ toàn quốc của 30 trường ĐH, điều chỉnh điểm sàn & học phí CSDL. | Không nộp hồ sơ xét tuyển dưới danh nghĩa thí sinh. |
+| **ĐH Phú Xuân**<br>(Ban Tuyển Sinh PXU) | `tuyensinh@pxu.edu.vn` | `pxu123` | Cổng tuyển sinh chuyên biệt của ĐH Phú Xuân: Xem và duyệt hồ sơ nộp vào PXU, quản lý chỉ tiêu OJT & học bổng 2026. | **Phân lập bảo mật tuyệt đối:** Chỉ xem và xử lý hồ sơ thí sinh nộp vào PXU (`uniCode === 'PXU'`), ẩn hoàn toàn 29 trường khác. |
+
+> 💡 **Tính năng Kiểm Thử Nhanh (Role Switcher Bar):** Tại **Tab 4 (Hồ sơ xét tuyển / Quản trị)** trên cả giao diện Desktop và Mobile, thanh công cụ chuyển đổi vai trò cho phép bạn chuyển đổi giữa Thí sinh, Admin và ĐH Phú Xuân chỉ với 1 click chuột!
+
+---
+
 ## 🗺️ BẢNG ÁNH XẠ CHỨC NĂNG & LUỒNG NÚT BẤM (BUTTON CLICK & ACTION MATRIX)
 
 Nhằm đảm bảo tính logic tuyệt đối: **"Bấm nút này thì ra cái gì / trang nào"**, dưới đây là bảng đối soát chi tiết toàn bộ các nút bấm và hành động tương tác trong hệ thống:
 
 | Vị trí / Nút bấm | Hành vi khi nhấn (Action) | Đích đến / Trạng thái hiển thị |
 | :--- | :--- | :--- |
-| **Nút Chuyển Giao Diện (Floating Pill)** | Chuyển đổi qua lại giữa Mobile & Desktop với 1 click | Chuyển ngay giao diện sang `Desktop Widescreen` hoặc `Mobile Native` |
+| **Chuyển đổi màn hình tự động** | Thay đổi kích thước trình duyệt hoặc mở trên thiết bị khác | Tự động chuyển `Desktop Widescreen` ($\ge$ 1024px) hoặc `Mobile Native` (< 1024px) không có thông báo gây phiền toái |
 | **Logo UniPath (Góc trên)** | Đưa người dùng về màn hình Trang chủ | Chuyển về **Tab 0 (Trang chủ)** và cuộn mượt lên đỉnh trang |
-| **Thanh Điều Hướng 5 Tabs** | Chuyển đổi giữa 5 phân hệ tính năng | **Tab 0:** Trang chủ • **Tab 1:** Khảo sát Holland • **Tab 2:** AI Matching • **Tab 3:** EduFair LIVE • **Tab 4:** Hồ sơ |
+| **Thanh Điều Hướng 5 Tabs** | Chuyển đổi giữa 5 phân hệ tính năng | **Tab 0:** Trang chủ • **Tab 1:** Khảo sát Holland • **Tab 2:** AI Matching • **Tab 3:** EduFair LIVE • **Tab 4:** Hồ sơ & Quản trị |
 | **Chuông Thông Báo (Bell Icon)** | Mở trung tâm thông báo tuyển sinh | Mở modal **`NotificationsModal`** (Căn giữa trên Desktop, Bottom-sheet trên Mobile) |
 | **Trợ Lý AI (Robot Icon)** | Mở hộp thoại chat AI 24/7 | Mở modal **`ChatBotModal`** với các câu hỏi gợi ý thông minh |
-| **Nút "⚡ Đăng nhập Demo" (Khi chưa đăng nhập)** | Kích hoạt phiên trải nghiệm nhanh | Đăng nhập tài khoản thí sinh **Trần Công Quý** với dữ liệu mẫu hoàn chỉnh |
-| **Nút "Đăng nhập / Đăng ký"** | Mở form xác thực tài khoản | Mở modal **`AuthModal`** (Chuyển đổi đăng nhập/đăng ký/khách) |
+| **Nút "⚡ Thí sinh (Trần Công Quý)"** | Đăng nhập tài khoản thí sinh 2k8 | Kích hoạt phiên làm việc thí sinh Trần Công Quý với dữ liệu mẫu hoàn chỉnh |
+| **Nút "👑 Admin Hệ Thống"** | Đăng nhập Quản trị viên cấp cao | Mở ngay **Bảng Điều Khiển Tuyển Sinh Toàn Quốc** (xét duyệt 30 trường, sửa CSDL điểm chuẩn) |
+| **Nút "🏛️ ĐH Phú Xuân (PXU)"** | Đăng nhập Ban Tuyển Sinh PXU | Mở ngay **Cổng Tuyển Sinh ĐH Phú Xuân** (xét duyệt hồ sơ nộp PXU, xem chỉ tiêu OJT) |
+| **Thanh RoleSwitcherBar (Tab 4)** | Chuyển đổi vai trò kiểm thử 1-click | Chuyển đổi trạng thái tài khoản và render giao diện tương ứng ngay lập tức |
 | **Hero Slide 1: "Làm bài test RIASEC"** | Điều hướng đến trắc nghiệm tính cách | Chuyển sang **Tab 1 (Khảo sát Holland)** |
 | **Hero Slide 2: "Tham gia EduFair Live"** | Điều hướng vào ngày hội tuyển sinh ảo | Chuyển sang **Tab 3 (Unipath LIVE)** |
-| **Hero Slide 3: "Hỏi Trợ lý AI ngay" / "Gói VIP"** | Tư vấn lộ trình THPT hoặc mở bot | Mở **`ChatBotModal`** hoặc chuyển sang **Tab 4** |
-| **Khung Tìm Kiếm Trường Đại Học** | Nhập tên trường, mã trường, khu vực | Gợi ý tức thì 3 trường phù hợp nhất kèm nút **"Xem tất cả {n} trường"** |
+| **Hero Slide 3: "Hỏi Trợ lý AI ngay"** | Tư vấn lộ trình THPT hoặc mở bot | Mở modal **`ChatBotModal`** |
+| **Khung Tìm Kiếm Trường Đại Học** | Nhập tên trường, mã trường, khu vực | Gợi ý tức thì danh sách trường phù hợp kèm bộ lọc 3 miền |
 | **Nhấn Vào Thẻ Trường Đại Học** | Mở hồ sơ chi tiết trường | Mở modal **`UniversityDetailModal`** (Tổng quan, Điểm chuẩn, Học phí, Review) |
 | **Nút Trái Tim (Yêu thích)** | Thêm hoặc xóa trường khỏi danh sách yêu thích | Lưu trạng thái vào `favoriteIds` (Xem lại tại Tab 4) |
 | **Nút Checkbox / Nút "So sánh"** | Chọn từ 1 đến 3 trường để đối soát | Thêm vào `compareIds` và làm xuất hiện thanh nổi **"So sánh (n/3)"** |
@@ -52,137 +79,49 @@ Nhằm đảm bảo tính logic tuyệt đối: **"Bấm nút này thì ra cái 
 | **Tab 1: "Bắt đầu làm bài trắc nghiệm"** | Khởi chạy 12 câu hỏi chuẩn Hoa Kỳ | Bắt đầu bài test RIASEC với thanh tiến trình trực quan |
 | **Tab 1: "Đối soát cơ hội trúng tuyển cùng AI"** | Chuyển kết quả Holland sang AI Matching | Chuyển sang **Tab 2 (AI Matching)** mang theo mã tính cách vừa đạt được |
 | **Tab 1: "Xem lộ trình nghề nghiệp chi tiết"** | Tra cứu hướng phát triển ngành học | Mở modal **`CareerPathModal`** tương ứng mã RIASEC của thí sinh |
-| **Tab 2: Thanh Trượt Điểm Thi & Học Phí** | Thay đổi tiêu chí điểm THPT và ngân sách | Đưa trạng thái về chưa phân tích để chống tự nhảy kết quả |
+| **Tab 2: Thanh Trượt Điểm Thi & Học Phí** | Thay đổi tiêu chí điểm THPT và ngân sách | Chuyển trạng thái sang chờ chốt thông số, ẩn bảng cũ để chống tự nhảy kết quả |
 | **Tab 2: "Phân tích cơ hội trúng tuyển ngay"** | AI kích hoạt thuật toán đối soát 30 trường | Hiển thị thẻ xác nhận ✅ và phân 3 nhóm: **An toàn - Vừa sức - Thách thức** |
 | **Tab 3: Tương Tác Thích, Thả Tim, Vỗ Tay** | Kích hoạt hiệu ứng âm thanh & hình ảnh | Phát âm thanh vỗ tay/tim/pop qua **Web Audio API** kèm emoji bay bổng |
 | **Tab 3: Gửi Bình Luận Trực Tiếp** | Gửi câu hỏi vào khung chat phòng live | Đẩy tin nhắn lên khung chat và nhận phản hồi tự động từ ban tư vấn |
-| **Tab 4: "Chỉnh sửa thông tin hồ sơ"** | Cập nhật điểm thi dự kiến, trường THPT | Mở modal **`EditProfileModal`** |
-| **Tab 4: "Xem tất cả hồ sơ ({n})"** | Quản lý toàn bộ đơn đăng ký xét tuyển | Mở modal **`AllApplicationsModal`** phân loại theo 5 trạng thái |
-| **Tab 4: "Chi tiết hồ sơ"** | Xem thông tin chi tiết đơn đăng ký | Mở modal **`ViewApplicationModal`** kèm mã hồ sơ và biên nhận |
-| **Tab 4: "Hủy hồ sơ"** | Hủy đơn đăng ký đang xét duyệt | Hộp thoại xác nhận an toàn, chuyển trạng thái thành **Đã hủy** |
-| **Tab 4: "Cài đặt & Bản quyền nhóm UP5"** | Xem giới thiệu, đổi giao diện, khôi phục | Mở modal **`SettingsModal`** |
-| **Tab 4: "Đăng xuất tài khoản"** | Thoát phiên làm việc hiện tại | Mở xác nhận đăng xuất và đưa về trạng thái khách an toàn |
+| **Tab 4 (Admin): "Duyệt trúng tuyển"** | Phê duyệt hồ sơ thí sinh | Chuyển trạng thái sang `Đã trúng tuyển` (Màu xanh emerald `#10B981`) |
+| **Tab 4 (Admin): "Yêu cầu bổ sung"** | Gửi yêu cầu hoàn thiện giấy tờ | Chuyển trạng thái sang `Thiếu hồ sơ` (Màu xanh dương `#2563EB`) |
+| **Tab 4 (Admin): "Từ chối hồ sơ"** | Từ chối do không đủ điểm sàn | Chuyển trạng thái sang `Đã bị hủy` (Màu đỏ `#EF4444`) |
+| **Tab 4 (Admin): "Sửa / Lưu CSDL"** | Tinh chỉnh điểm chuẩn & học phí trường | Cập nhật trực tiếp số liệu trường vào CSDL chuẩn và lưu vào State |
+| **Tab 4 (PXU): "Duyệt trúng tuyển PXU"** | Phê duyệt trúng tuyển sớm ĐH Phú Xuân | Gửi giấy báo trúng tuyển sớm ĐH Phú Xuân cho thí sinh |
 
 ---
 
-## 🌟 CÁC PHÂN HỆ TÍNH NĂNG NỔI BẬT
+## 🛠️ HƯỚNG DẪN CÀI ĐẶT & CHẠY LOCAL (DEVELOPMENT SETUP)
 
-### 1. 🧭 Trắc nghiệm Tính cách Nghề nghiệp RIASEC (Holland Code)
-- Chuẩn hóa theo mô hình tâm lý học hướng nghiệp Holland 6 nhóm tính cách: **Realistic, Investigative, Artistic, Social, Enterprising, Conventional**.
-- Trực quan hóa kết quả bằng **Biểu đồ Radar SVG đa chiều**, phân tích điểm mạnh - điểm yếu và đề xuất danh mục các chuyên ngành đại học phù hợp nhất.
+### Yêu cầu môi trường
+* **Node.js:** Phiên bản 18.x trở lên (khuyên dùng Node 20 LTS).
+* **Trình quản lý gói:** `npm` (đi kèm Node.js).
 
-### 2. 🤖 AI Matching 2026 - Dự đoán Xác suất Trúng tuyển
-- Thuật toán AI phân tích tương quan giữa điểm thi THPT dự kiến, ngân sách học phí gia đình và khu vực ưu tiên (Bắc, Trung, Nam).
-- Quy trình phân tích chuẩn xác theo ý người dùng: Chỉ tính toán khi người dùng bấm nút **"Phân tích cơ hội trúng tuyển ngay"**; khi kéo thanh điểm hoặc ngân sách, kết quả cũ sẽ tự động ẩn đi và yêu cầu bấm phân tích lại để đảm bảo tính thời điểm.
-- Phân loại thông minh 30 trường đại học thành 3 nhóm cơ hội trúng tuyển:
-  - 🟢 **Nhóm An Toàn (> 85%):** Vùng điểm đệm vững chắc.
-  - 🟡 **Nhóm Vừa Sức (65% - 85%):** Mục tiêu trọng tâm vừa vặn năng lực.
-  - 🔴 **Nhóm Thử Thách (< 65%):** Khát vọng vươn tầm và bứt phá.
-
-### 3. 🏛️ Cơ sở Dữ liệu 30 Trường Đại học & Công cụ So sánh
-- Dữ liệu chuẩn xác của 30 trường đại học danh tiếng tại Việt Nam: mã trường, học phí/năm, phổ điểm chuẩn 3 năm liên tiếp (2022, 2023, 2024), tỷ lệ sinh viên có việc làm sau tốt nghiệp.
-- **Biểu đồ cột (Bar Chart) trực quan:** So sánh trực tiếp mức điểm chuẩn từng năm và mức điểm của thí sinh.
-- **Tính năng So sánh Trường:** Cho phép ghim và đối chiếu từ 2 đến 3 trường cùng lúc theo từng tiêu chí với thanh nổi cố định trên màn hình.
-
-### 4. 🔴 Unipath LIVE - Virtual EduFair Trực tuyến
-- Không gian giao lưu trực tuyến Virtual EduFair kết nối trực tiếp học sinh với ban tuyển sinh.
-- **Bộ tổng hợp âm thanh Web Audio API độc quyền:** Nút Vỗ tay phát tiếng vỗ tay chân thực, nút Thả tim phát hợp âm chuông ngân ngọt ngào kèm pháo hoa confetti, nút Thích phát tiếng pop sôi động kèm các icon cảm xúc bay lượn trên màn hình.
-- Khung chat trực tiếp tự động cuộn mượt mà với 8 bình luận mới nhất, chống rò rỉ bộ nhớ.
-
-### 5. 📄 Cổng Nộp Hồ sơ Xét tuyển Sớm & Quản trị 360°
-- Biểu mẫu nộp hồ sơ trực tuyến tinh gọn: Điền thông tin cá nhân ➔ Chọn ngành & phương thức xét tuyển ➔ Xác nhận nộp thành công.
-- Theo dõi tiến độ hồ sơ theo 5 trạng thái phân định: **Đang xét duyệt**, **Hồ sơ hợp lệ**, **Thiếu hồ sơ**, **Đã hủy**, **Đã bị hủy**.
-
-### 6. 📱 Chế độ Kép: Mobile Native & Desktop Widescreen
-- **Chuyển đổi tức thì:** Nút bấm nổi thông minh đặt ở vị trí khoa học, không đè lên các nút thao tác khác.
-- **Trên Mobile:** Giao diện một tay, bottom navigation bar, modal dạng ngăn kéo vuốt công thái học.
-- **Trên Desktop:** Giao diện toàn màn hình, topbar cố định, bố cục 3-4 cột rộng rãi, các modal tự động căn giữa màn hình thành dạng dialog sang trọng với hiệu ứng kính mờ (backdrop blur).
-
----
-
-## 🛠️ KIẾN TRÚC CÔNG NGHỆ (TECH STACK)
-
-| Phân hệ | Công nghệ / Thư viện | Vai trò & Ưu điểm |
-| :--- | :--- | :--- |
-| **Framework** | React 19 + TypeScript | Hiệu năng cao, strict-typing an toàn tuyệt đối |
-| **Bundler** | Vite 6 | Thời gian khởi động dev server tính bằng mili-giây, build tối ưu |
-| **Styling** | Modern CSS + Tailwind | Tối ưu hóa hiển thị responsive trên cả smartphone và laptop |
-| **Iconography** | Lucide React | Bộ icon hiện đại, sắc nét chuẩn giao diện phẳng |
-| **Audio Synthesis**| Web Audio API (Native) | Tự tổng hợp âm thanh vỗ tay/tim/pop mà không cần tải file MP3 nặng |
-| **Particle FX** | Canvas Confetti + CSS Keyframes | Hiệu ứng chúc mừng, thả tim và emoji bay lượn sinh động |
-| **State Management**| React Context + Local Storage | Lưu phiên phân tích AI và đồng bộ dữ liệu người dùng |
-| **Hosting & CI/CD**| Vercel Cloud Platform | Tự động build và deploy liên tục mỗi khi cập nhật GitHub |
-
----
-
-## 🚀 HƯỚNG DẪN CÀI ĐẶT & CHẠY DỰ ÁN (LOCAL DEVELOPMENT)
-
-### Yêu cầu:
-- [Node.js](https://nodejs.org/) $\ge$ 18.x
-- Quản lý gói `npm` hoặc `pnpm` / `yarn`
-
-### Các bước thực hiện:
+### Các bước khởi chạy dự án:
 ```bash
-# 1. Clone mã nguồn từ GitHub
-git clone https://github.com/TranCongQuy/uni5hoanthanh.git
+# 1. Di chuyển vào thư mục dự án
+cd "d:\VSCODE PXU K22\unipath-web"
 
-# 2. Di chuyển vào thư mục dự án
-cd uni5hoanthanh
-
-# 3. Cài đặt các gói phụ thuộc
+# 2. Cài đặt các gói phụ thuộc
 npm install
 
-# 4. Chạy máy chủ phát triển cục bộ
+# 3. Khởi chạy máy chủ phát triển (Vite Dev Server)
 npm run dev
-```
 
-Mở trình duyệt và truy cập: **`http://localhost:5173`**
-
-### Kiểm tra cú pháp và build sản xuất:
-```bash
-# Kiểm tra linting (Đảm bảo 0 lỗi)
+# 4. Kiểm tra chất lượng mã nguồn (ESLint - 0 lỗi)
 npm run lint
 
-# Build bản tối ưu hóa cho Production
+# 5. Đóng gói bản phát hành sản phẩm (Production Build)
 npm run build
 ```
 
 ---
 
-## 📂 CẤU TRÚC THƯ MỤC NGUỒN
+## 🌟 ĐƠN VỊ THỰC HIỆN & BẢN QUYỀN
 
-```
-unipath-web/
-├── public/
-│   ├── images/              # Logo UniPath, campus 30 trường, banner EduFair, avatar
-│   └── favicon.ico
-├── src/
-│   ├── components/
-│   │   ├── auth/            # AuthScreen (Màn hình đăng nhập mobile)
-│   │   ├── charts/          # RadarChart (RIASEC), BarChart (Điểm chuẩn 3 năm)
-│   │   ├── common/          # ViewModeToggle, UI Components (Button, Avatar, Badge)
-│   │   ├── desktop/         # DesktopView.tsx (Giao diện Desktop Widescreen hoàn chỉnh)
-│   │   ├── mobile/          # MobileView.tsx (Giao diện Mobile First chuẩn app)
-│   │   ├── modals/          # 12 Modal: Chi tiết trường, So sánh, ChatBot, Lộ trình THPT...
-│   │   ├── navigation/      # BottomNavigation.tsx (Thanh điều hướng dưới mobile)
-│   │   └── tabs/            # HomeTab, QuizTab, MatchingTab, LiveTab, ProfileTab
-│   ├── context/             # AppContext.tsx (Quản lý toàn bộ State toàn cục)
-│   ├── data/                # MockData.ts (30 trường ĐH, 12 câu hỏi RIASEC, ngành đào tạo)
-│   ├── utils/               # sound.ts (Bộ tổng hợp âm thanh Web Audio API độc quyền)
-│   ├── types/               # Type definitions (University, Application, HollandCode...)
-│   ├── App.tsx              # Root Router & Modal Controller
-│   ├── main.tsx             # React DOM Entrypoint
-│   └── index.css            # Responsive resets & animation keyframes
-├── package.json
-└── README.md
-```
-
----
-
-## 🌟 THÔNG ĐIỆP DỰ ÁN
-
-> *"Chọn đúng trường - Đi đúng đường - Vững tương lai cùng Unipath!"*  
-> Hệ sinh thái Tuyển sinh Unipath 2.0 cam kết đồng hành cùng học sinh và phụ huynh Việt Nam với sự chuẩn xác, tiện lợi và nhân văn nhất.
-
----
-**Trường Đại học Phú Xuân (PXU) • Nhóm UP5 • 2026**
+Dự án được thực hiện phục vụ công tác tuyển sinh đại học số và hướng nghiệp THPT toàn quốc:
+* 🏛️ **Đơn vị chủ quản & Đào tạo:** **Trường Đại học Phú Xuân (PXU)**
+* 👥 **Nhóm nghiên cứu & phát triển UP5:**
+  * 👑 **Trưởng nhóm:** **Dương Đình Phát**
+  * 💻 **Kỹ sư phát triển phần mềm:** **Trần Công Quý**
+  * 🤝 **Thành viên:** **Trần Thị Nhung, Nguyễn Thị Lý Trà My, Thái Thị Nga**

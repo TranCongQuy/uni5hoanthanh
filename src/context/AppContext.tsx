@@ -2,12 +2,17 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type {
   AIMatchState,
   ApplicationRecord,
+  ApplicationStatus,
   ConsultationBooking,
+  CurrentUser,
   HollandCode,
   University,
   UserProfile,
+  UserRole,
   ViewMode,
 } from '../types';
+import { ACCOUNT_STUDENT, ACCOUNT_ADMIN, ACCOUNT_PXU } from '../types';
+import { UNIVERSITIES } from '../data/MockData';
 
 interface HollandResult {
   primaryCode: HollandCode;
@@ -17,12 +22,15 @@ interface HollandResult {
 }
 
 interface AppContextType {
-  // Auth
+  // Auth & RBAC
   isLoggedIn: boolean;
   isGuest: boolean;
-  user: { email: string; name: string };
+  user: CurrentUser;
   login: (email: string, pass: string) => boolean;
   loginDemo: () => void;
+  loginAdmin: () => void;
+  loginPXU: () => void;
+  switchRole: (role: UserRole) => void;
   loginAsGuest: () => void;
   register: (fullName: string, email: string, pass: string) => boolean;
   logout: () => void;
@@ -99,12 +107,17 @@ interface AppContextType {
   applications: ApplicationRecord[];
   addApplication: (app: Omit<ApplicationRecord, 'id' | 'submittedAt' | 'status' | 'statusColor' | 'code'>) => void;
   cancelApplication: (appId: string) => void;
+  updateApplicationStatus: (id: string, status: ApplicationStatus, notes?: string) => void;
   selectedAppForDetail: ApplicationRecord | null;
   openApplicationDetail: (app: ApplicationRecord) => void;
   closeApplicationDetail: () => void;
   isAllApplicationsOpen: boolean;
   openAllApplications: () => void;
   closeAllApplications: () => void;
+
+  // Universities database management
+  universitiesList: University[];
+  updateUniversityMetrics: (id: number, score2024: number, tuitionMin: number) => void;
 
   // Toast
   toastMessage: string | null;
@@ -213,6 +226,38 @@ const INITIAL_APPLICATIONS: ApplicationRecord[] = [
     notes: 'Hồ sơ đã bị hội đồng tuyển sinh từ chối/hủy do không đạt điểm sàn nhận hồ sơ tối thiểu.',
     cancelReason: 'Nhà trường từ chối do không đủ điều kiện ngưỡng điểm sàn',
   },
+  {
+    id: 'app-6',
+    code: 'HS-2026-PXU06',
+    uniId: 11,
+    uniName: 'Đại học Phú Xuân',
+    uniCode: 'PXU',
+    major: 'Quản trị Kinh doanh & Marketing Số',
+    candidateName: 'Nguyễn Văn An',
+    phone: '0988 776 655',
+    email: 'an.nguyen@thpt.edu.vn',
+    score: 22.5,
+    submittedAt: '02/11/2026 14:10',
+    status: 'Đang xét duyệt',
+    statusColor: '#F59E0B',
+    notes: 'Đăng ký xét tuyển học bạ THPT 3 học kỳ, điểm trung bình 8.2. Đăng ký học bổng OJT.',
+  },
+  {
+    id: 'app-7',
+    code: 'HS-2026-PXU07',
+    uniId: 11,
+    uniName: 'Đại học Phú Xuân',
+    uniCode: 'PXU',
+    major: 'Thiết kế Đồ họa & Kỹ thuật số',
+    candidateName: 'Lê Thị Thảo Vy',
+    phone: '0935 123 789',
+    email: 'thaovy.le@gmail.com',
+    score: 25.0,
+    submittedAt: '04/11/2026 16:30',
+    status: 'Thiếu hồ sơ',
+    statusColor: '#2563EB',
+    notes: 'Cần nộp bổ sung bản sao công chứng CCCD và phiếu điểm học bạ trước ngày 20/11.',
+  },
 ];
 
 const DEFAULT_PROFILE: UserProfile = {
@@ -253,14 +298,11 @@ const clearDemoStorage = () => {
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // --- Auth State ---
+  // --- Auth State & RBAC ---
   // Mandatory gateway: always starts at false so every user starts at Onboarding & AuthScreen
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [isGuest, setIsGuest] = useState<boolean>(false);
-  const [user, setUser] = useState<{ email: string; name: string }>({
-    email: DEMO_EMAIL,
-    name: DEMO_NAME,
-  });
+  const [user, setUser] = useState<CurrentUser>(ACCOUNT_STUDENT);
 
   // --- Profile State (Clean, pristine default) ---
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
@@ -325,18 +367,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState<string>('');
 
-  // --- View Mode State (Mobile vs Desktop / Laptop) ---
+  // --- Universities Database State ---
+  const [universitiesList, setUniversitiesList] = useState<University[]>(UNIVERSITIES);
+
+  const updateUniversityMetrics = (id: number, score2024: number, tuitionMin: number) => {
+    setUniversitiesList((prev) =>
+      prev.map((u) => (u.id === id ? { ...u, score2024, tuitionMin } : u))
+    );
+    showToast('Đã cập nhật số liệu trường đại học thành công!');
+  };
+
+  // --- Automatic View Mode Detection (Responsive without any toasts) ---
   const [viewMode, setViewModeState] = useState<ViewMode>(() => {
-    try {
-      const saved = localStorage.getItem('unipath_view_mode');
-      if (saved === 'desktop' || saved === 'mobile') {
-        return saved;
-      }
-    } catch {
-      // ignore
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024 ? 'desktop' : 'mobile';
     }
     return 'mobile';
   });
+
+  useEffect(() => {
+    const handleResize = () => {
+      const isDesktop = window.innerWidth >= 1024;
+      setViewModeState(isDesktop ? 'desktop' : 'mobile');
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // --- Toast Helper ---
   const showToast = (msg: string) => {
@@ -346,19 +402,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, 2800);
   };
 
+  // Silent view mode setters (no notifications)
   const setViewMode = (mode: ViewMode) => {
     setViewModeState(mode);
-    try {
-      localStorage.setItem('unipath_view_mode', mode);
-    } catch {
-      // ignore
-    }
-    showToast(mode === 'desktop' ? 'Đã chuyển sang giao diện Laptop / Desktop 💻' : 'Đã chuyển sang giao diện Điện thoại 📱');
   };
 
   const toggleViewMode = () => {
-    const nextMode = viewMode === 'desktop' ? 'mobile' : 'desktop';
-    setViewMode(nextMode);
+    setViewModeState((prev) => (prev === 'desktop' ? 'mobile' : 'desktop'));
   };
 
   useEffect(() => {
@@ -429,10 +479,64 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('unipath_notifications', notifications.toString());
   }, [notifications]);
 
-  // --- Auth Handlers ---
+  // --- Auth & RBAC Handlers ---
+  const loginAdmin = () => {
+    clearDemoStorage();
+    setIsLoggedIn(true);
+    setIsGuest(false);
+    setUser(ACCOUNT_ADMIN);
+    setProfile({
+      ...DEFAULT_PROFILE,
+      name: ACCOUNT_ADMIN.name,
+      email: ACCOUNT_ADMIN.email,
+      school: ACCOUNT_ADMIN.organization || 'Hệ Thống Tuyển Sinh Quốc Gia',
+    });
+    setActiveTab(4);
+    setIsAuthModalOpen(false);
+    showToast('Đăng nhập Quản trị viên Hệ Thống UniPath 2.0 👑');
+  };
+
+  const loginPXU = () => {
+    clearDemoStorage();
+    setIsLoggedIn(true);
+    setIsGuest(false);
+    setUser(ACCOUNT_PXU);
+    setProfile({
+      ...DEFAULT_PROFILE,
+      name: ACCOUNT_PXU.name,
+      email: ACCOUNT_PXU.email,
+      school: 'Trường Đại học Phú Xuân (PXU)',
+      dreamUni: 'PXU - Đại học Phú Xuân',
+    });
+    setActiveTab(4);
+    setIsAuthModalOpen(false);
+    showToast('Đăng nhập Cổng tuyển sinh ĐH Phú Xuân (PXU) 🏛️');
+  };
+
+  const switchRole = (role: UserRole) => {
+    if (role === 'admin') {
+      setUser(ACCOUNT_ADMIN);
+      showToast('Đã chuyển sang vai trò: Admin Hệ Thống 👑');
+    } else if (role === 'university_pxu') {
+      setUser(ACCOUNT_PXU);
+      showToast('Đã chuyển sang vai trò: Đại diện ĐH Phú Xuân 🏛️');
+    } else {
+      setUser(ACCOUNT_STUDENT);
+      showToast('Đã chuyển sang vai trò: Thí sinh Trần Công Quý ⚡');
+    }
+  };
+
   const login = (email: string, pass: string): boolean => {
     const cleanEmail = email.trim().toLowerCase();
-    if (cleanEmail === DEMO_EMAIL && pass === DEMO_PASS) {
+    if (cleanEmail === 'admin@unipath.vn') {
+      loginAdmin();
+      return true;
+    }
+    if (cleanEmail === 'tuyensinh@pxu.edu.vn') {
+      loginPXU();
+      return true;
+    }
+    if (cleanEmail === DEMO_EMAIL && (pass === DEMO_PASS || pass.length >= 6)) {
       loginDemo();
       return true;
     }
@@ -445,7 +549,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (match) {
           setIsLoggedIn(true);
           setIsGuest(false);
-          setUser({ email: match.email, name: match.name });
+          setUser({
+            email: match.email,
+            name: match.name,
+            role: 'student',
+            title: 'Học sinh THPT 2026',
+            organization: 'Thí sinh tự do',
+            avatar: '/images/avatar_user.png',
+          });
           setProfile((prev) => ({ ...prev, name: match.name, email: match.email }));
           showToast(`Đăng nhập thành công! Xin chào ${match.name}`);
           setIsAuthModalOpen(false);
@@ -465,7 +576,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // 2. Reset in-memory state to 100% pristine defaults (zero saved progress)
     setIsLoggedIn(true);
     setIsGuest(false);
-    setUser({ email: DEMO_EMAIL, name: DEMO_NAME });
+    setUser(ACCOUNT_STUDENT);
     setProfile({ ...DEFAULT_PROFILE });
     setHollandResult(null);
     setAIMatchState({
@@ -498,7 +609,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     clearDemoStorage();
     setIsLoggedIn(true);
     setIsGuest(true);
-    setUser({ email: 'khach@unipath.vn', name: 'Khách trải nghiệm' });
+    setUser({
+      email: 'khach@unipath.vn',
+      name: 'Khách trải nghiệm',
+      role: 'student',
+      title: 'Khách vãng lai',
+      organization: 'Trải nghiệm tự do',
+      avatar: '/images/avatar_user.png',
+    });
     setProfile({
       ...DEFAULT_PROFILE,
       name: 'Khách trải nghiệm',
@@ -549,7 +667,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setIsLoggedIn(true);
     setIsGuest(false);
-    setUser({ email: newUser.email, name: newUser.name });
+    setUser({
+      email: newUser.email,
+      name: newUser.name,
+      role: 'student',
+      title: 'Học sinh THPT',
+      organization: 'Thí sinh tự do',
+      avatar: '/images/avatar_user.png',
+    });
     setProfile((prev) => ({ ...prev, name: newUser.name, email: newUser.email }));
     showToast('Tạo tài khoản thành công!');
     setIsAuthModalOpen(false);
@@ -560,7 +685,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     clearDemoStorage();
     setIsLoggedIn(false);
     setIsGuest(false);
-    setUser({ email: '', name: '' });
+    setUser(ACCOUNT_STUDENT);
     setHollandResult(null);
     setAIMatchState({
       hasEvaluated: false,
@@ -687,7 +812,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.clear();
     setIsLoggedIn(false);
     setIsGuest(false);
-    setUser({ email: DEMO_EMAIL, name: DEMO_NAME });
+    setUser(ACCOUNT_STUDENT);
     setProfile({ ...DEFAULT_PROFILE });
     setBookings([]);
     setFavoriteIds([11, 1, 21]);
@@ -783,6 +908,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Đã hủy hồ sơ xét tuyển thành công.');
   };
 
+  const updateApplicationStatus = (id: string, status: ApplicationStatus, notes?: string) => {
+    setApplications((prev) =>
+      prev.map((app) => {
+        if (app.id === id) {
+          let statusColor = '#F59E0B';
+          if (status === 'Đã trúng tuyển') statusColor = '#10B981';
+          else if (status === 'Thiếu hồ sơ') statusColor = '#2563EB';
+          else if (status === 'Đã bị hủy' || status === 'Đã hủy') statusColor = '#EF4444';
+
+          const updated: ApplicationRecord = {
+            ...app,
+            status,
+            statusColor,
+            notes: notes !== undefined ? notes : app.notes,
+          };
+          if (selectedAppForDetail?.id === id) {
+            setSelectedAppForDetail(updated);
+          }
+          return updated;
+        }
+        return app;
+      })
+    );
+    showToast(`Đã cập nhật trạng thái hồ sơ: ${status}`);
+  };
+
   const openApplicationDetail = (app: ApplicationRecord) => {
     setSelectedAppForDetail(app);
   };
@@ -826,6 +977,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         user,
         login,
         loginDemo,
+        loginAdmin,
+        loginPXU,
+        switchRole,
         loginAsGuest,
         register,
         logout,
@@ -888,12 +1042,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         applications,
         addApplication,
         cancelApplication,
+        updateApplicationStatus,
         selectedAppForDetail,
         openApplicationDetail,
         closeApplicationDetail,
         isAllApplicationsOpen,
         openAllApplications,
         closeAllApplications,
+        universitiesList,
+        updateUniversityMetrics,
         toastMessage,
         showToast,
         searchKeyword,

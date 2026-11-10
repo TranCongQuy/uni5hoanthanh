@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { MobileView } from './components/mobile/MobileView';
 import { DesktopView } from './components/desktop/DesktopView';
-import { ViewModeToggle } from './components/common/ViewModeToggle';
 import { UniversityDetailModal } from './components/modals/UniversityDetailModal';
 import { CompareModal } from './components/modals/CompareModal';
 import { ChatBotModal } from './components/modals/ChatBotModal';
@@ -102,9 +101,6 @@ const MainApp: React.FC = () => {
         <NotificationsModal />
         <AuthModal />
 
-        {/* Floating One-Click Mode Toggle Widget */}
-        <ViewModeToggle />
-
         {/* System Toast Notification */}
         <Toast message={toastMessage} />
       </>
@@ -123,9 +119,6 @@ const MainApp: React.FC = () => {
 
         {/* Full Authentication Screen */}
         <AuthScreen />
-
-        {/* Floating One-Click Mode Toggle Widget so user can switch to Desktop with 1 click */}
-        <ViewModeToggle />
 
         {/* System Toast Notification */}
         <Toast message={toastMessage} />
@@ -157,9 +150,6 @@ const MainApp: React.FC = () => {
       <AllApplicationsModal />
       <NotificationsModal />
       <AuthModal />
-
-      {/* Floating One-Click Mode Toggle Widget */}
-      <ViewModeToggle />
 
       {/* System Toast Notification */}
       <Toast message={toastMessage} />

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Mail, Lock, User, Eye, EyeOff, CheckSquare, Square, ArrowRight, Sparkles, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, CheckSquare, Square, Sparkles, ShieldCheck, ShieldAlert, School } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../common/UI';
 
 export const AuthScreen: React.FC = () => {
-  const { login, register, loginDemo, setViewMode } = useApp();
+  const { login, register, loginDemo, loginAdmin, loginPXU } = useApp();
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [showPassword, setShowPassword] = useState(false);
@@ -82,49 +82,6 @@ export const AuthScreen: React.FC = () => {
         boxSizing: 'border-box',
       }}
     >
-      {/* Quick switcher to Desktop Mode */}
-      <div
-        style={{
-          width: '100%',
-          maxWidth: '460px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '12px',
-        }}
-      >
-        <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 700 }}>
-          📱 Đang ở Chế độ Điện thoại (Mobile)
-        </span>
-        <button
-          type="button"
-          onClick={() => setViewMode('desktop')}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            backgroundColor: '#0F172A',
-            color: '#FFFFFF',
-            border: 'none',
-            borderRadius: '20px',
-            padding: '5px 12px',
-            fontSize: '11.5px',
-            fontWeight: 700,
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#1E293B';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#0F172A';
-          }}
-        >
-          <span>💻 Sang màn hình Laptop</span>
-        </button>
-      </div>
-
       <div
         style={{
           width: '100%',
@@ -487,113 +444,143 @@ export const AuthScreen: React.FC = () => {
             </form>
           )}
 
-          {/* 3. Divider: HOẶC TRẢI NGHIỆM TÀI KHOẢN THỬ NGHIỆM */}
-          <div style={{ margin: '24px 0 16px', position: 'relative', textAlign: 'center' }}>
+          {/* 3. Divider: CHỌN VAI TRÒ TRẢI NGHIỆM & KIỂM THỬ */}
+          <div style={{ margin: '22px 0 14px', position: 'relative', textAlign: 'center' }}>
             <div style={{ height: '1px', backgroundColor: '#E2E8F0', position: 'absolute', top: '50%', left: 0, right: 0 }} />
-            <span style={{ position: 'relative', backgroundColor: '#FFFFFF', padding: '0 14px', fontSize: '12px', fontWeight: 700, color: '#94A3B8' }}>
-              HOẶC TRẢI NGHIỆM NHANH
+            <span style={{ position: 'relative', backgroundColor: '#FFFFFF', padding: '0 12px', fontSize: '11.5px', fontWeight: 800, color: '#64748B', letterSpacing: '0.3px', textTransform: 'uppercase' }}>
+              CHỌN TÀI KHOẢN TRẢI NGHIỆM (1-CLICK)
             </span>
           </div>
 
-          {/* 4. MỤC: TIẾP TỤC VỚI TÀI KHOẢN THỬ NGHIỆM TRẦN CÔNG QUÝ */}
-          <div
-            style={{
-              background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 50%, #FDE68A 100%)',
-              border: '2px solid #F59E0B',
-              borderRadius: '22px',
-              padding: '16px',
-              boxShadow: '0 6px 20px rgba(245, 158, 11, 0.15)',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Top VIP Badge */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 900,
-                  color: '#92400E',
-                  backgroundColor: 'rgba(255,255,255,0.85)',
-                  padding: '3px 10px',
-                  borderRadius: '10px',
-                  border: '1px solid #FCD34D',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
-                <Sparkles size={13} color="#D97706" />
-                TÀI KHOẢN THỬ NGHIỆM MẪU
-              </span>
-
-              <span style={{ fontSize: '11px', color: '#B45309', fontWeight: 700 }}>
-                1-Click vào app
-              </span>
-            </div>
-
-            {/* Candidate Info Box */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-              <div
-                style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  border: '2px solid #F59E0B',
-                  flexShrink: 0,
-                  backgroundColor: '#FFFFFF',
-                }}
-              >
-                <img
-                  src="/images/avatar_user.png"
-                  alt="Trần Công Quý"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                />
-              </div>
-
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '15px', fontWeight: 800, color: '#78350F' }}>
-                  Trần Công Quý
-                </div>
-                <div style={{ fontSize: '12px', color: '#92400E', marginTop: '2px' }}>
-                  Email: <strong>quy@unipath.vn</strong> • MK: <strong>123456</strong>
-                </div>
-              </div>
-            </div>
-
-            <p style={{ margin: '0 0 12px', fontSize: '12px', color: '#78350F', lineHeight: 1.4 }}>
-              Đầy đủ dữ liệu mẫu: Điểm thi 24.5đ, hồ sơ xét tuyển ĐH Phú Xuân & Bách Khoa, kết quả RIASEC.
-            </p>
-
-            {/* Primary Action Button */}
-            <button
-              type="button"
-              onClick={loginDemo}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* 1. Candidate Role: Trần Công Quý */}
+            <div
               style={{
-                width: '100%',
-                height: '48px',
-                borderRadius: '14px',
-                border: 'none',
-                background: 'linear-gradient(135deg, #D97706 0%, #B45309 100%)',
-                color: '#FFFFFF',
-                fontSize: '14px',
-                fontWeight: 800,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(217, 119, 6, 0.35)',
-                transition: 'all 0.2s',
+                background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)',
+                border: '1.5px solid #F59E0B',
+                borderRadius: '16px',
+                padding: '12px 14px',
+                boxShadow: '0 2px 8px rgba(245, 158, 11, 0.1)',
               }}
             >
-              <span>Tiếp tục với tài khoản thử nghiệm Trần Công Quý</span>
-              <ArrowRight size={16} />
-            </button>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 900, color: '#92400E', backgroundColor: '#FFFFFF', padding: '2px 8px', borderRadius: '8px', border: '1px solid #FCD34D', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <Sparkles size={12} color="#D97706" />
+                  VAI TRÒ THÍ SINH
+                </span>
+                <span style={{ fontSize: '11px', color: '#B45309', fontWeight: 700 }}>quy@unipath.vn</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#78350F' }}>Trần Công Quý (2k8)</div>
+                  <div style={{ fontSize: '11.5px', color: '#92400E' }}>Khảo sát Holland, AI Matching, Nộp hồ sơ</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={loginDemo}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #D97706 0%, #B45309 100%)',
+                    color: '#FFFFFF',
+                    fontSize: '12.5px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 2px 8px rgba(217,119,6,0.3)',
+                  }}
+                >
+                  ⚡ Vào Thí sinh
+                </button>
+              </div>
+            </div>
+
+            {/* 2. System Admin Role */}
+            <div
+              style={{
+                background: 'linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%)',
+                border: '1.5px solid #3B82F6',
+                borderRadius: '16px',
+                padding: '12px 14px',
+                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.1)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 900, color: '#1E40AF', backgroundColor: '#FFFFFF', padding: '2px 8px', borderRadius: '8px', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <ShieldAlert size={12} color="#2563EB" />
+                  ADMIN TOÀN QUỐC
+                </span>
+                <span style={{ fontSize: '11px', color: '#1D4ED8', fontWeight: 700 }}>admin@unipath.vn</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A' }}>Admin Hệ Thống UniPath</div>
+                  <div style={{ fontSize: '11.5px', color: '#475569' }}>Duyệt mọi hồ sơ, quản trị điểm & học phí 30 trường</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={loginAdmin}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                    color: '#FFFFFF',
+                    fontSize: '12.5px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 2px 8px rgba(37,99,235,0.3)',
+                  }}
+                >
+                  👑 Vào Admin
+                </button>
+              </div>
+            </div>
+
+            {/* 3. University Representative: Trường ĐH Phú Xuân */}
+            <div
+              style={{
+                background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+                border: '1.5px solid #10B981',
+                borderRadius: '16px',
+                padding: '12px 14px',
+                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.1)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 900, color: '#065F46', backgroundColor: '#FFFFFF', padding: '2px 8px', borderRadius: '8px', border: '1px solid #A7F3D0', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <School size={12} color="#059669" />
+                  ĐẠI HỌC PHÚ XUÂN (PXU)
+                </span>
+                <span style={{ fontSize: '11px', color: '#047857', fontWeight: 700 }}>tuyensinh@pxu.edu.vn</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#064E3B' }}>Ban Tuyển sinh ĐH Phú Xuân</div>
+                  <div style={{ fontSize: '11.5px', color: '#047857' }}>Chỉ quản lý & xét duyệt hồ sơ nộp vào PXU</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={loginPXU}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                    color: '#FFFFFF',
+                    fontSize: '12.5px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 2px 8px rgba(5,150,105,0.3)',
+                  }}
+                >
+                  🏛️ Vào ĐH Phú Xuân
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Privacy & Trust footer note */}

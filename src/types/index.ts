@@ -93,6 +93,7 @@ export type ApplicationStatus =
   | 'Đang xét duyệt'
   | 'Hồ sơ hợp lệ'
   | 'Thiếu hồ sơ'
+  | 'Đã trúng tuyển'
   | 'Đã hủy'
   | 'Đã bị hủy';
 
@@ -123,5 +124,44 @@ export interface AIMatchState {
   analyzedAt?: string;
 }
 
+export type UserRole = 'student' | 'admin' | 'university_pxu';
+
+export interface CurrentUser {
+  email: string;
+  name: string;
+  role: UserRole;
+  organization?: string;
+  avatar?: string;
+  title?: string;
+}
+
+export const ACCOUNT_STUDENT: CurrentUser = {
+  email: 'quy@unipath.vn',
+  name: 'Trần Công Quý',
+  role: 'student',
+  title: 'Thí sinh 2k8 — THPT Chuyên Quốc Học Huế',
+  organization: 'THPT Chuyên Quốc Học Huế',
+  avatar: '/images/avatar_user.png',
+};
+
+export const ACCOUNT_ADMIN: CurrentUser = {
+  email: 'admin@unipath.vn',
+  name: 'Admin Hệ Thống UniPath',
+  role: 'admin',
+  title: 'Quản trị viên Cấp cao UniPath 2.0',
+  organization: 'Hệ Thống Tuyển Sinh Quốc Gia UniPath',
+  avatar: '/images/advisor_avatar.png',
+};
+
+export const ACCOUNT_PXU: CurrentUser = {
+  email: 'tuyensinh@pxu.edu.vn',
+  name: 'Ban Tuyển sinh ĐH Phú Xuân',
+  role: 'university_pxu',
+  title: 'Đại diện Tuyển sinh — ĐH Phú Xuân (PXU)',
+  organization: 'Trường Đại học Phú Xuân (PXU)',
+  avatar: '/images/logo_pxu.png',
+};
+
 export type ViewMode = 'mobile' | 'desktop';
+
 

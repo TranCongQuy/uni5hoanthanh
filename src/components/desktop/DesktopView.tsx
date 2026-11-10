@@ -43,6 +43,7 @@ import { SoundFX } from '../../utils/sound';
 import { RadarChart } from '../charts/RadarChart';
 import { DonutChart } from '../charts/DonutChart';
 import { evaluateMatching } from '../../services/MatchingService';
+import { RoleSwitcherBar, AdminPortalView, PXUPortalView } from '../portal/RolePortalViews';
 
 const QUIZ_OPTIONS = [
   {
@@ -95,6 +96,8 @@ export const DesktopView: React.FC = () => {
     profile,
     isLoggedIn,
     loginDemo,
+    loginAdmin,
+    loginPXU,
     openNotifications,
     openChatBot,
     openUniDetail,
@@ -577,20 +580,6 @@ export const DesktopView: React.FC = () => {
                 }}
               >
                 <span>Uni<span style={{ color: '#2563EB' }}>Path</span></span>
-                <span
-                  style={{
-                    backgroundColor: '#EFF6FF',
-                    color: '#2563EB',
-                    border: '1px solid #BFDBFE',
-                    padding: '2px 7px',
-                    borderRadius: '6px',
-                    fontSize: '10px',
-                    fontWeight: 800,
-                    letterSpacing: '0.2px',
-                  }}
-                >
-                  DESKTOP
-                </span>
               </div>
               <div
                 style={{
@@ -3165,7 +3154,7 @@ export const DesktopView: React.FC = () => {
                 backgroundColor: '#FFFFFF',
                 borderRadius: '24px',
                 border: '1.5px solid #E2E8F0',
-                padding: '48px 36px',
+                padding: '44px 36px',
                 textAlign: 'center',
                 boxShadow: '0 8px 30px rgba(0,0,0,0.04)',
               }}
@@ -3187,51 +3176,74 @@ export const DesktopView: React.FC = () => {
                 <User size={36} />
               </div>
               <h2 style={{ fontSize: '24px', fontWeight: 900, color: '#0F172A', marginBottom: '10px' }}>
-                Đăng nhập để theo dõi hồ sơ xét tuyển
+                Cổng Quản Trị & Xét Tuyển UniPath 2.0
               </h2>
               <p style={{ fontSize: '15px', color: '#64748B', maxWidth: '520px', margin: '0 auto 28px', lineHeight: 1.6 }}>
-                Bạn cần đăng nhập để xem tiến độ duyệt hồ sơ xét tuyển sớm đại học năm 2026, danh sách nguyện vọng yêu thích và quản lý thông tin thí sinh.
+                Chọn một trong 3 tài khoản mẫu bên dưới để kiểm thử ngay lập tức các phân quyền của hệ thống:
               </p>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 <button
                   onClick={loginDemo}
                   style={{
-                    padding: '13px 26px',
-                    borderRadius: '14px',
+                    padding: '12px 20px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    fontSize: '13.5px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(245,158,11,0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <Sparkles size={16} />
+                  <span>⚡ Thí sinh (Trần Công Quý)</span>
+                </button>
+                <button
+                  onClick={loginAdmin}
+                  style={{
+                    padding: '12px 20px',
+                    borderRadius: '12px',
                     backgroundColor: '#2563EB',
                     color: '#FFFFFF',
                     border: 'none',
-                    fontSize: '14.5px',
+                    fontSize: '13.5px',
                     fontWeight: 800,
                     cursor: 'pointer',
                     boxShadow: '0 4px 14px rgba(37,99,235,0.25)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
                   }}
                 >
-                  <Sparkles size={18} />
-                  <span>⚡ Trải nghiệm ngay với Demo Trần Công Quý</span>
+                  👑 Admin Hệ Thống
                 </button>
                 <button
-                  onClick={openAuthModal}
+                  onClick={loginPXU}
                   style={{
-                    padding: '13px 24px',
-                    borderRadius: '14px',
-                    backgroundColor: '#FFFFFF',
-                    color: '#1E293B',
-                    border: '1.5px solid #CBD5E1',
-                    fontSize: '14.5px',
-                    fontWeight: 700,
+                    padding: '12px 20px',
+                    borderRadius: '12px',
+                    backgroundColor: '#059669',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    fontSize: '13.5px',
+                    fontWeight: 800,
                     cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(5,150,105,0.25)',
                   }}
                 >
-                  Đăng nhập / Đăng ký tài khoản
+                  🏛️ ĐH Phú Xuân (PXU)
                 </button>
               </div>
             </div>
+          ) : user.role === 'admin' ? (
+            <AdminPortalView />
+          ) : user.role === 'university_pxu' ? (
+            <PXUPortalView />
           ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '28px', alignItems: 'start' }}>
+            <div>
+              <RoleSwitcherBar />
+              <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '28px', alignItems: 'start' }}>
             {/* Left Column: Candidate Card */}
             <div
               style={{
@@ -3492,7 +3504,9 @@ export const DesktopView: React.FC = () => {
               </div>
             </div>
           </div>
-        ))}
+        </div>
+          )
+        )}
       </main>
 
       {/* ===================================================================== */}
@@ -3536,7 +3550,7 @@ export const DesktopView: React.FC = () => {
           style={{
             position: 'fixed',
             bottom: '24px',
-            right: '210px',
+            right: '24px',
             zIndex: 9998,
             display: 'flex',
             alignItems: 'center',

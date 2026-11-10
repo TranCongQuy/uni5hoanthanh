@@ -29,14 +29,12 @@
 
 ## 2. CHẾ ĐỘ HIỂN THỊ: MOBILE NATIVE & DESKTOP WIDESCREEN
 
-UniPath 2.0 hỗ trợ 2 chế độ hiển thị chuyên biệt:
-- **Giao diện Điện thoại (Mobile Native):** Bố cục dọc tối ưu cho thao tác 1 tay trên smartphone, thanh điều hướng đáy (Bottom Navigation), các modal dạng ngăn kéo vuốt (Bottom-sheet) mềm mại.
-- **Giao diện Máy tính (Desktop Widescreen):** Bố cục ngang rộng rãi, thanh menu đỉnh cố định, lưới hiển thị 3-4 cột thẻ trường đại học, các modal tự động căn giữa màn hình (Centered Dialog) sang trọng với hiệu ứng kính mờ (Backdrop Blur).
-- **Nút chuyển đổi 1-click (Floating Widget):**
-  - Luôn hiện diện ở góc màn hình.
-  - Trên Mobile: Nằm cố định ở góc dưới bên trái (`left: 16px`) để không che đè nút So sánh trường ở bên phải.
-  - Trên Desktop: Nằm ở góc dưới bên phải (`right: 20px`).
-  - Bấm vào là chuyển đổi giao diện tức thì mà không làm mất dữ liệu đang làm việc.
+UniPath 2.0 hỗ trợ cơ chế hiển thị thích ứng kép (Dual-Engine Adaptive Interface) tự động 100%:
+- **Giao diện Điện thoại (Mobile Native - khi màn hình < 1024px):** Bố cục dọc tối ưu cho thao tác 1 tay trên smartphone, thanh điều hướng đáy (Bottom Navigation 5 tabs), các modal dạng ngăn kéo vuốt (Bottom-sheet) mềm mại, chạm vuốt mượt mà.
+- **Giao diện Máy tính (Desktop Widescreen - khi màn hình ≥ 1024px):** Bố cục ngang rộng rãi với độ rộng tối đa 1380px, thanh menu đỉnh cố định (Sticky Topbar), lưới hiển thị 3-4 cột thẻ trường đại học, sidebar phân tích cơ hội trúng tuyển đa năng, các modal tự động căn giữa màn hình (Centered Dialog) sang trọng với hiệu ứng kính mờ (Backdrop Blur).
+- **Tự động nhận diện khung hình (Zero-Notification Auto Detection):**
+  - Hệ thống tự động nhận diện thiết bị và kích thước màn hình theo thời gian thực mà không cần bấm nút chuyển chế độ.
+  - Chuyển đổi hoàn toàn êm ái, **không xuất hiện bất kỳ thông báo toast hay popup gây gián đoạn**, mang lại trải nghiệm tự nhiên, liền mạch.
 
 ---
 
@@ -168,15 +166,36 @@ UniPath 2.0 hỗ trợ 2 chế độ hiển thị chuyên biệt:
 
 ---
 
-## 9. CƠ CHẾ PHÂN QUYỀN & TÀI KHOẢN THỬ NGHIỆM
+## 9. CƠ CHẾ PHÂN QUYỀN RBAC & BỘ 3 TÀI KHOẢN KIỂM THỬ
 
-Hệ thống hỗ trợ 3 cấp độ tài khoản:
-1. **Khách (Guest):** Có thể tra cứu 30 trường, làm bài test RIASEC, chạy AI Matching, xem livestream và trò chuyện cùng Trợ lý AI. Khi muốn nộp hồ sơ hoặc lưu nguyện vọng, hệ thống sẽ nhắc đăng nhập.
-2. **Tài khoản Demo thử nghiệm (Trần Công Quý):**
-   - Dành riêng cho ban giám khảo và người dùng trải nghiệm nhanh mà không cần tạo tài khoản thật.
-   - Tự động điền đầy đủ dữ liệu mẫu: Điểm THPT dự kiến 24.5đ, trường THPT Chuyên Quốc Học Huế, 5 hồ sơ xét tuyển với đầy đủ các trạng thái thực tế.
-3. **Tài khoản cá nhân đăng ký:** Lưu giữ thông tin cá nhân riêng biệt theo email của thí sinh.
+Hệ thống hỗ trợ 3 vai trò phân quyền (Role-Based Access Control) rõ ràng:
+
+1. **⚡ Vai trò Thí sinh (Student) — Đại diện mẫu: Trần Công Quý**
+   - **Email:** `quy@unipath.vn` | **Mật khẩu:** `123456`
+   - **Quyền hạn:** Làm bài test RIASEC, chạy thuật toán AI Matching 2026, tương tác Livestream EduFair, nộp hồ sơ xét tuyển sớm và theo dõi trạng thái hồ sơ cá nhân.
+   - **Giới hạn:** Không thể xem hồ sơ của thí sinh khác, không thể duyệt hồ sơ, không thể sửa CSDL trường.
+
+2. **👑 Vai trò Quản trị viên Hệ thống (System Admin) — UniPath 2.0**
+   - **Email:** `admin@unipath.vn` | **Mật khẩu:** `admin123`
+   - **Quyền hạn:** Toàn quyền quản trị hệ thống, xem toàn bộ hồ sơ của cả 30 trường đại học trên toàn quốc, phê duyệt trúng tuyển, yêu cầu thí sinh bổ sung giấy tờ, từ chối hồ sơ, và điều chỉnh điểm chuẩn THPT & học phí trong CSDL chuẩn.
+
+3. **🏛️ Vai trò Đại diện Tuyển sinh Trường Đại học Phú Xuân (PXU)**
+   - **Email:** `tuyensinh@pxu.edu.vn` | **Mật khẩu:** `pxu123`
+   - **Quyền hạn:** Cổng xét tuyển độc quyền của Trường Đại học Phú Xuân: Xem và xét duyệt các hồ sơ nộp vào PXU, quản lý chỉ tiêu tuyển sinh OJT và gói học bổng tài năng 2026.
+   - **Giới hạn bảo mật phân lập:** Chỉ xem và xử lý các hồ sơ đăng ký vào Đại học Phú Xuân (`uniCode === 'PXU'`). Toàn bộ hồ sơ của 29 trường đại học khác được ẩn và bảo mật tuyệt đối.
+
+> 💡 **Thanh chuyển vai trò kiểm thử 1-click (Role Switcher Bar):**  
+> Xuất hiện tại **Tab 4 (Hồ sơ xét tuyển / Quản trị)** trên cả giao diện Desktop và Mobile, cho phép hội đồng chấm thi và người kiểm thử chuyển đổi nhanh giữa 3 vai trò chỉ bằng 1 nút nhấn!
 
 ---
 
-**© 2026 Unipath Education Platform — Nhóm UP5, Trường Đại học Phú Xuân (PXU)**
+## 10. TÀI LIỆU CHUYÊN SÂU DỰ ÁN
+Để nghiên cứu chi tiết từng khía cạnh kỹ thuật và nghiệp vụ, vui lòng tham khảo 4 tài liệu sau trong thư mục gốc:
+- 📋 **[01-NGHIEP-VU.md](01-NGHIEP-VU.md):** Nghiệp vụ RIASEC, AI Matching và quy trình tuyển sinh.
+- 🎨 **[02-GIAO-DIEN-AI.md](02-GIAO-DIEN-AI.md):** Thiết kế Responsive Adaptive UI, âm thanh Web Audio API và biểu đồ SVG.
+- 💻 **[03-KY-THUAT-FRONTEND.md](03-KY-THUAT-FRONTEND.md):** Kỹ thuật React 19, TypeScript 5, Vite 6, Context API và chống tràn layout.
+- 🛡️ **[04-KY-THUAT-ADMIN.md](04-KY-THUAT-ADMIN.md):** Ma trận RBAC, luồng duyệt hồ sơ và bảo mật phân lập cho ĐH Phú Xuân.
+
+---
+
+**© 2026 UniPath Vietnam — Bản quyền thuộc về Nhóm UP5, Trường Đại học Phú Xuân (PXU). Phát triển app bởi Trần Công Quý.**
