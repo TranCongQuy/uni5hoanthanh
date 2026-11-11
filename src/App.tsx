@@ -15,6 +15,8 @@ import { NotificationsModal } from './components/modals/NotificationsModal';
 import { AuthModal } from './components/modals/AuthModal';
 import { OnboardingModal } from './components/modals/OnboardingModal';
 import { AuthScreen } from './components/auth/AuthScreen';
+import { AdminApp } from './components/admin/AdminApp';
+import { UniversityApp } from './components/university/UniversityApp';
 import { Toast } from './components/common/UI';
 import './App.css';
 
@@ -34,6 +36,7 @@ const MainApp: React.FC = () => {
     selectedAppForDetail,
     isAllApplicationsOpen,
     isLoggedIn,
+    user,
   } = useApp();
 
   // Onboarding state: defaults to true every time user re-enters the app (no device persistence as requested)
@@ -80,6 +83,28 @@ const MainApp: React.FC = () => {
       document.documentElement.style.overflow = '';
     };
   }, [isAnyModalOpen]);
+
+  // 0. DEDICATED SHELLS THEO VAI TRÒ (Admin & ĐH Phú Xuân có giao diện riêng,
+  //    không dùng chung khung của thí sinh. Thí sinh giữ nguyên 100% ở các nhánh dưới.)
+  if (isLoggedIn && user.role === 'admin') {
+    return (
+      <>
+        <AdminApp />
+        <ViewApplicationModal />
+        <Toast message={toastMessage} />
+      </>
+    );
+  }
+
+  if (isLoggedIn && user.role === 'university_pxu') {
+    return (
+      <>
+        <UniversityApp />
+        <ViewApplicationModal />
+        <Toast message={toastMessage} />
+      </>
+    );
+  }
 
   // 1. DESKTOP / LAPTOP INTERFACE (When user clicks switch to desktop mode)
   if (viewMode === 'desktop') {
