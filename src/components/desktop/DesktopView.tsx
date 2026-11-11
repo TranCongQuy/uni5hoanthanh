@@ -30,8 +30,6 @@ import {
 import confetti from 'canvas-confetti';
 import { useApp } from '../../context/AppContext';
 import {
-  UNIVERSITIES,
-  getUniversitiesByRegion,
   QUIZ_QUESTIONS,
   HOLLAND_NAMES,
   HOLLAND_MAJORS,
@@ -43,7 +41,6 @@ import { SoundFX } from '../../utils/sound';
 import { RadarChart } from '../charts/RadarChart';
 import { DonutChart } from '../charts/DonutChart';
 import { evaluateMatching } from '../../services/MatchingService';
-import { RoleSwitcherBar, AdminPortalView, PXUPortalView } from '../portal/RolePortalViews';
 
 const QUIZ_OPTIONS = [
   {
@@ -95,9 +92,8 @@ export const DesktopView: React.FC = () => {
     user,
     profile,
     isLoggedIn,
-    loginDemo,
-    loginAdmin,
-    loginPXU,
+    login,
+    universitiesList,
     openNotifications,
     openChatBot,
     openUniDetail,
@@ -152,21 +148,22 @@ export const DesktopView: React.FC = () => {
   // Featured 8 universities
   const featuredUnis = useMemo(() => {
     return [
-      UNIVERSITIES.find((u) => u.id === 1)!, // BKA
-      UNIVERSITIES.find((u) => u.id === 2)!, // FTU
-      UNIVERSITIES.find((u) => u.id === 3)!, // NEU
-      UNIVERSITIES.find((u) => u.id === 11)!, // PXU
-      UNIVERSITIES.find((u) => u.id === 13)!, // DUT
-      UNIVERSITIES.find((u) => u.id === 21)!, // HCMUT
-      UNIVERSITIES.find((u) => u.id === 23)!, // UEH
-      UNIVERSITIES.find((u) => u.id === 24)!, // UIT
+      universitiesList.find((u) => u.id === 1)!, // BKA
+      universitiesList.find((u) => u.id === 2)!, // FTU
+      universitiesList.find((u) => u.id === 3)!, // NEU
+      universitiesList.find((u) => u.id === 11)!, // PXU
+      universitiesList.find((u) => u.id === 13)!, // DUT
+      universitiesList.find((u) => u.id === 21)!, // HCMUT
+      universitiesList.find((u) => u.id === 23)!, // UEH
+      universitiesList.find((u) => u.id === 24)!, // UIT
     ].filter(Boolean);
-  }, []);
+  }, [universitiesList]);
 
   const featuredScrollRef = useRef<HTMLDivElement>(null);
 
   // Filter universities by region and search
-  const baseList = getUniversitiesByRegion(selectedRegion);
+  const baseList =
+    selectedRegion === 'Tất cả' ? universitiesList : universitiesList.filter((u) => u.region === selectedRegion);
   const filteredUnis = useMemo(() => {
     return baseList.filter((u) => {
       if (!desktopSearch.trim()) return true;
@@ -184,13 +181,13 @@ export const DesktopView: React.FC = () => {
   const searchMatches = useMemo(() => {
     if (!desktopSearch.trim()) return [];
     const q = desktopSearch.toLowerCase().trim();
-    return UNIVERSITIES.filter(
+    return universitiesList.filter(
       (u) =>
         u.name.toLowerCase().includes(q) ||
         u.code.toLowerCase().includes(q) ||
         u.loc.toLowerCase().includes(q)
     ).slice(0, 5);
-  }, [desktopSearch]);
+  }, [desktopSearch, universitiesList]);
 
   // =========================================================================
   // TAB 1: QUIZ (HOLLAND RIASEC) STATE
@@ -266,7 +263,7 @@ export const DesktopView: React.FC = () => {
         budget: aiMatchState.budget,
         region: aiMatchState.region,
         time: aiMatchState.analyzedAt || '10:30',
-        evaluation: evaluateMatching(aiMatchState.score, aiMatchState.budget, hollandResult?.primaryCode || '', aiMatchState.region),
+        evaluation: evaluateMatching(aiMatchState.score, aiMatchState.budget, hollandResult?.primaryCode || '', aiMatchState.region, universitiesList),
       };
     }
     return null;
@@ -284,12 +281,12 @@ export const DesktopView: React.FC = () => {
         budget: aiMatchState.budget,
         region: aiMatchState.region,
         time: aiMatchState.analyzedAt || '10:30',
-        evaluation: evaluateMatching(aiMatchState.score, aiMatchState.budget, hollandResult?.primaryCode || '', aiMatchState.region),
+        evaluation: evaluateMatching(aiMatchState.score, aiMatchState.budget, hollandResult?.primaryCode || '', aiMatchState.region, universitiesList),
       });
     } else {
       setLastMatchEvaluatedData(null);
     }
-  }, [aiMatchState, hollandResult]);
+  }, [aiMatchState, hollandResult, universitiesList]);
 
   // Handlers that reset evaluation when sliders/parameters change
   const handleScoreChange = (val: number) => {
@@ -319,7 +316,7 @@ export const DesktopView: React.FC = () => {
   const handleEvaluateMatching = () => {
     setIsMatchLoading(true);
     setTimeout(() => {
-      const res = evaluateMatching(matchScore, matchBudget, hollandResult?.primaryCode || '', matchRegion);
+      const res = evaluateMatching(matchScore, matchBudget, hollandResult?.primaryCode || '', matchRegion, universitiesList);
       const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
       setLastMatchEvaluatedData({
         score: matchScore,
@@ -826,7 +823,7 @@ export const DesktopView: React.FC = () => {
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                 <button
-                  onClick={loginDemo}
+                  onClick={() => login('quy@unipath.vn', '123456')}
                   style={{
                     padding: '6px 12px',
                     borderRadius: '8px',
@@ -3014,7 +3011,7 @@ export const DesktopView: React.FC = () => {
                   Gian hàng trực tuyến các trường tham gia hôm nay
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-                  {UNIVERSITIES.slice(0, 8).map((u) => (
+                  {universitiesList.slice(0, 8).map((u) => (
                     <div
                       key={u.id}
                       onClick={() => openUniDetail(u.id)}
@@ -3183,7 +3180,7 @@ export const DesktopView: React.FC = () => {
               </p>
               <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 <button
-                  onClick={loginDemo}
+                  onClick={() => login('quy@unipath.vn', '123456')}
                   style={{
                     padding: '12px 20px',
                     borderRadius: '12px',
@@ -3203,7 +3200,7 @@ export const DesktopView: React.FC = () => {
                   <span>⚡ Thí sinh (Trần Công Quý)</span>
                 </button>
                 <button
-                  onClick={loginAdmin}
+                  onClick={() => login('admin@unipath.vn', 'admin123')}
                   style={{
                     padding: '12px 20px',
                     borderRadius: '12px',
@@ -3219,7 +3216,7 @@ export const DesktopView: React.FC = () => {
                   👑 Admin Hệ Thống
                 </button>
                 <button
-                  onClick={loginPXU}
+                  onClick={() => login('tuyensinh@pxu.edu.vn', 'pxu123')}
                   style={{
                     padding: '12px 20px',
                     borderRadius: '12px',
@@ -3236,13 +3233,8 @@ export const DesktopView: React.FC = () => {
                 </button>
               </div>
             </div>
-          ) : user.role === 'admin' ? (
-            <AdminPortalView />
-          ) : user.role === 'university_pxu' ? (
-            <PXUPortalView />
           ) : (
             <div>
-              <RoleSwitcherBar />
               <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '28px', alignItems: 'start' }}>
             {/* Left Column: Candidate Card */}
             <div

@@ -40,10 +40,6 @@ interface AppContextType {
   isGuest: boolean;
   user: CurrentUser;
   login: (email: string, pass: string) => boolean;
-  loginDemo: () => void;
-  loginAdmin: () => void;
-  loginPXU: () => void;
-  switchRole: (role: UserRole) => void;
   loginAsGuest: () => void;
   register: (fullName: string, email: string, pass: string) => boolean;
   logout: () => void;
@@ -534,18 +530,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Đăng nhập Cổng tuyển sinh ĐH Phú Xuân (PXU) 🏛️');
   };
 
-  const switchRole = (role: UserRole) => {
-    if (role === 'admin') {
-      setUser(ACCOUNT_ADMIN);
-      showToast('Đã chuyển sang vai trò: Admin Hệ Thống 👑');
-    } else if (role === 'university_pxu') {
-      setUser(ACCOUNT_PXU);
-      showToast('Đã chuyển sang vai trò: Đại diện ĐH Phú Xuân 🏛️');
-    } else {
-      setUser(ACCOUNT_STUDENT);
-      showToast('Đã chuyển sang vai trò: Thí sinh Trần Công Quý ⚡');
-    }
-  };
 
   const login = (email: string, pass: string): boolean => {
     const cleanEmail = email.trim().toLowerCase();
@@ -1041,10 +1025,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isGuest,
         user,
         login,
-        loginDemo,
-        loginAdmin,
-        loginPXU,
-        switchRole,
         loginAsGuest,
         register,
         logout,

@@ -4,7 +4,7 @@ import { useApp } from '../../context/AppContext';
 import { Button } from '../common/UI';
 
 export const AuthScreen: React.FC = () => {
-  const { login, register, loginDemo, loginAdmin, loginPXU } = useApp();
+  const { login, register } = useApp();
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [showPassword, setShowPassword] = useState(false);
@@ -477,7 +477,7 @@ export const AuthScreen: React.FC = () => {
                 </div>
                 <button
                   type="button"
-                  onClick={loginDemo}
+                  onClick={() => login('quy@unipath.vn', '123456')}
                   style={{
                     padding: '8px 14px',
                     borderRadius: '10px',
@@ -520,7 +520,7 @@ export const AuthScreen: React.FC = () => {
                 </div>
                 <button
                   type="button"
-                  onClick={loginAdmin}
+                  onClick={() => login('admin@unipath.vn', 'admin123')}
                   style={{
                     padding: '8px 14px',
                     borderRadius: '10px',
@@ -563,7 +563,7 @@ export const AuthScreen: React.FC = () => {
                 </div>
                 <button
                   type="button"
-                  onClick={loginPXU}
+                  onClick={() => login('tuyensinh@pxu.edu.vn', 'pxu123')}
                   style={{
                     padding: '8px 14px',
                     borderRadius: '10px',

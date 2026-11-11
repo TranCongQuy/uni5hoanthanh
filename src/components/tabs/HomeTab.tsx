@@ -15,8 +15,17 @@ import {
   X,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { UNIVERSITIES, getUniversitiesByRegion } from '../../data/MockData';
+import type { University } from '../../types';
+import { pickReferenceCutoff, admissionPercent } from '../../services/MatchingService';
 import { UniversityAvatar, ImageSafe, AppFooter, EmptyState } from '../common/UI';
+
+// % phù hợp hiển thị trên thẻ trường: dùng CHUNG thuật toán với AI Matching và
+// trang chi tiết trường (ngành tham chiếu + bảng bậc %), không còn số cứng.
+const badgePercent = (uni: University, score: number, hollandCode?: string): number => {
+  const ref = pickReferenceCutoff(uni, score, hollandCode);
+  const pct = admissionPercent(score - ref.cutoff) + (ref.isHolland ? 5 : 0);
+  return Math.min(100, pct);
+};
 
 export const HomeTab: React.FC = () => {
   const {
@@ -34,6 +43,8 @@ export const HomeTab: React.FC = () => {
     openNotifications,
     searchKeyword,
     setSearchKeyword,
+    universitiesList,
+    hollandResult,
   } = useApp();
 
   const [selectedRegion, setSelectedRegion] = useState<string>('Tất cả');
@@ -69,7 +80,8 @@ export const HomeTab: React.FC = () => {
   }, []);
 
   // Filter universities
-  const baseList = getUniversitiesByRegion(selectedRegion);
+  const baseList =
+    selectedRegion === 'Tất cả' ? universitiesList : universitiesList.filter((u) => u.region === selectedRegion);
   const filteredUniversities = baseList.filter((u) => {
     if (!searchKeyword.trim()) return true;
     const query = searchKeyword.toLowerCase().trim();
@@ -82,7 +94,7 @@ export const HomeTab: React.FC = () => {
   });
 
   // Autocomplete search matches across all 30 universities
-  const searchMatches = searchKeyword.trim().length > 0 ? UNIVERSITIES.filter((u) => {
+  const searchMatches = searchKeyword.trim().length > 0 ? universitiesList.filter((u) => {
     const query = searchKeyword.toLowerCase().trim();
     return (
       u.name.toLowerCase().includes(query) ||
@@ -94,14 +106,14 @@ export const HomeTab: React.FC = () => {
 
   // Featured 8 universities across North, Central, and South regions
   const featuredUnis = [
-    UNIVERSITIES.find((u) => u.id === 1)!, // BKA - Bách Khoa HN
-    UNIVERSITIES.find((u) => u.id === 2)!, // FTU - Ngoại Thương
-    UNIVERSITIES.find((u) => u.id === 3)!, // NEU - Kinh Tế Quốc Dân
-    UNIVERSITIES.find((u) => u.id === 11)!, // PXU - Phú Xuân
-    UNIVERSITIES.find((u) => u.id === 13)!, // DUT - Bách Khoa ĐN
-    UNIVERSITIES.find((u) => u.id === 21)!, // HCMUT - Bách Khoa HCM
-    UNIVERSITIES.find((u) => u.id === 23)!, // UEH - Kinh Tế HCM
-    UNIVERSITIES.find((u) => u.id === 24)!, // UIT - CNTT HCM
+    universitiesList.find((u) => u.id === 1)!, // BKA - Bách Khoa HN
+    universitiesList.find((u) => u.id === 2)!, // FTU - Ngoại Thương
+    universitiesList.find((u) => u.id === 3)!, // NEU - Kinh Tế Quốc Dân
+    universitiesList.find((u) => u.id === 11)!, // PXU - Phú Xuân
+    universitiesList.find((u) => u.id === 13)!, // DUT - Bách Khoa ĐN
+    universitiesList.find((u) => u.id === 21)!, // HCMUT - Bách Khoa HCM
+    universitiesList.find((u) => u.id === 23)!, // UEH - Kinh Tế HCM
+    universitiesList.find((u) => u.id === 24)!, // UIT - CNTT HCM
   ].filter(Boolean);
 
   const featuredScrollRef = React.useRef<HTMLDivElement>(null);
@@ -1301,7 +1313,7 @@ export const HomeTab: React.FC = () => {
                       boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
                     }}
                   >
-                    92% phù hợp
+                    {badgePercent(uni, profile.expectedScore || 15.0, hollandResult?.primaryCode)}% phù hợp
                   </div>
                 </div>
 

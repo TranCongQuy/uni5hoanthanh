@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useApp } from '../../context/AppContext';
-import { UNIVERSITIES } from '../../data/MockData';
 import { Button, UniversityAvatar, ImageSafe, AppFooter } from '../common/UI';
 import { SoundFX } from '../../utils/sound';
 
@@ -21,7 +20,7 @@ interface LiveChatMessage {
 }
 
 export const LiveTab: React.FC = () => {
-  const { openUniDetail, showToast } = useApp();
+  const { openUniDetail, showToast, universitiesList } = useApp();
 
   // Countdown timer state
   const [timeLeft, setTimeLeft] = useState({
@@ -261,12 +260,12 @@ export const LiveTab: React.FC = () => {
 
   // Virtual booths (6 featured universities)
   const virtualBooths = [
-    { uni: UNIVERSITIES[10], isLive: true, viewers: 342 }, // PXU
-    { uni: UNIVERSITIES[0], isLive: true, viewers: 512 },  // BKA
-    { uni: UNIVERSITIES[20], isLive: true, viewers: 428 }, // HCMUT
-    { uni: UNIVERSITIES[1], isLive: false, viewers: 0 },   // FTU
-    { uni: UNIVERSITIES[2], isLive: false, viewers: 0 },   // NEU
-    { uni: UNIVERSITIES[22], isLive: false, viewers: 0 },  // UEH
+    { uni: universitiesList.find((u) => u.id === 11)!, isLive: true, viewers: 342 }, // PXU
+    { uni: universitiesList.find((u) => u.id === 1)!, isLive: true, viewers: 512 },  // BKA
+    { uni: universitiesList.find((u) => u.id === 21)!, isLive: true, viewers: 428 }, // HCMUT
+    { uni: universitiesList.find((u) => u.id === 2)!, isLive: false, viewers: 0 },   // FTU
+    { uni: universitiesList.find((u) => u.id === 3)!, isLive: false, viewers: 0 },   // NEU
+    { uni: universitiesList.find((u) => u.id === 23)!, isLive: false, viewers: 0 },  // UEH
   ];
 
   // Workshop sessions

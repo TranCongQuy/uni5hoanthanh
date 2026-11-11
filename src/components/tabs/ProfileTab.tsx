@@ -13,10 +13,9 @@ import {
   FileText,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { UNIVERSITIES, getHollandName } from '../../data/MockData';
+import { getHollandName } from '../../data/MockData';
 import { Button, UniversityAvatar, AppFooter } from '../common/UI';
 import { LineChart } from '../charts/LineChart';
-import { RoleSwitcherBar, AdminPortalView, PXUPortalView } from '../portal/RolePortalViews';
 
 export const ProfileTab: React.FC = () => {
   const {
@@ -37,38 +36,22 @@ export const ProfileTab: React.FC = () => {
     openApplicationDetail,
     openAllApplications,
     setActiveTab,
+    universitiesList,
   } = useApp();
 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Favorite universities objects
-  const favoriteUnis = UNIVERSITIES.filter((u) => favoriteIds.includes(u.id));
+  const favoriteUnis = universitiesList.filter((u) => favoriteIds.includes(u.id));
 
   const handleConfirmUpgrade = () => {
     upgradePremium('Gói Không Giới Hạn');
     setShowUpgradeModal(false);
   };
 
-  if (user.role === 'admin') {
-    return (
-      <div style={{ padding: '16px 16px 104px', display: 'flex', flexDirection: 'column' }}>
-        <AdminPortalView />
-      </div>
-    );
-  }
-
-  if (user.role === 'university_pxu') {
-    return (
-      <div style={{ padding: '16px 16px 104px', display: 'flex', flexDirection: 'column' }}>
-        <PXUPortalView />
-      </div>
-    );
-  }
-
   return (
     <div style={{ padding: '20px 20px 104px', display: 'flex', flexDirection: 'column' }}>
-      <RoleSwitcherBar />
       {/* 1. User Info Header Card */}
       <div
         style={{

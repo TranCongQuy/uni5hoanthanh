@@ -20,6 +20,7 @@ export const MatchingTab: React.FC = () => {
     openChatBot,
     setActiveTab,
     aiMatchState,
+    universitiesList,
     saveAIMatchState,
   } = useApp();
 
@@ -51,7 +52,8 @@ export const MatchingTab: React.FC = () => {
           aiMatchState.score,
           aiMatchState.budget,
           hollandResult?.primaryCode || '',
-          aiMatchState.region
+          aiMatchState.region,
+          universitiesList
         ),
       };
     }
@@ -76,13 +78,14 @@ export const MatchingTab: React.FC = () => {
           aiMatchState.score,
           aiMatchState.budget,
           hollandResult?.primaryCode || '',
-          aiMatchState.region
+          aiMatchState.region,
+          universitiesList
         ),
       });
     } else {
       setEvaluatedData(null);
     }
-  }, [aiMatchState, hollandResult]);
+  }, [aiMatchState, hollandResult, universitiesList]);
 
   // Handlers that reset evaluation when sliders/parameters change
   const handleScoreChange = (val: number) => {
@@ -116,7 +119,8 @@ export const MatchingTab: React.FC = () => {
         score,
         budget,
         hollandResult?.primaryCode || '',
-        region
+        region,
+        universitiesList
       );
       const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
       setEvaluatedData({

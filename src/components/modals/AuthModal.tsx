@@ -9,9 +9,6 @@ export const AuthModal: React.FC = () => {
     closeAuthModal,
     login,
     register,
-    loginDemo,
-    loginAdmin,
-    loginPXU,
     loginAsGuest,
   } = useApp();
 
@@ -452,7 +449,7 @@ export const AuthModal: React.FC = () => {
                   variant="primary"
                   size="M"
                   fullWidth
-                  onClick={loginDemo}
+                  onClick={() => login('quy@unipath.vn', '123456')}
                   style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', border: 'none', color: '#FFFFFF' }}
                 >
                   ⚡ Thí sinh 2k8: Trần Công Quý
@@ -462,7 +459,7 @@ export const AuthModal: React.FC = () => {
                   <Button
                     variant="tonal"
                     size="S"
-                    onClick={loginAdmin}
+                    onClick={() => login('admin@unipath.vn', 'admin123')}
                     style={{ backgroundColor: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE' }}
                   >
                     👑 Admin Hệ Thống
@@ -471,7 +468,7 @@ export const AuthModal: React.FC = () => {
                   <Button
                     variant="tonal"
                     size="S"
-                    onClick={loginPXU}
+                    onClick={() => login('tuyensinh@pxu.edu.vn', 'pxu123')}
                     style={{ backgroundColor: '#ECFDF5', color: '#047857', border: '1px solid #A7F3D0' }}
                   >
                     🏛️ ĐH Phú Xuân (PXU)

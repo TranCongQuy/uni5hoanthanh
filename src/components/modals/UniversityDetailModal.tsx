@@ -10,7 +10,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { getUniversityById } from '../../data/MockData';
+import { pickReferenceCutoff, admissionPercent } from '../../services/MatchingService';
 import { Button, UniversityAvatar, ImageSafe } from '../common/UI';
 import { BarChart } from '../charts/BarChart';
 import { DonutChart } from '../charts/DonutChart';
@@ -27,54 +27,56 @@ export const UniversityDetailModal: React.FC = () => {
     openApplyDemo,
     profile,
     viewMode,
+    universitiesList,
+    hollandResult,
   } = useApp();
 
   const isDesktop = viewMode === 'desktop';
   const [activeTab, setActiveTab] = useState<'overview' | 'majors' | 'tuition' | 'reviews'>('overview');
 
   if (selectedUniIdForDetail === null) return null;
-  const uni = getUniversityById(selectedUniIdForDetail);
+  const uni = universitiesList.find((u) => u.id === selectedUniIdForDetail);
   if (!uni) return null;
 
   const isFav = favoriteIds.includes(uni.id);
   const isComp = compareIds.includes(uni.id);
 
-  // Dynamic AI Match Algorithm based on actual score and cutoff
+  // Thuật toán % trúng tuyển THỐNG NHẤT toàn hệ thống: cùng ngành tham chiếu và
+  // cùng bảng bậc % với AI Matching (MatchingService) — không còn 2 công thức lệch nhau.
   const userScore = profile.expectedScore || 15.0;
-  const cutoff = uni.score2024;
-  const diff = Number((userScore - cutoff).toFixed(1));
+  const refPick = pickReferenceCutoff(uni, userScore, hollandResult?.primaryCode || undefined);
+  const cutoff = refPick.cutoff;
+  const diff = Number((userScore - cutoff).toFixed(2));
 
-  let matchPercent: number;
+  let matchPercent = admissionPercent(diff);
+  if (refPick.isHolland) {
+    matchPercent = Math.min(100, matchPercent + 5);
+  }
+
   let matchStatus: string;
   let matchColor: string;
   let matchDesc: string;
 
-  if (diff >= 1.5) {
-    matchPercent = Math.min(98, Math.round(86 + Math.min(diff, 4) * 3));
+  if (matchPercent >= 88) {
     matchStatus = `Cơ hội rất cao (${matchPercent}%)`;
     matchColor = '#10B981';
-    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm của bạn vượt điểm chuẩn 2024 (${cutoff} điểm) là +${diff} điểm. Tỷ lệ trúng tuyển rất an toàn!`;
-  } else if (diff >= 0) {
-    matchPercent = Math.round(72 + diff * 9);
+    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm của bạn vượt điểm chuẩn ngành ${refPick.major} (${cutoff} điểm) là +${diff} điểm. Tỷ lệ trúng tuyển rất an toàn!`;
+  } else if (matchPercent >= 75) {
     matchStatus = `Cơ hội tốt (${matchPercent}%)`;
     matchColor = '#059669';
-    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm ngang bằng hoặc nhỉnh hơn điểm chuẩn 2024 (${cutoff} điểm). Cơ hội trúng tuyển khả quan nếu giữ vững phong độ!`;
-  } else if (diff >= -1.5) {
-    matchPercent = Math.round(52 + diff * 12); // ~34% - 52%
+    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm ngang bằng hoặc nhỉnh hơn điểm chuẩn ngành ${refPick.major} (${cutoff} điểm). Cơ hội trúng tuyển khả quan nếu giữ vững phong độ!`;
+  } else if (matchPercent >= 50) {
     matchStatus = `Vừa sức / Cạnh tranh (${matchPercent}%)`;
     matchColor = '#F59E0B';
-    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm thấp hơn điểm chuẩn 2024 (${cutoff} điểm) là ${Math.abs(diff)} điểm. Cần nỗ lực thêm ở các tổ hợp môn!`;
-  } else if (diff >= -3.5) {
-    matchPercent = Math.max(16, Math.round(30 + (diff + 1.5) * 7)); // ~16% - 30%
+    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm xấp xỉ điểm chuẩn ngành ${refPick.major} (${cutoff} điểm), chênh lệch ${diff} điểm. Cần nỗ lực thêm ở các tổ hợp môn!`;
+  } else if (matchPercent >= 35) {
     matchStatus = `Thách thức cao (${matchPercent}%)`;
     matchColor = '#EA580C';
-    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm cách điểm chuẩn 2024 (${cutoff} điểm) là ${Math.abs(diff)} điểm. Nguyện vọng này có mức cạnh tranh cao.`;
+    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm thấp hơn điểm chuẩn ngành ${refPick.major} (${cutoff} điểm) là ${Math.abs(diff)} điểm. Nguyện vọng này có mức cạnh tranh cao.`;
   } else {
-    // Large negative difference (e.g. 16.5 vs 28.2)
-    matchPercent = Math.max(8, Math.round(18 - Math.min(Math.abs(diff) - 3.5, 10))); // 8% - 15%
     matchStatus = `Rất khó / Thách thức lớn (${matchPercent}%)`;
     matchColor = '#EF4444';
-    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm thấp hơn điểm chuẩn 2024 (${cutoff} điểm) tận ${Math.abs(diff)} điểm. Bạn nên cân nhắc thêm trường an toàn hơn hoặc phương thức xét học bạ.`;
+    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm thấp hơn điểm chuẩn ngành ${refPick.major} (${cutoff} điểm) tận ${Math.abs(diff)} điểm. Bạn nên cân nhắc thêm trường an toàn hơn hoặc phương thức xét học bạ.`;
   }
 
   return (

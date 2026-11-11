@@ -1,5 +1,5 @@
-import type { EvaluationGroup, GroupType, MatchResult } from '../types';
-import { getUniversitiesByRegion, getHollandMajors, getAverageCutoffScore } from '../data/MockData';
+import type { EvaluationGroup, GroupType, MatchResult, University } from '../types';
+import { getHollandMajors, getAverageCutoffScore } from '../data/MockData';
 
 export const GROUP_META: Record<GroupType, { title: string; description: string; color: string; bgColor: string }> = {
   SAFE: {
@@ -22,11 +22,57 @@ export const GROUP_META: Record<GroupType, { title: string; description: string;
   },
 };
 
+// Chọn ngành tham chiếu để tính % trúng tuyển: ưu tiên ngành khớp mã Holland của
+// thí sinh; nếu không có, chọn ngành có điểm chuẩn gần điểm của thí sinh nhất.
+export function pickReferenceCutoff(
+  uni: University,
+  userScore: number,
+  hollandCode?: string
+): { major: string; cutoff: number; isHolland: boolean } {
+  const entries = Object.entries(uni.cutoffScores);
+  if (entries.length === 0) {
+    return { major: uni.majors[0] || 'Ngành đào tạo trọng điểm', cutoff: getAverageCutoffScore(uni), isHolland: false };
+  }
+  const hollandMajors = hollandCode ? getHollandMajors(hollandCode) : [];
+  for (const [major, score] of entries) {
+    for (const hm of hollandMajors) {
+      if (major.toLowerCase().includes(hm.toLowerCase()) || hm.toLowerCase().includes(major.toLowerCase())) {
+        return { major, cutoff: score, isHolland: true };
+      }
+    }
+  }
+  let bestMajor = entries[0][0];
+  let bestCutoff = entries[0][1];
+  let minDiff = Number.MAX_VALUE;
+  for (const [major, score] of entries) {
+    const diff = Math.abs(userScore - score);
+    if (diff < minDiff) {
+      minDiff = diff;
+      bestMajor = major;
+      bestCutoff = score;
+    }
+  }
+  return { major: bestMajor, cutoff: bestCutoff, isHolland: false };
+}
+
+// Bảng bậc % trúng tuyển theo chênh lệch điểm — NGUỒN CÔNG THỨC DUY NHẤT của
+// toàn hệ thống (AI Matching, chi tiết trường, thẻ trường đều dùng bảng này).
+export function admissionPercent(diffScore: number): number {
+  if (diffScore >= 2.0) return 95;
+  if (diffScore >= 1.0) return 88;
+  if (diffScore >= 0.0) return 75;
+  if (diffScore >= -0.5) return 60;
+  if (diffScore >= -1.0) return 50;
+  if (diffScore >= -2.0) return 35;
+  return 20;
+}
+
 export function evaluateMatching(
   userScore: number,
   maxBudget: number,
   hollandCode: string,
-  regionFilter: string
+  regionFilter: string,
+  universities: University[]
 ): EvaluationGroup {
   const result: EvaluationGroup = {
     safeList: [],
@@ -35,69 +81,21 @@ export function evaluateMatching(
     totalCount: 0,
   };
 
-  const list = getUniversitiesByRegion(regionFilter);
-  const hollandMajors = getHollandMajors(hollandCode);
+  const list =
+    !regionFilter || regionFilter.trim().toLowerCase() === 'tất cả'
+      ? universities
+      : universities.filter((u) => u.region.toLowerCase() === regionFilter.trim().toLowerCase());
 
   for (const u of list) {
-    let bestMajor = '';
-    let bestCutoff = getAverageCutoffScore(u);
-    let isHolland = false;
-
-    const cutoffScores = u.cutoffScores;
-    const entries = Object.entries(cutoffScores);
-
-    if (entries.length > 0) {
-      // 1. Thử tìm ngành trùng với mã Holland
-      for (const [major, score] of entries) {
-        for (const hm of hollandMajors) {
-          if (
-            major.toLowerCase().includes(hm.toLowerCase()) ||
-            hm.toLowerCase().includes(major.toLowerCase())
-          ) {
-            bestMajor = major;
-            bestCutoff = score;
-            isHolland = true;
-            break;
-          }
-        }
-        if (isHolland) break;
-      }
-
-      // 2. Nếu không có ngành Holland khớp, chọn ngành có điểm chuẩn gần với điểm của user nhất
-      if (!isHolland) {
-        let minDiff = Number.MAX_VALUE;
-        for (const [major, score] of entries) {
-          const diff = Math.abs(userScore - score);
-          if (diff < minDiff) {
-            minDiff = diff;
-            bestMajor = major;
-            bestCutoff = score;
-          }
-        }
-      }
-    } else {
-      bestMajor = u.majors[0] || 'Ngành đào tạo trọng điểm';
-    }
+    const pick = pickReferenceCutoff(u, userScore, hollandCode);
+    const bestMajor = pick.major;
+    const bestCutoff = pick.cutoff;
+    const isHolland = pick.isHolland;
 
     const diffScore = Number((userScore - bestCutoff).toFixed(2));
     const isBudgetMatched = u.tuitionMin <= maxBudget;
 
-    let percent: number;
-    if (diffScore >= 2.0) {
-      percent = 95;
-    } else if (diffScore >= 1.0) {
-      percent = 88;
-    } else if (diffScore >= 0.0) {
-      percent = 75;
-    } else if (diffScore >= -0.5) {
-      percent = 60;
-    } else if (diffScore >= -1.0) {
-      percent = 50;
-    } else if (diffScore >= -2.0) {
-      percent = 35;
-    } else {
-      percent = 20;
-    }
+    let percent = admissionPercent(diffScore);
 
     // Điểm thưởng Holland (+5%)
     if (isHolland) {

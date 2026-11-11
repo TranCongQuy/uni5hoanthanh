@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, Scale, Plus, Search } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { UNIVERSITIES, getUniversityById } from '../../data/MockData';
 import type { University } from '../../types';
 import { Button, UniversityAvatar } from '../common/UI';
 
@@ -15,6 +14,7 @@ export const CompareModal: React.FC = () => {
     clearCompare,
     openUniDetail,
     viewMode,
+    universitiesList,
   } = useApp();
 
   const isDesktop = viewMode === 'desktop';
@@ -25,11 +25,11 @@ export const CompareModal: React.FC = () => {
   if (!isCompareModalOpen) return null;
 
   const compareUnis: University[] = compareIds
-    .map((id) => getUniversityById(id))
+    .map((id) => universitiesList.find((u) => u.id === id))
     .filter((u): u is University => u !== undefined);
 
   // Available universities to add (not yet in compare)
-  const availableToAdd = UNIVERSITIES.filter((u) => !compareIds.includes(u.id));
+  const availableToAdd = universitiesList.filter((u) => !compareIds.includes(u.id));
 
   const filteredAvailableToAdd = availableToAdd.filter((u) => {
     const kw = compareSearchKeyword.toLowerCase().trim();
