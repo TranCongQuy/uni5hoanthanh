@@ -21,6 +21,19 @@ interface HollandResult {
   completedAt: string;
 }
 
+// Nhật ký xử lý hồ sơ: ghi lại mỗi lần Admin/PXU đổi trạng thái một hồ sơ (luồng xử lý)
+export interface ProcessingLogEntry {
+  id: string;
+  appCode: string;
+  candidateName: string;
+  uniCode: string;
+  fromStatus: ApplicationStatus;
+  toStatus: ApplicationStatus;
+  actorName: string;
+  actorRole: UserRole;
+  time: string;
+}
+
 interface AppContextType {
   // Auth & RBAC
   isLoggedIn: boolean;
@@ -108,6 +121,7 @@ interface AppContextType {
   addApplication: (app: Omit<ApplicationRecord, 'id' | 'submittedAt' | 'status' | 'statusColor' | 'code'>) => void;
   cancelApplication: (appId: string) => void;
   updateApplicationStatus: (id: string, status: ApplicationStatus, notes?: string) => void;
+  processingLog: ProcessingLogEntry[];
   selectedAppForDetail: ApplicationRecord | null;
   openApplicationDetail: (app: ApplicationRecord) => void;
   closeApplicationDetail: () => void;
@@ -322,6 +336,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // --- Applications State (Pristine sample list) ---
   const [applications, setApplications] = useState<ApplicationRecord[]>(INITIAL_APPLICATIONS);
 
+  const [processingLog, setProcessingLog] = useState<ProcessingLogEntry[]>([]);
+
   const [selectedAppForDetail, setSelectedAppForDetail] = useState<ApplicationRecord | null>(null);
   const [isAllApplicationsOpen, setIsAllApplicationsOpen] = useState<boolean>(false);
 
@@ -371,6 +387,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [universitiesList, setUniversitiesList] = useState<University[]>(UNIVERSITIES);
 
   const updateUniversityMetrics = (id: number, score2024: number, tuitionMin: number) => {
+    // Phân quyền CSDL trường: chỉ Admin Hệ Thống mới được sửa điểm chuẩn / học phí
+    if (user.role !== 'admin') {
+      showToast('⛔ Chỉ Admin Hệ Thống mới có quyền sửa CSDL trường đại học.');
+      return;
+    }
     setUniversitiesList((prev) =>
       prev.map((u) => (u.id === id ? { ...u, score2024, tuitionMin } : u))
     );
@@ -528,15 +549,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const login = (email: string, pass: string): boolean => {
     const cleanEmail = email.trim().toLowerCase();
+    // Phân quyền đăng nhập: mỗi vai trò có mật khẩu riêng, sai mật khẩu không vào được
     if (cleanEmail === 'admin@unipath.vn') {
-      loginAdmin();
-      return true;
+      if (pass === 'admin123') {
+        loginAdmin();
+        return true;
+      }
+      return false;
     }
     if (cleanEmail === 'tuyensinh@pxu.edu.vn') {
-      loginPXU();
-      return true;
+      if (pass === 'pxu123') {
+        loginPXU();
+        return true;
+      }
+      return false;
     }
-    if (cleanEmail === DEMO_EMAIL && (pass === DEMO_PASS || pass.length >= 6)) {
+    if (cleanEmail === DEMO_EMAIL && pass === DEMO_PASS) {
       loginDemo();
       return true;
     }
@@ -888,6 +916,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const cancelApplication = (appId: string) => {
+    // Phân quyền hủy hồ sơ: chỉ thí sinh (chủ hồ sơ) mới được hủy.
+    // Admin/PXU xử lý bằng quyết định duyệt / bổ sung / từ chối, không hủy thay thí sinh.
+    if (user.role !== 'student') {
+      showToast('⛔ Vai trò của bạn không hủy hồ sơ thay thí sinh được. Hãy dùng quyết định xử lý hồ sơ.');
+      return;
+    }
     setApplications((prev) =>
       prev.map((app) => {
         if (app.id === appId) {
@@ -909,6 +943,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateApplicationStatus = (id: string, status: ApplicationStatus, notes?: string) => {
+    // --- Phân quyền xử lý hồ sơ theo vai trò ---
+    const target = applications.find((a) => a.id === id);
+    if (!target) return;
+    if (user.role === 'student') {
+      showToast('⛔ Chỉ Admin hoặc trường đại học mới được xử lý hồ sơ xét tuyển.');
+      return;
+    }
+    if (user.role === 'university_pxu' && target.uniCode !== 'PXU') {
+      showToast('⛔ Cổng PXU chỉ được xử lý hồ sơ nộp vào ĐH Phú Xuân.');
+      return;
+    }
+
     setApplications((prev) =>
       prev.map((app) => {
         if (app.id === id) {
@@ -931,7 +977,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return app;
       })
     );
-    showToast(`Đã cập nhật trạng thái hồ sơ: ${status}`);
+
+    // --- Ghi nhật ký xử lý (luồng: ai đã xử lý hồ sơ nào, từ trạng thái nào sang trạng thái nào) ---
+    setProcessingLog((prev) =>
+      [
+        {
+          id: `log-${Date.now()}`,
+          appCode: target.code,
+          candidateName: target.candidateName,
+          uniCode: target.uniCode,
+          fromStatus: target.status,
+          toStatus: status,
+          actorName: user.name,
+          actorRole: user.role,
+          time: new Date().toLocaleString('vi-VN'),
+        },
+        ...prev,
+      ].slice(0, 30)
+    );
+
+    showToast(`Đã cập nhật hồ sơ ${target.code}: ${status}`);
   };
 
   const openApplicationDetail = (app: ApplicationRecord) => {
@@ -1043,6 +1108,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addApplication,
         cancelApplication,
         updateApplicationStatus,
+        processingLog,
         selectedAppForDetail,
         openApplicationDetail,
         closeApplicationDetail,

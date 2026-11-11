@@ -14,7 +14,6 @@ import {
   Edit2,
   ChevronRight,
   ShieldCheck,
-  Users,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import type { ApplicationRecord, ApplicationStatus } from '../../types';
@@ -98,8 +97,8 @@ export const AdminApp: React.FC = () => {
     universitiesList,
     updateUniversityMetrics,
     updateApplicationStatus,
+    processingLog,
     openApplicationDetail,
-    switchRole,
     logout,
     viewMode,
   } = useApp();
@@ -348,6 +347,46 @@ export const AdminApp: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Nhật ký xử lý hồ sơ (luồng xử lý của Admin & các trường) */}
+      <div style={cardStyle}>
+        <h2 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 900, color: '#0F172A' }}>Nhật ký xử lý hồ sơ</h2>
+        <p style={{ margin: '0 0 12px', fontSize: '12.5px', color: '#64748B' }}>
+          Mỗi quyết định duyệt / bổ sung / từ chối đều được ghi lại: ai xử lý, hồ sơ nào, đổi trạng thái ra sao.
+        </p>
+        {processingLog.length === 0 ? (
+          <p style={{ margin: 0, fontSize: '13.5px', color: '#64748B' }}>Chưa có lượt xử lý nào trong phiên này. Hãy vào mục Hồ sơ và xử lý một hồ sơ đang chờ duyệt.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {processingLog.slice(0, 8).map((log) => (
+              <div
+                key={log.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 2px',
+                  borderBottom: '1px solid #F1F5F9',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <span style={{ fontSize: '12px', color: '#94A3B8', fontWeight: 600, whiteSpace: 'nowrap' }}>{log.time}</span>
+                <span style={{ fontSize: '13px', color: '#0F172A', fontWeight: 700 }}>
+                  {log.actorName} <span style={{ color: '#64748B', fontWeight: 600 }}>({log.actorRole === 'admin' ? 'Admin' : log.uniCode})</span>
+                </span>
+                <span style={{ fontSize: '13px', color: '#334155' }}>
+                  {log.appCode} · {log.candidateName}
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700 }}>
+                  <span style={{ color: statusColor(log.fromStatus) }}>{log.fromStatus}</span>
+                  <span style={{ color: '#94A3B8' }}>→</span>
+                  <span style={{ color: statusColor(log.toStatus) }}>{log.toStatus}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -803,42 +842,18 @@ export const AdminApp: React.FC = () => {
 
       <div style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-          <Users size={17} color="#2563EB" />
-          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 900, color: '#0F172A' }}>Chuyển vai trò kiểm thử</h2>
+          <ShieldCheck size={17} color="#2563EB" />
+          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 900, color: '#0F172A' }}>Quyền của phiên đăng nhập này</h2>
         </div>
-        <p style={{ margin: '0 0 12px', fontSize: '12.5px', color: '#64748B' }}>
-          Chuyển nhanh để kiểm tra giao diện của từng vai trò. Mỗi vai trò có khung giao diện riêng.
-        </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {(
-            [
-              { role: 'student' as const, label: '⚡ Thí sinh (Trần Công Quý)', desc: 'App hướng nghiệp của học sinh' },
-              { role: 'admin' as const, label: '👑 Admin Hệ Thống UniPath', desc: 'Trung tâm điều hành (đang dùng)' },
-              { role: 'university_pxu' as const, label: '🏛️ ĐH Phú Xuân (PXU)', desc: 'Cổng tuyển sinh của trường' },
-            ]
-          ).map((item) => (
-            <button
-              key={item.role}
-              onClick={() => switchRole(item.role)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '12px 14px',
-                borderRadius: '12px',
-                border: user.role === item.role ? '2px solid #2563EB' : '1px solid #E2E8F0',
-                backgroundColor: user.role === item.role ? '#EFF6FF' : '#FFFFFF',
-                cursor: 'pointer',
-                textAlign: 'left',
-              }}
-            >
-              <span>
-                <span style={{ display: 'block', fontSize: '13.5px', fontWeight: 800, color: '#0F172A' }}>{item.label}</span>
-                <span style={{ display: 'block', fontSize: '12px', color: '#64748B' }}>{item.desc}</span>
-              </span>
-              {user.role === item.role && <Check size={17} color="#2563EB" />}
-            </button>
-          ))}
+        <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.7 }}>
+          Vai trò được xác định bằng <strong>tài khoản đăng nhập</strong>, không tự đổi giữa chừng:
+          <ul style={{ margin: '8px 0', paddingLeft: '18px' }}>
+            <li><strong>Admin:</strong> xử lý hồ sơ của cả {universitiesList.length} trường, sửa CSDL điểm chuẩn/học phí, xem nhật ký xử lý</li>
+            <li><strong>ĐH Phú Xuân:</strong> chỉ xử lý hồ sơ nộp vào PXU — hệ thống tự chặn nếu xử lý hồ sơ trường khác</li>
+            <li><strong>Thí sinh:</strong> chỉ nộp và tự hủy hồ sơ của chính mình, không xử lý được hồ sơ</li>
+          </ul>
+          Muốn dùng vai trò khác: đăng xuất ở dưới rồi đăng nhập bằng tài khoản của vai trò đó
+          (Thí sinh: quy@unipath.vn · Admin: admin@unipath.vn · PXU: tuyensinh@pxu.edu.vn — mật khẩu xem trong README dự án).
         </div>
       </div>
 
