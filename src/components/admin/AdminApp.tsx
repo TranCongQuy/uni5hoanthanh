@@ -22,6 +22,7 @@ import {
   Phone,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import type { BookingState } from '../../context/AppContext';
 import type { ApplicationRecord, ApplicationStatus } from '../../types';
 import { UniversityAvatar } from '../common/UI';
 
@@ -116,6 +117,44 @@ const exportAppsCsv = (rows: ApplicationRecord[], filename: string) => {
   URL.revokeObjectURL(url);
 };
 
+const Pager: React.FC<{ page: number; pageCount: number; total: number; unit: string; onChange: (p: number) => void }> = ({ page, pageCount, total, unit, onChange }) => {
+  if (pageCount <= 1) return null;
+  const btn: React.CSSProperties = {
+    minWidth: '34px',
+    height: '34px',
+    padding: '0 10px',
+    borderRadius: '10px',
+    border: '1px solid #E2E8F0',
+    backgroundColor: '#FFFFFF',
+    color: '#334155',
+    fontSize: '12.5px',
+    fontWeight: 700,
+    cursor: 'pointer',
+  };
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+      <button style={{ ...btn, opacity: page <= 1 ? 0.45 : 1 }} disabled={page <= 1} onClick={() => onChange(page - 1)}>
+        ← Trước
+      </button>
+      {Array.from({ length: pageCount }, (_, i) => i + 1).map((p) => (
+        <button
+          key={p}
+          style={p === page ? { ...btn, backgroundColor: '#2563EB', border: '1px solid #2563EB', color: '#FFFFFF', fontWeight: 800 } : btn}
+          onClick={() => onChange(p)}
+        >
+          {p}
+        </button>
+      ))}
+      <button style={{ ...btn, opacity: page >= pageCount ? 0.45 : 1 }} disabled={page >= pageCount} onClick={() => onChange(page + 1)}>
+        Sau →
+      </button>
+      <span style={{ fontSize: '12px', color: '#64748B', marginLeft: '6px' }}>
+        Trang {page}/{pageCount} · Tổng {total} {unit}
+      </span>
+    </div>
+  );
+};
+
 interface RegisteredUser {
   name: string;
   email: string;
@@ -146,6 +185,8 @@ export const AdminApp: React.FC = () => {
     updateUniversityMetrics,
     updateApplicationStatus,
     processingLog,
+    bookingStates,
+    updateBookingState,
     openApplicationDetail,
     openNotifications,
     openSettings,
@@ -156,6 +197,10 @@ export const AdminApp: React.FC = () => {
   const isDesktop = viewMode === 'desktop';
   const [section, setSection] = useState<AdminSection>('dashboard');
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
+  const [appsPage, setAppsPage] = useState(1);
+  const [unisPage, setUnisPage] = useState(1);
+  const [checkedIds, setCheckedIds] = useState<string[]>([]);
+  const [bkFilter, setBkFilter] = useState<'all' | BookingState>('all');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // --- Apps filters ---
@@ -221,6 +266,11 @@ export const AdminApp: React.FC = () => {
     return 0;
   });
 
+  const APPS_PER_PAGE = 5;
+  const appsPageCount = Math.max(1, Math.ceil(sortedApps.length / APPS_PER_PAGE));
+  const curAppsPage = Math.min(appsPage, appsPageCount);
+  const pagedApps = sortedApps.slice((curAppsPage - 1) * APPS_PER_PAGE, curAppsPage * APPS_PER_PAGE);
+
   const selectedApp: ApplicationRecord | null =
     applications.find((a) => a.id === selectedAppId) || pendingApps[0] || applications[0] || null;
 
@@ -236,6 +286,29 @@ export const AdminApp: React.FC = () => {
       if (uniSort === 'tuitionAsc') return a.tuitionMin - b.tuitionMin;
       return a.name.localeCompare(b.name, 'vi');
     });
+
+  const UNIS_PER_PAGE = 12;
+  const unisPageCount = Math.max(1, Math.ceil(filteredUnis.length / UNIS_PER_PAGE));
+  const curUnisPage = Math.min(unisPage, unisPageCount);
+  const pagedUnis = filteredUnis.slice((curUnisPage - 1) * UNIS_PER_PAGE, curUnisPage * UNIS_PER_PAGE);
+
+  const toggleChecked = (id: string) => {
+    setCheckedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const applyBatch = (status: ApplicationStatus) => {
+    checkedIds.forEach((id) => updateApplicationStatus(id, status));
+    setCheckedIds([]);
+  };
+
+  const bookingStateOf = (id: string): BookingState => bookingStates[id] || 'pending';
+  const bookingCounts = {
+    all: bookings.length,
+    pending: bookings.filter((b) => bookingStateOf(b.id) === 'pending').length,
+    contacted: bookings.filter((b) => bookingStateOf(b.id) === 'contacted').length,
+    done: bookings.filter((b) => bookingStateOf(b.id) === 'done').length,
+  };
+  const filteredBookings = bkFilter === 'all' ? bookings : bookings.filter((b) => bookingStateOf(b.id) === bkFilter);
 
   const selectApp = (app: ApplicationRecord, goToApps: boolean) => {
     setSelectedAppId(app.id);
@@ -267,7 +340,7 @@ export const AdminApp: React.FC = () => {
 
   // ---------------------------------------------------------------------
   const renderDashboard = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', ...(isDesktop ? { height: '100%' } : {}) }}>
       <div style={{ minWidth: 0 }}>
         <h1 style={{ margin: 0, fontSize: isDesktop ? '26px' : '22px', fontWeight: 900, color: '#0F172A' }}>Tổng quan điều hành</h1>
         <p style={{ margin: '4px 0 0', fontSize: '13.5px', color: '#64748B' }}>
@@ -327,9 +400,9 @@ export const AdminApp: React.FC = () => {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1.35fr 1fr' : '1fr', gap: '16px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1.35fr 1fr' : '1fr', gap: '16px', alignItems: isDesktop ? 'stretch' : 'start', ...(isDesktop ? { flex: 1, minHeight: 0 } : {}) }}>
         {/* Hàng đợi */}
-        <div style={cardStyle}>
+        <div style={{ ...cardStyle, ...(isDesktop ? { height: '100%', overflowY: 'auto' as const } : {}) }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
             <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 900, color: '#0F172A' }}>Hàng đợi cần xử lý</h2>
             <span style={{ fontSize: '11px', fontWeight: 800, color: '#D97706', backgroundColor: '#FFFBEB', padding: '3px 10px', borderRadius: '999px', whiteSpace: 'nowrap' }}>
@@ -382,7 +455,7 @@ export const AdminApp: React.FC = () => {
         </div>
 
         {/* Phân bổ */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0, ...(isDesktop ? { height: '100%', overflowY: 'auto' as const } : {}) }}>
           <div style={cardStyle}>
             <h2 style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: 900, color: '#0F172A' }}>Phân bổ theo trạng thái</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -431,7 +504,7 @@ export const AdminApp: React.FC = () => {
       </div>
 
       {/* Nhật ký xử lý */}
-      <div style={cardStyle}>
+      <div style={{ ...cardStyle, ...(isDesktop ? { maxHeight: '238px', overflowY: 'auto' as const, flexShrink: 0 } : {}) }}>
         <h2 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 900, color: '#0F172A' }}>Nhật ký xử lý hồ sơ</h2>
         <p style={{ margin: '0 0 12px', fontSize: '12.5px', color: '#64748B' }}>Mỗi quyết định duyệt / bổ sung / từ chối đều được ghi lại: ai xử lý, hồ sơ nào, đổi trạng thái ra sao.</p>
         {processingLog.length === 0 ? (
@@ -483,7 +556,10 @@ export const AdminApp: React.FC = () => {
             <Search size={18} color="#94A3B8" style={{ flexShrink: 0 }} />
             <input
               value={appSearch}
-              onChange={(e) => setAppSearch(e.target.value)}
+              onChange={(e) => {
+                setAppSearch(e.target.value);
+                setAppsPage(1);
+              }}
               placeholder="Tìm tên thí sinh, mã hồ sơ, ngành, trường..."
               style={{ flex: 1, border: 'none', outline: 'none', fontSize: '13.5px', color: '#0F172A', backgroundColor: 'transparent', minWidth: 0 }}
             />
@@ -493,7 +569,10 @@ export const AdminApp: React.FC = () => {
               </button>
             )}
           </div>
-          <select value={appSort} onChange={(e) => setAppSort(e.target.value as AppSort)} style={{ ...selectStyle, height: '46px' }} aria-label="Sắp xếp hồ sơ">
+          <select value={appSort} onChange={(e) => {
+            setAppSort(e.target.value as AppSort);
+            setAppsPage(1);
+          }} style={{ ...selectStyle, height: '46px' }} aria-label="Sắp xếp hồ sơ">
             <option value="list">Thứ tự danh sách</option>
             <option value="scoreDesc">Điểm cao → thấp</option>
             <option value="scoreAsc">Điểm thấp → cao</option>
@@ -506,7 +585,10 @@ export const AdminApp: React.FC = () => {
             return (
               <button
                 key={s}
-                onClick={() => setAppStatus(s)}
+                onClick={() => {
+                  setAppStatus(s);
+                  setAppsPage(1);
+                }}
                 style={{
                   padding: '7px 13px',
                   borderRadius: '999px',
@@ -529,7 +611,10 @@ export const AdminApp: React.FC = () => {
           {['Tất cả', ...uniCodesInApps].map((code) => (
             <button
               key={code}
-              onClick={() => setAppUni(code)}
+              onClick={() => {
+                setAppUni(code);
+                setAppsPage(1);
+              }}
               style={{
                 padding: '5px 11px',
                 borderRadius: '999px',
@@ -547,12 +632,41 @@ export const AdminApp: React.FC = () => {
         </div>
       </div>
 
+      {checkedIds.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            flexWrap: 'wrap',
+            backgroundColor: '#0F172A',
+            color: '#FFFFFF',
+            borderRadius: '14px',
+            padding: '10px 14px',
+          }}
+        >
+          <span style={{ fontSize: '13px', fontWeight: 800, marginRight: '2px' }}>Đã chọn {checkedIds.length} hồ sơ</span>
+          <button onClick={() => applyBatch('Đã trúng tuyển')} style={{ padding: '8px 13px', borderRadius: '10px', border: 'none', backgroundColor: '#059669', color: '#FFFFFF', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}>
+            Duyệt trúng tuyển
+          </button>
+          <button onClick={() => applyBatch('Thiếu hồ sơ')} style={{ padding: '8px 13px', borderRadius: '10px', border: 'none', backgroundColor: '#2563EB', color: '#FFFFFF', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}>
+            Yêu cầu bổ sung
+          </button>
+          <button onClick={() => applyBatch('Đã bị hủy')} style={{ padding: '8px 13px', borderRadius: '10px', border: 'none', backgroundColor: '#DC2626', color: '#FFFFFF', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}>
+            Từ chối
+          </button>
+          <button onClick={() => setCheckedIds([])} style={{ padding: '8px 13px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.4)', backgroundColor: 'transparent', color: '#FFFFFF', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', marginLeft: 'auto' }}>
+            Bỏ chọn
+          </button>
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1.55fr 1fr' : '1fr', gap: '16px', alignItems: 'start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: 0 }}>
           {sortedApps.length === 0 && (
             <div style={{ ...cardStyle, textAlign: 'center', color: '#64748B', fontSize: '13.5px' }}>Không có hồ sơ nào khớp bộ lọc hiện tại.</div>
           )}
-          {sortedApps.map((app) => {
+          {pagedApps.map((app) => {
             const isSelected = selectedApp?.id === app.id;
             return (
               <button
@@ -569,6 +683,28 @@ export const AdminApp: React.FC = () => {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                  <span
+                    role="checkbox"
+                    aria-checked={checkedIds.includes(app.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleChecked(app.id);
+                    }}
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '6px',
+                      border: checkedIds.includes(app.id) ? '2px solid #2563EB' : '2px solid #CBD5E1',
+                      backgroundColor: checkedIds.includes(app.id) ? '#2563EB' : '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {checkedIds.includes(app.id) && <Check size={13} color="#FFFFFF" strokeWidth={3.5} />}
+                  </span>
                   <UniversityAvatar code={app.uniCode} size={34} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{app.candidateName}</div>
@@ -679,47 +815,127 @@ export const AdminApp: React.FC = () => {
           </div>
         )}
       </div>
+      <Pager page={curAppsPage} pageCount={appsPageCount} total={sortedApps.length} unit="hồ sơ" onChange={setAppsPage} />
     </div>
   );
 
-  const renderBookings = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <div style={{ minWidth: 0 }}>
-        <h1 style={{ margin: 0, fontSize: isDesktop ? '26px' : '22px', fontWeight: 900, color: '#0F172A' }}>Lịch tư vấn tuyển sinh</h1>
-        <p style={{ margin: '4px 0 0', fontSize: '13.5px', color: '#64748B' }}>
-          {bookings.length} lịch hẹn thí sinh đã đặt với các trường trên toàn hệ thống
-        </p>
-      </div>
-      {bookings.length === 0 ? (
-        <div style={{ ...cardStyle, textAlign: 'center', color: '#64748B', fontSize: '13.5px' }}>Chưa có lịch tư vấn nào được đặt.</div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: '12px' }}>
-          {bookings.map((bk) => (
-            <div key={bk.id} style={{ ...cardStyle, padding: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                <UniversityAvatar code={bk.uniCode} size={38} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bk.name}</div>
-                  <div style={{ fontSize: '11.5px', color: '#64748B' }}>
-                    Tư vấn với {bk.uniCode} · {bk.major}
+  const renderBookings = () => {
+    const stateMeta: Record<BookingState, { label: string; color: string; bg: string }> = {
+      pending: { label: 'Chờ liên hệ', color: '#B45309', bg: '#FEF3C7' },
+      contacted: { label: 'Đã liên hệ', color: '#1D4ED8', bg: '#DBEAFE' },
+      done: { label: 'Hoàn thành', color: '#047857', bg: '#D1FAE5' },
+    };
+    const chipBtn = (active: boolean): React.CSSProperties => ({
+      padding: '7px 13px',
+      borderRadius: '999px',
+      border: active ? '1px solid #0F172A' : '1px solid #E2E8F0',
+      backgroundColor: active ? '#0F172A' : '#FFFFFF',
+      color: active ? '#FFFFFF' : '#475569',
+      fontSize: '12.5px',
+      fontWeight: 700,
+      cursor: 'pointer',
+      whiteSpace: 'nowrap',
+    });
+    const actBtn = (bg: string): React.CSSProperties => ({
+      padding: '8px 12px',
+      borderRadius: '10px',
+      border: 'none',
+      backgroundColor: bg,
+      color: '#FFFFFF',
+      fontSize: '12px',
+      fontWeight: 800,
+      cursor: 'pointer',
+    });
+    const ghostBtn: React.CSSProperties = {
+      padding: '8px 12px',
+      borderRadius: '10px',
+      border: '1px solid #E2E8F0',
+      backgroundColor: '#FFFFFF',
+      color: '#64748B',
+      fontSize: '12px',
+      fontWeight: 700,
+      cursor: 'pointer',
+    };
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ minWidth: 0 }}>
+          <h1 style={{ margin: 0, fontSize: isDesktop ? '26px' : '22px', fontWeight: 900, color: '#0F172A' }}>Lịch tư vấn tuyển sinh</h1>
+          <p style={{ margin: '4px 0 0', fontSize: '13.5px', color: '#64748B' }}>
+            {bookings.length} lịch hẹn trên toàn hệ thống · {bookingCounts.pending} đang chờ liên hệ — bấm xử lý ngay trên từng lịch
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button style={chipBtn(bkFilter === 'all')} onClick={() => setBkFilter('all')}>
+            Tất cả · {bookingCounts.all}
+          </button>
+          <button style={chipBtn(bkFilter === 'pending')} onClick={() => setBkFilter('pending')}>
+            Chờ liên hệ · {bookingCounts.pending}
+          </button>
+          <button style={chipBtn(bkFilter === 'contacted')} onClick={() => setBkFilter('contacted')}>
+            Đã liên hệ · {bookingCounts.contacted}
+          </button>
+          <button style={chipBtn(bkFilter === 'done')} onClick={() => setBkFilter('done')}>
+            Hoàn thành · {bookingCounts.done}
+          </button>
+        </div>
+        {filteredBookings.length === 0 ? (
+          <div style={{ ...cardStyle, textAlign: 'center', color: '#64748B', fontSize: '13.5px' }}>Không có lịch tư vấn nào ở trạng thái này.</div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+            {filteredBookings.map((bk) => {
+              const st = bookingStateOf(bk.id);
+              const meta = stateMeta[st];
+              return (
+                <div key={bk.id} style={{ ...cardStyle, padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <UniversityAvatar code={bk.uniCode} size={38} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bk.name}</div>
+                      <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+                        Tư vấn với {bk.uniCode} · {bk.major}
+                      </div>
+                    </div>
+                    <span style={{ padding: '4px 9px', borderRadius: '999px', backgroundColor: meta.bg, color: meta.color, fontSize: '11px', fontWeight: 800, whiteSpace: 'nowrap' }}>{meta.label}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', color: '#334155' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <Calendar size={13} color="#7C3AED" /> <strong>{bk.dateTime}</strong>
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <Phone size={13} color="#64748B" /> {bk.phone}
+                    </span>
+                    {bk.notes && <span style={{ color: '#64748B', lineHeight: 1.5 }}>{bk.notes}</span>}
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '2px' }}>
+                    {st === 'pending' && (
+                      <button style={actBtn('#2563EB')} onClick={() => updateBookingState(bk.id, 'contacted')}>
+                        Đánh dấu đã liên hệ
+                      </button>
+                    )}
+                    {st === 'contacted' && (
+                      <>
+                        <button style={actBtn('#059669')} onClick={() => updateBookingState(bk.id, 'done')}>
+                          Hoàn thành tư vấn
+                        </button>
+                        <button style={ghostBtn} onClick={() => updateBookingState(bk.id, 'pending')}>
+                          Đặt lại
+                        </button>
+                      </>
+                    )}
+                    {st === 'done' && (
+                      <button style={ghostBtn} onClick={() => updateBookingState(bk.id, 'pending')}>
+                        Mở lại lịch
+                      </button>
+                    )}
                   </div>
                 </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', color: '#334155' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  <Calendar size={13} color="#7C3AED" /> <strong>{bk.dateTime}</strong>
-                </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  <Phone size={13} color="#64748B" /> {bk.phone}
-                </span>
-                {bk.notes && <span style={{ color: '#64748B', lineHeight: 1.5 }}>{bk.notes}</span>}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderUnis = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -735,12 +951,18 @@ export const AdminApp: React.FC = () => {
           <Search size={17} color="#94A3B8" style={{ flexShrink: 0 }} />
           <input
             value={uniSearch}
-            onChange={(e) => setUniSearch(e.target.value)}
+            onChange={(e) => {
+              setUniSearch(e.target.value);
+              setUnisPage(1);
+            }}
             placeholder="Tìm tên trường hoặc mã trường..."
             style={{ flex: 1, border: 'none', outline: 'none', fontSize: '13.5px', backgroundColor: 'transparent', minWidth: 0 }}
           />
         </div>
-        <select value={uniSort} onChange={(e) => setUniSort(e.target.value as UniSort)} style={{ ...selectStyle, height: '44px' }} aria-label="Sắp xếp trường">
+        <select value={uniSort} onChange={(e) => {
+          setUniSort(e.target.value as UniSort);
+          setUnisPage(1);
+        }} style={{ ...selectStyle, height: '44px' }} aria-label="Sắp xếp trường">
           <option value="name">Tên trường A–Z</option>
           <option value="scoreDesc">Điểm chuẩn cao → thấp</option>
           <option value="tuitionAsc">Học phí thấp → cao</option>
@@ -748,7 +970,10 @@ export const AdminApp: React.FC = () => {
         {['Tất cả', 'Bắc', 'Trung', 'Nam'].map((r) => (
           <button
             key={r}
-            onClick={() => setUniRegion(r)}
+            onClick={() => {
+              setUniRegion(r);
+              setUnisPage(1);
+            }}
             style={{
               padding: '8px 14px',
               borderRadius: '999px',
@@ -767,7 +992,7 @@ export const AdminApp: React.FC = () => {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(258px, 1fr))', gap: '12px' }}>
-        {filteredUnis.map((uni) => {
+        {pagedUnis.map((uni) => {
           const isEditing = editingUniId === uni.id;
           return (
             <div key={uni.id} style={{ ...cardStyle, padding: '16px', border: isEditing ? '2px solid #2563EB' : '1px solid #E2E8F0' }}>
@@ -856,11 +1081,12 @@ export const AdminApp: React.FC = () => {
         })}
       </div>
       {filteredUnis.length === 0 && <div style={{ ...cardStyle, textAlign: 'center', color: '#64748B', fontSize: '13.5px' }}>Không tìm thấy trường nào khớp bộ lọc.</div>}
+      <Pager page={curUnisPage} pageCount={unisPageCount} total={filteredUnis.length} unit="trường" onChange={setUnisPage} />
     </div>
   );
 
   const renderAccount = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '680px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: isDesktop ? '1160px' : '680px' }}>
       <h1 style={{ margin: 0, fontSize: isDesktop ? '26px' : '22px', fontWeight: 900, color: '#0F172A' }}>Tài khoản quản trị</h1>
 
       <div style={cardStyle}>
@@ -895,6 +1121,7 @@ export const AdminApp: React.FC = () => {
         </div>
       </div>
 
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1.25fr 1fr' : '1fr', gap: '16px', alignItems: 'start' }}>
       {/* Ma trận phân quyền */}
       <div style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
@@ -955,6 +1182,7 @@ export const AdminApp: React.FC = () => {
           ))}
         </div>
         <p style={{ margin: '12px 0 0', fontSize: '12px', color: '#64748B' }}>Gồm 3 tài khoản hệ thống theo vai trò và các tài khoản thí sinh tự đăng ký trên thiết bị này.</p>
+      </div>
       </div>
 
       <div style={cardStyle}>
@@ -1061,6 +1289,7 @@ export const AdminApp: React.FC = () => {
         margin: '0 auto',
         padding: isDesktop ? '26px 28px 40px' : '18px 16px 96px',
         boxSizing: 'border-box',
+        ...(isDesktop ? { height: '100%', overflowY: 'auto' as const } : {}),
       }}
     >
       {section === 'dashboard' && renderDashboard()}
@@ -1073,7 +1302,7 @@ export const AdminApp: React.FC = () => {
 
   if (isDesktop) {
     return (
-      <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#EDF1F7', width: '100%', overflowX: 'clip' }}>
+      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: '#EDF1F7', width: '100%' }}>
         <aside
           style={{
             width: '262px',
@@ -1083,9 +1312,8 @@ export const AdminApp: React.FC = () => {
             display: 'flex',
             flexDirection: 'column',
             padding: '22px 16px',
-            position: 'sticky',
-            top: 0,
-            height: '100vh',
+            height: '100%',
+            overflowY: 'auto',
             boxSizing: 'border-box',
           }}
         >

@@ -24,6 +24,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import type { BookingState } from '../../context/AppContext';
 import type { ApplicationRecord, ApplicationStatus } from '../../types';
 import { UniversityAvatar } from '../common/UI';
 
@@ -122,6 +123,8 @@ export const UniversityApp: React.FC = () => {
     universitiesList,
     updateApplicationStatus,
     processingLog,
+    bookingStates,
+    updateBookingState,
     openApplicationDetail,
     openNotifications,
     openSettings,
@@ -141,6 +144,7 @@ export const UniversityApp: React.FC = () => {
   const pxuUni = universitiesList.find((u) => u.code === 'PXU');
   const pxuApps = applications.filter((a) => a.uniCode === 'PXU');
   const pxuBookings = bookings.filter((b) => b.uniCode === 'PXU');
+  const bookingStateOf = (id: string): BookingState => bookingStates[id] || 'pending';
   const pxuLog = processingLog.filter((l) => l.uniCode === 'PXU');
   const countByStatus = (s: ApplicationStatus) => pxuApps.filter((a) => a.status === s).length;
   const pendingApps = pxuApps.filter((a) => a.status === 'Đang xét duyệt');
@@ -626,42 +630,97 @@ export const UniversityApp: React.FC = () => {
     </div>
   );
 
-  const renderBookings = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <div style={{ minWidth: 0 }}>
-        <h1 style={{ margin: 0, fontSize: isDesktop ? '26px' : '22px', fontWeight: 900, color: '#0F172A' }}>Lịch tư vấn với ĐH Phú Xuân</h1>
-        <p style={{ margin: '4px 0 0', fontSize: '13.5px', color: '#64748B' }}>
-          {pxuBookings.length} lịch hẹn thí sinh đã đặt riêng với PXU (cổng này không thấy lịch của trường khác)
-        </p>
-      </div>
-      {pxuBookings.length === 0 ? (
-        <div style={{ ...cardStyle, textAlign: 'center', color: '#64748B', fontSize: '13.5px' }}>Chưa có lịch tư vấn nào được đặt với PXU.</div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(258px, 1fr))', gap: '12px' }}>
-          {pxuBookings.map((bk) => (
-            <div key={bk.id} style={{ ...cardStyle, padding: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                <UniversityAvatar code="PXU" size={38} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bk.name}</div>
-                  <div style={{ fontSize: '11.5px', color: '#64748B' }}>Ngành quan tâm: {bk.major}</div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', color: '#334155' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  <Calendar size={13} color="#7C3AED" /> <strong>{bk.dateTime}</strong>
-                </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  <Phone size={13} color="#64748B" /> {bk.phone}
-                </span>
-                {bk.notes && <span style={{ color: '#64748B', lineHeight: 1.5 }}>{bk.notes}</span>}
-              </div>
-            </div>
-          ))}
+  const renderBookings = () => {
+    const stateMeta: Record<BookingState, { label: string; color: string; bg: string }> = {
+      pending: { label: 'Chờ liên hệ', color: '#B45309', bg: '#FEF3C7' },
+      contacted: { label: 'Đã liên hệ', color: '#1D4ED8', bg: '#DBEAFE' },
+      done: { label: 'Hoàn thành', color: '#047857', bg: '#D1FAE5' },
+    };
+    const pendingCount = pxuBookings.filter((b) => bookingStateOf(b.id) === 'pending').length;
+    const actBtn = (bg: string): React.CSSProperties => ({
+      padding: '8px 12px',
+      borderRadius: '10px',
+      border: 'none',
+      backgroundColor: bg,
+      color: '#FFFFFF',
+      fontSize: '12px',
+      fontWeight: 800,
+      cursor: 'pointer',
+    });
+    const ghostBtn: React.CSSProperties = {
+      padding: '8px 12px',
+      borderRadius: '10px',
+      border: '1px solid #E2E8F0',
+      backgroundColor: '#FFFFFF',
+      color: '#64748B',
+      fontSize: '12px',
+      fontWeight: 700,
+      cursor: 'pointer',
+    };
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ minWidth: 0 }}>
+          <h1 style={{ margin: 0, fontSize: isDesktop ? '26px' : '22px', fontWeight: 900, color: '#0F172A' }}>Lịch tư vấn với ĐH Phú Xuân</h1>
+          <p style={{ margin: '4px 0 0', fontSize: '13.5px', color: '#64748B' }}>
+            {pxuBookings.length} lịch hẹn đặt riêng với PXU · {pendingCount} đang chờ liên hệ — xử lý ngay trên từng lịch
+          </p>
         </div>
-      )}
-    </div>
-  );
+        {pxuBookings.length === 0 ? (
+          <div style={{ ...cardStyle, textAlign: 'center', color: '#64748B', fontSize: '13.5px' }}>Chưa có lịch tư vấn nào được đặt với PXU.</div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: '12px' }}>
+            {pxuBookings.map((bk) => {
+              const st = bookingStateOf(bk.id);
+              const meta = stateMeta[st];
+              return (
+                <div key={bk.id} style={{ ...cardStyle, padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <UniversityAvatar code="PXU" size={38} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bk.name}</div>
+                      <div style={{ fontSize: '11.5px', color: '#64748B' }}>Ngành quan tâm: {bk.major}</div>
+                    </div>
+                    <span style={{ padding: '4px 9px', borderRadius: '999px', backgroundColor: meta.bg, color: meta.color, fontSize: '11px', fontWeight: 800, whiteSpace: 'nowrap' }}>{meta.label}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', color: '#334155' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <Calendar size={13} color="#7C3AED" /> <strong>{bk.dateTime}</strong>
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <Phone size={13} color="#64748B" /> {bk.phone}
+                    </span>
+                    {bk.notes && <span style={{ color: '#64748B', lineHeight: 1.5 }}>{bk.notes}</span>}
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 'auto' }}>
+                    {st === 'pending' && (
+                      <button style={actBtn('#059669')} onClick={() => updateBookingState(bk.id, 'contacted')}>
+                        Đánh dấu đã liên hệ
+                      </button>
+                    )}
+                    {st === 'contacted' && (
+                      <>
+                        <button style={actBtn('#047857')} onClick={() => updateBookingState(bk.id, 'done')}>
+                          Hoàn thành tư vấn
+                        </button>
+                        <button style={ghostBtn} onClick={() => updateBookingState(bk.id, 'pending')}>
+                          Đặt lại
+                        </button>
+                      </>
+                    )}
+                    {st === 'done' && (
+                      <button style={ghostBtn} onClick={() => updateBookingState(bk.id, 'pending')}>
+                        Mở lại lịch
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderPrograms = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

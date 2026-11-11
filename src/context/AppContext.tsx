@@ -21,6 +21,9 @@ interface HollandResult {
   completedAt: string;
 }
 
+// Trạng thái xử lý một lịch tư vấn: chờ liên hệ -> đã liên hệ -> hoàn thành
+export type BookingState = 'pending' | 'contacted' | 'done';
+
 // Nhật ký xử lý hồ sơ: ghi lại mỗi lần Admin/PXU đổi trạng thái một hồ sơ (luồng xử lý)
 export interface ProcessingLogEntry {
   id: string;
@@ -49,6 +52,8 @@ interface AppContextType {
   updateProfile: (updated: Partial<UserProfile>) => void;
   bookings: ConsultationBooking[];
   addBooking: (booking: Omit<ConsultationBooking, 'id'>) => void;
+  bookingStates: Record<string, BookingState>;
+  updateBookingState: (bookingId: string, state: BookingState) => void;
   upgradePremium: (planName: string) => void;
 
   // Wishlist
@@ -723,6 +728,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Đã lưu thông tin hồ sơ!');
   };
 
+  const [bookingStates, setBookingStates] = useState<Record<string, BookingState>>({});
+
+  const updateBookingState = (bookingId: string, state: BookingState) => {
+    // Phân quyền xử lý lịch tư vấn: thí sinh không xử lý lịch; PXU chỉ xử lý lịch của PXU
+    const target = bookings.find((b) => b.id === bookingId);
+    if (!target) return;
+    if (user.role === 'student') {
+      showToast('⛔ Chỉ Admin hoặc trường đại học mới xử lý lịch tư vấn.');
+      return;
+    }
+    if (user.role === 'university_pxu' && target.uniCode !== 'PXU') {
+      showToast('⛔ Cổng PXU chỉ xử lý lịch tư vấn đặt với ĐH Phú Xuân.');
+      return;
+    }
+    setBookingStates((prev) => ({ ...prev, [bookingId]: state }));
+    const label = state === 'contacted' ? 'Đã liên hệ' : state === 'done' ? 'Hoàn thành' : 'Chờ liên hệ';
+    showToast(`Đã cập nhật lịch tư vấn của ${target.name}: ${label}`);
+  };
+
   const addBooking = (bookingData: Omit<ConsultationBooking, 'id'>) => {
     const newBooking: ConsultationBooking = {
       ...bookingData,
@@ -1032,6 +1056,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateProfile,
         bookings,
         addBooking,
+        bookingStates,
+        updateBookingState,
         upgradePremium,
         favoriteIds,
         toggleFavorite,
