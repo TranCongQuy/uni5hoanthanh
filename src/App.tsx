@@ -91,6 +91,8 @@ const MainApp: React.FC = () => {
       <>
         <AdminApp />
         <ViewApplicationModal />
+        <NotificationsModal />
+        <SettingsModal />
         <Toast message={toastMessage} />
       </>
     );
@@ -101,6 +103,8 @@ const MainApp: React.FC = () => {
       <>
         <UniversityApp />
         <ViewApplicationModal />
+        <NotificationsModal />
+        <SettingsModal />
         <Toast message={toastMessage} />
       </>
     );
