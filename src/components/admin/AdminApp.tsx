@@ -3,103 +3,89 @@ import {
   LayoutDashboard,
   FileText,
   School,
-  User,
-  LogOut,
+  Users,
   Search,
   Clock,
   CheckCircle2,
-  AlertCircle,
   Check,
   X,
   Edit2,
   ChevronRight,
   ShieldCheck,
   Bell,
-  Settings,
   Calendar,
   Download,
-  Users,
   Phone,
+  Mail,
+  RotateCcw,
+  ArrowRight,
+  Sparkles,
+  ExternalLink,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import type { BookingState } from '../../context/AppContext';
-import type { ApplicationRecord, ApplicationStatus } from '../../types';
+import { getStatusMeta } from '../../types';
+import type { ApplicationRecord, ApplicationStatus, University } from '../../types';
 import { UniversityAvatar } from '../common/UI';
-
-// =========================================================================
-// ADMIN APP v2 — Trung tâm điều hành UniPath (khung giao diện riêng cho Admin)
-// Điều hướng riêng: Tổng quan / Hồ sơ / Tư vấn / Trường / Tài khoản.
-// Đầy đủ chức năng hệ thống dành cho Admin: xử lý hồ sơ toàn quốc, lịch tư
-// vấn, CSDL 30 trường, người dùng & ma trận phân quyền, nhật ký xử lý.
-// =========================================================================
+import { AccountRoleMenu } from '../common/AccountRoleMenu';
 
 type AdminSection = 'dashboard' | 'apps' | 'bookings' | 'unis' | 'account';
 type AppSort = 'list' | 'scoreDesc' | 'scoreAsc' | 'nameAsc';
 type UniSort = 'name' | 'scoreDesc' | 'tuitionAsc';
 
-const NAV_ITEMS: { id: AdminSection; label: string; icon: React.ReactNode }[] = [
-  { id: 'dashboard', label: 'Tổng quan', icon: <LayoutDashboard size={20} /> },
-  { id: 'apps', label: 'Hồ sơ', icon: <FileText size={20} /> },
-  { id: 'bookings', label: 'Tư vấn', icon: <Calendar size={20} /> },
-  { id: 'unis', label: 'Trường', icon: <School size={20} /> },
-  { id: 'account', label: 'Tài khoản', icon: <User size={20} /> },
+const NAV_ITEMS: { id: AdminSection; label: string; shortLabel: string; icon: React.ReactNode }[] = [
+  { id: 'dashboard', label: 'Tổng quan điều hành', shortLabel: 'Tổng quan', icon: <LayoutDashboard size={19} /> },
+  { id: 'apps', label: 'Hồ sơ xét tuyển', shortLabel: 'Hồ sơ', icon: <FileText size={19} /> },
+  { id: 'bookings', label: 'Lịch tư vấn 1-1', shortLabel: 'Tư vấn', icon: <Calendar size={19} /> },
+  { id: 'unis', label: 'CSDL 30 Trường ĐH', shortLabel: '30 Trường', icon: <School size={19} /> },
+  { id: 'account', label: 'Phân quyền & User', shortLabel: 'Phân quyền', icon: <Users size={19} /> },
 ];
 
-const ALL_STATUSES: ApplicationStatus[] = [
-  'Đang xét duyệt',
-  'Hồ sơ hợp lệ',
-  'Thiếu hồ sơ',
-  'Đã trúng tuyển',
-  'Đã hủy',
-  'Đã bị hủy',
+const QUICK_REVIEW_NOTES = [
+  'Đủ điều kiện trúng tuyển sớm đợt 1 năm 2026.',
+  'Hồ sơ hợp lệ, đã chuyển Hội đồng tuyển sinh trường.',
+  'Vui lòng bổ sung ảnh chụp Học bạ HK1 lớp 12 rõ nét.',
+  'Chưa đạt ngưỡng điểm sàn nhận hồ sơ theo quy chế.',
 ];
 
-const statusColor = (status: ApplicationStatus): string => {
-  switch (status) {
-    case 'Đã trúng tuyển':
-      return '#059669';
-    case 'Hồ sơ hợp lệ':
-      return '#0EA5E9';
-    case 'Thiếu hồ sơ':
-      return '#2563EB';
-    case 'Đang xét duyệt':
-      return '#D97706';
-    case 'Đã bị hủy':
-      return '#DC2626';
-    default:
-      return '#64748B';
-  }
-};
+const SYSTEM_ACCOUNTS = [
+  { name: 'Trần Công Quý', email: 'quy@unipath.vn', role: 'Thí sinh THPT', color: '#2563EB', bg: '#EFF6FF' },
+  { name: 'Ban Tuyển sinh ĐH Phú Xuân', email: 'tuyensinh@pxu.edu.vn', role: 'ĐH Phú Xuân (PXU)', color: '#059669', bg: '#ECFDF5' },
+  { name: 'Admin Hệ thống UniPath', email: 'admin@unipath.vn', role: 'Quản trị toàn quốc', color: '#4F46E5', bg: '#EEF2FF' },
+];
 
-const StatusChip: React.FC<{ status: ApplicationStatus }> = ({ status }) => (
-  <span
-    style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '5px',
-      padding: '3px 10px',
-      borderRadius: '999px',
-      fontSize: '11px',
-      fontWeight: 800,
-      color: statusColor(status),
-      backgroundColor: `${statusColor(status)}1A`,
-      whiteSpace: 'nowrap',
-      flexShrink: 0,
-    }}
-  >
-    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: statusColor(status), flexShrink: 0 }} />
-    {status}
-  </span>
-);
+const PERMISSION_ROWS = [
+  { label: 'Thẩm định & duyệt hồ sơ cả 30 trường đại học', admin: 'Toàn quyền', pxu: '—', student: '—' },
+  { label: 'Thẩm định hồ sơ nộp vào Trường ĐH Phú Xuân (PXU)', admin: 'Toàn quyền', pxu: 'Chỉ PXU', student: '—' },
+  { label: 'Điều chỉnh điểm chuẩn & học phí sàn (đồng bộ AI)', admin: '30 trường', pxu: 'Chỉ PXU', student: '—' },
+  { label: 'Điều phối lịch hẹn tư vấn tuyển sinh 1-1', admin: 'Toàn quốc', pxu: 'Chỉ PXU', student: 'Của riêng mình' },
+  { label: 'Truy cập nhật ký kiểm toán xử lý hồ sơ', admin: 'Toàn sàn', pxu: 'Chỉ PXU', student: '—' },
+  { label: 'Nộp hồ sơ, bổ sung minh chứng & tự rút nguyện vọng', admin: '—', pxu: '—', student: 'Chính chủ' },
+];
 
-const cardStyle: React.CSSProperties = {
-  backgroundColor: '#FFFFFF',
-  borderRadius: '20px',
-  border: '1px solid #E2E8F0',
-  boxShadow: '0 4px 18px rgba(15, 23, 42, 0.04)',
-  padding: '20px',
-  boxSizing: 'border-box',
-  minWidth: 0,
+const StatusBadge: React.FC<{ status: ApplicationStatus }> = ({ status }) => {
+  const m = getStatusMeta(status);
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        padding: '4px 10px',
+        borderRadius: '999px',
+        fontSize: '11.5px',
+        fontWeight: 800,
+        color: m.color,
+        backgroundColor: m.bg,
+        border: `1px solid ${m.border}`,
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+      }}
+    >
+      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: m.dot, flexShrink: 0 }} />
+      {m.label}
+    </span>
+  );
 };
 
 const exportAppsCsv = (rows: ApplicationRecord[], filename: string) => {
@@ -117,62 +103,24 @@ const exportAppsCsv = (rows: ApplicationRecord[], filename: string) => {
   URL.revokeObjectURL(url);
 };
 
-const Pager: React.FC<{ page: number; pageCount: number; total: number; unit: string; onChange: (p: number) => void }> = ({ page, pageCount, total, unit, onChange }) => {
-  if (pageCount <= 1) return null;
-  const btn: React.CSSProperties = {
-    minWidth: '34px',
-    height: '34px',
-    padding: '0 10px',
-    borderRadius: '10px',
-    border: '1px solid #E2E8F0',
-    backgroundColor: '#FFFFFF',
-    color: '#334155',
-    fontSize: '12.5px',
-    fontWeight: 700,
-    cursor: 'pointer',
-  };
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
-      <button style={{ ...btn, opacity: page <= 1 ? 0.45 : 1 }} disabled={page <= 1} onClick={() => onChange(page - 1)}>
-        ← Trước
-      </button>
-      {Array.from({ length: pageCount }, (_, i) => i + 1).map((p) => (
-        <button
-          key={p}
-          style={p === page ? { ...btn, backgroundColor: '#2563EB', border: '1px solid #2563EB', color: '#FFFFFF', fontWeight: 800 } : btn}
-          onClick={() => onChange(p)}
-        >
-          {p}
-        </button>
-      ))}
-      <button style={{ ...btn, opacity: page >= pageCount ? 0.45 : 1 }} disabled={page >= pageCount} onClick={() => onChange(page + 1)}>
-        Sau →
-      </button>
-      <span style={{ fontSize: '12px', color: '#64748B', marginLeft: '6px' }}>
-        Trang {page}/{pageCount} · Tổng {total} {unit}
-      </span>
-    </div>
-  );
+const getMajorCutoff = (app: ApplicationRecord, unis: University[]): number => {
+  const u = unis.find((x) => x.code === app.uniCode || x.id === app.uniId);
+  if (!u) return 20;
+  return u.cutoffScores[app.major] ?? u.score2024;
 };
 
-const SYSTEM_ACCOUNTS: { name: string; email: string; role: string; color: string }[] = [
-  { name: 'Trần Công Quý', email: 'quy@unipath.vn', role: 'Thí sinh', color: '#2563EB' },
-  { name: 'Admin Hệ Thống UniPath', email: 'admin@unipath.vn', role: 'Admin', color: '#7C3AED' },
-  { name: 'Ban Tuyển Sinh Phú Xuân', email: 'tuyensinh@pxu.edu.vn', role: 'ĐH Phú Xuân', color: '#059669' },
-];
-
-const PERMISSION_ROWS: { label: string; admin: string; pxu: string; student: string }[] = [
-  { label: 'Xử lý hồ sơ của cả 30 trường', admin: '✓', pxu: '—', student: '—' },
-  { label: 'Xử lý hồ sơ nộp vào ĐH Phú Xuân', admin: '✓', pxu: '✓', student: '—' },
-  { label: 'Cập nhật điểm chuẩn & học phí', admin: '30 trường', pxu: 'Chỉ PXU', student: '—' },
-  { label: 'Quản lý lịch hẹn tư vấn 1-1', admin: 'Tất cả', pxu: 'Chỉ PXU', student: 'Của mình' },
-  { label: 'Xem nhật ký thẩm định hồ sơ', admin: 'Toàn hệ thống', pxu: 'Chỉ PXU', student: '—' },
-  { label: 'Nộp, bổ sung & tự rút hồ sơ riêng', admin: '—', pxu: '—', student: '✓' },
-];
+const surfaceCard: React.CSSProperties = {
+  backgroundColor: '#FFFFFF',
+  borderRadius: '18px',
+  border: '1px solid #E2E8F0',
+  boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)',
+  padding: '20px',
+  boxSizing: 'border-box',
+  minWidth: 0,
+};
 
 export const AdminApp: React.FC = () => {
   const {
-    user,
     registeredUsers,
     applications,
     bookings,
@@ -186,9 +134,7 @@ export const AdminApp: React.FC = () => {
     openApplicationDetail,
     openNotifications,
     unreadNotificationCount,
-    openSettings,
     resetAllData,
-    logout,
     viewMode,
   } = useApp();
 
@@ -199,16 +145,14 @@ export const AdminApp: React.FC = () => {
   const [unisPage, setUnisPage] = useState(1);
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [reviewerNote, setReviewerNote] = useState('');
-  const [bkFilter, setBkFilter] = useState<'all' | BookingState>('all');
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [mobileBkTab, setMobileBkTab] = useState<BookingState>('pending');
 
-  // --- Apps filters ---
+  // Filters
   const [appSearch, setAppSearch] = useState('');
   const [appStatus, setAppStatus] = useState<string>('Tất cả');
   const [appUni, setAppUni] = useState<string>('Tất cả');
   const [appSort, setAppSort] = useState<AppSort>('list');
 
-  // --- Universities filters / edit ---
   const [uniSearch, setUniSearch] = useState('');
   const [uniRegion, setUniRegion] = useState<string>('Tất cả');
   const [uniSort, setUniSort] = useState<UniSort>('name');
@@ -216,24 +160,44 @@ export const AdminApp: React.FC = () => {
   const [editScore, setEditScore] = useState<number>(20);
   const [editTuition, setEditTuition] = useState<number>(15);
 
-  // --- Derived data ---
+  // Derived metrics
   const totalApps = applications.length;
   const countByStatus = (s: ApplicationStatus) => applications.filter((a) => a.status === s).length;
   const pendingApps = applications.filter((a) => a.status === 'Đang xét duyệt');
   const missingApps = applications.filter((a) => a.status === 'Thiếu hồ sơ');
+  const validAppsCount = countByStatus('Hồ sơ hợp lệ');
+  const admittedAppsCount = countByStatus('Đã trúng tuyển');
+  const cancelledAppsCount = countByStatus('Đã hủy') + countByStatus('Đã bị hủy');
+  const actionQueue = applications.filter((a) => a.status === 'Đang xét duyệt' || a.status === 'Thiếu hồ sơ');
+
+  const avgScore =
+    totalApps > 0 ? (applications.reduce((sum, a) => sum + a.score, 0) / totalApps).toFixed(1) : '0.0';
+  const admittedRate = totalApps > 0 ? Math.round((admittedAppsCount / totalApps) * 100) : 0;
+
+  const bookingStateOf = (id: string): BookingState => bookingStates[id] || 'pending';
+  const pendingBookings = bookings.filter((b) => bookingStateOf(b.id) === 'pending');
+  const contactedBookings = bookings.filter((b) => bookingStateOf(b.id) === 'contacted');
+  const doneBookings = bookings.filter((b) => bookingStateOf(b.id) === 'done');
+
   const uniCodesInApps = Array.from(new Set(applications.map((a) => a.uniCode)));
-  const uniCounts = uniCodesInApps
+  const topUnisByApps = uniCodesInApps
     .map((code) => ({
       code,
       name: applications.find((a) => a.uniCode === code)?.uniName || code,
       count: applications.filter((a) => a.uniCode === code).length,
     }))
-    .sort((a, b) => b.count - a.count);
-  const maxUniCount = Math.max(1, ...uniCounts.map((u) => u.count));
-  const avgScore = totalApps > 0 ? (applications.reduce((sum, a) => sum + a.score, 0) / totalApps).toFixed(1) : '0';
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+  const maxUniAppCount = Math.max(1, ...topUnisByApps.map((u) => u.count));
 
+  // Filtered Applications
   const filteredApps = applications.filter((a) => {
-    const matchStatus = appStatus === 'Tất cả' || a.status === appStatus;
+    const matchStatus =
+      appStatus === 'Tất cả'
+        ? true
+        : appStatus === 'Đã hủy / Từ chối'
+        ? a.status === 'Đã hủy' || a.status === 'Đã bị hủy'
+        : a.status === appStatus;
     const matchUni = appUni === 'Tất cả' || a.uniCode === appUni;
     const kw = appSearch.trim().toLowerCase();
     const matchKw =
@@ -244,6 +208,7 @@ export const AdminApp: React.FC = () => {
       a.uniName.toLowerCase().includes(kw);
     return matchStatus && matchUni && matchKw;
   });
+
   const sortedApps = [...filteredApps].sort((a, b) => {
     if (appSort === 'scoreDesc') return b.score - a.score;
     if (appSort === 'scoreAsc') return a.score - b.score;
@@ -251,19 +216,20 @@ export const AdminApp: React.FC = () => {
     return 0;
   });
 
-  const APPS_PER_PAGE = 5;
+  const APPS_PER_PAGE = 8;
   const appsPageCount = Math.max(1, Math.ceil(sortedApps.length / APPS_PER_PAGE));
   const curAppsPage = Math.min(appsPage, appsPageCount);
   const pagedApps = sortedApps.slice((curAppsPage - 1) * APPS_PER_PAGE, curAppsPage * APPS_PER_PAGE);
 
   const selectedApp: ApplicationRecord | null =
-    applications.find((a) => a.id === selectedAppId) || pendingApps[0] || applications[0] || null;
+    applications.find((a) => a.id === selectedAppId) || pendingApps[0] || sortedApps[0] || applications[0] || null;
 
+  // Filtered Universities
   const filteredUnis = universitiesList
     .filter((u) => {
       const matchRegion = uniRegion === 'Tất cả' || u.region === uniRegion;
       const kw = uniSearch.trim().toLowerCase();
-      const matchKw = !kw || u.name.toLowerCase().includes(kw) || u.code.toLowerCase().includes(kw);
+      const matchKw = !kw || u.name.toLowerCase().includes(kw) || u.code.toLowerCase().includes(kw) || u.loc.toLowerCase().includes(kw);
       return matchRegion && matchKw;
     })
     .sort((a, b) => {
@@ -272,10 +238,25 @@ export const AdminApp: React.FC = () => {
       return a.name.localeCompare(b.name, 'vi');
     });
 
-  const UNIS_PER_PAGE = 12;
+  const UNIS_PER_PAGE = 10;
   const unisPageCount = Math.max(1, Math.ceil(filteredUnis.length / UNIS_PER_PAGE));
   const curUnisPage = Math.min(unisPage, unisPageCount);
   const pagedUnis = filteredUnis.slice((curUnisPage - 1) * UNIS_PER_PAGE, curUnisPage * UNIS_PER_PAGE);
+
+  const jumpToFilteredApps = (statusFilter: string) => {
+    setAppStatus(statusFilter);
+    setAppsPage(1);
+    setSection('apps');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const selectAppForReview = (app: ApplicationRecord, switchTab = false) => {
+    setSelectedAppId(app.id);
+    if (switchTab) setSection('apps');
+    window.setTimeout(() => {
+      document.getElementById('admin-app-inspector')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 90);
+  };
 
   const toggleChecked = (id: string) => {
     setCheckedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -287,964 +268,1401 @@ export const AdminApp: React.FC = () => {
     setReviewerNote('');
   };
 
-  const bookingStateOf = (id: string): BookingState => bookingStates[id] || 'pending';
-  const bookingCounts = {
-    all: bookings.length,
-    pending: bookings.filter((b) => bookingStateOf(b.id) === 'pending').length,
-    contacted: bookings.filter((b) => bookingStateOf(b.id) === 'contacted').length,
-    done: bookings.filter((b) => bookingStateOf(b.id) === 'done').length,
-  };
-  const filteredBookings = bkFilter === 'all' ? bookings : bookings.filter((b) => bookingStateOf(b.id) === bkFilter);
-
-  const selectApp = (app: ApplicationRecord, goToApps: boolean) => {
-    setSelectedAppId(app.id);
-    if (goToApps) setSection('apps');
-    if (!isDesktop) {
-      window.setTimeout(() => {
-        document.getElementById("app-inspector")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, goToApps ? 180 : 80);
-    }
-  };
-
   const handleSaveUni = (id: number) => {
     updateUniversityMetrics(id, editScore, editTuition);
     setEditingUniId(null);
   };
 
-  const selectStyle: React.CSSProperties = {
-    padding: '9px 12px',
-    borderRadius: '11px',
-    border: '1px solid #E2E8F0',
-    backgroundColor: '#FFFFFF',
-    fontSize: '12.5px',
-    fontWeight: 700,
-    color: '#334155',
-    outline: 'none',
-    cursor: 'pointer',
-    maxWidth: '100%',
-  };
+  const currentNavMeta = NAV_ITEMS.find((i) => i.id === section) || NAV_ITEMS[0];
 
-  // ---------------------------------------------------------------------
+  // =========================================================================
+  // SECTION 1: DASHBOARD
+  // =========================================================================
   const renderDashboard = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', ...(isDesktop ? { height: '100%' } : {}) }}>
-      <div style={{ minWidth: 0 }}>
-        <h1 style={{ margin: 0, fontSize: isDesktop ? '26px' : '22px', fontWeight: 900, color: '#0F172A' }}>Tổng quan điều hành</h1>
-        <p style={{ margin: '4px 0 0', fontSize: '13.5px', color: '#64748B' }}>
-          Hệ thống tuyển sinh UniPath 2.0 · {new Date().toLocaleDateString('vi-VN')} · {universitiesList.length} trường · Điểm TB hồ sơ {avgScore}
-        </p>
-      </div>
-
-      {/* KPI cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(132px, 1fr))', gap: '12px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+      {/* 4 Actionable KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '14px' }}>
         {[
-          { label: 'Tổng hồ sơ', value: totalApps, icon: <FileText size={19} color="#2563EB" />, bg: '#EFF6FF' },
-          { label: 'Đang xét duyệt', value: countByStatus('Đang xét duyệt'), icon: <Clock size={19} color="#D97706" />, bg: '#FFFBEB' },
-          { label: 'Thiếu hồ sơ', value: countByStatus('Thiếu hồ sơ'), icon: <AlertCircle size={19} color="#2563EB" />, bg: '#EFF6FF' },
-          { label: 'Đã trúng tuyển', value: countByStatus('Đã trúng tuyển'), icon: <CheckCircle2 size={19} color="#059669" />, bg: '#ECFDF5' },
-          { label: 'Lịch tư vấn', value: bookings.length, icon: <Calendar size={19} color="#7C3AED" />, bg: '#F5F3FF' },
+          {
+            title: 'Tổng hồ sơ toàn quốc',
+            value: totalApps,
+            sub: `Điểm trung bình: ${avgScore}đ`,
+            accent: '#2563EB',
+            iconBg: '#EFF6FF',
+            icon: <FileText size={20} color="#2563EB" />,
+            onClick: () => jumpToFilteredApps('Tất cả'),
+            cta: 'Xem tất cả →',
+          },
+          {
+            title: 'Cần thẩm định ngay',
+            value: pendingApps.length,
+            sub: `${missingApps.length} hồ sơ đang chờ bổ sung`,
+            accent: '#D97706',
+            iconBg: '#FFFBEB',
+            icon: <Clock size={20} color="#D97706" />,
+            onClick: () => jumpToFilteredApps('Đang xét duyệt'),
+            cta: 'Xử lý ngay →',
+          },
+          {
+            title: 'Đã trúng tuyển sớm',
+            value: admittedAppsCount,
+            sub: `Chiếm ${admittedRate}% tổng nguyện vọng`,
+            accent: '#059669',
+            iconBg: '#ECFDF5',
+            icon: <CheckCircle2 size={20} color="#059669" />,
+            onClick: () => jumpToFilteredApps('Đã trúng tuyển'),
+            cta: 'Danh sách đỗ →',
+          },
+          {
+            title: 'Lịch hẹn tư vấn 1-1',
+            value: bookings.length,
+            sub: `${pendingBookings.length} thí sinh đang chờ gọi`,
+            accent: '#4F46E5',
+            iconBg: '#EEF2FF',
+            icon: <Calendar size={20} color="#4F46E5" />,
+            onClick: () => setSection('bookings'),
+            cta: 'Mở bảng Kanban →',
+          },
         ].map((kpi) => (
-          <div key={kpi.label} style={{ ...cardStyle, padding: '15px' }}>
-            <div style={{ width: '38px', height: '38px', borderRadius: '12px', backgroundColor: kpi.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '9px' }}>
-              {kpi.icon}
-            </div>
-            <div style={{ fontSize: '25px', fontWeight: 900, color: '#0F172A', lineHeight: 1.1 }}>{kpi.value}</div>
-            <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 600, marginTop: '2px' }}>{kpi.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Việc cần xử lý */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
-        {[
-          { text: `${pendingApps.length} hồ sơ chờ duyệt`, target: 'apps' as AdminSection, color: '#D97706', bg: '#FFFBEB' },
-          { text: `${missingApps.length} hồ sơ thiếu giấy tờ`, target: 'apps' as AdminSection, color: '#2563EB', bg: '#EFF6FF' },
-          { text: `${bookings.length} lịch tư vấn đã đặt`, target: 'bookings' as AdminSection, color: '#7C3AED', bg: '#F5F3FF' },
-        ].map((item) => (
           <button
-            key={item.text}
-            onClick={() => setSection(item.target)}
+            key={kpi.title}
+            type="button"
+            onClick={kpi.onClick}
+            className="up-card-interactive"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '8px',
-              padding: '13px 15px',
-              borderRadius: '15px',
-              border: 'none',
-              backgroundColor: item.bg,
-              color: item.color,
-              fontSize: '13px',
-              fontWeight: 800,
-              cursor: 'pointer',
+              ...surfaceCard,
+              padding: '18px',
               textAlign: 'left',
-              minWidth: 0,
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              gap: '12px',
+              borderTop: `3px solid ${kpi.accent}`,
             }}
           >
-            <span style={{ minWidth: 0 }}>{item.text}</span>
-            <ChevronRight size={16} style={{ flexShrink: 0 }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+              <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#64748B' }}>{kpi.title}</span>
+              <span
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  backgroundColor: kpi.iconBg,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                {kpi.icon}
+              </span>
+            </div>
+            <div>
+              <div style={{ fontSize: isDesktop ? '28px' : '24px', fontWeight: 900, color: '#0F172A', lineHeight: 1.1 }}>
+                {kpi.value}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', gap: '6px' }}>
+                <span style={{ fontSize: '11.5px', color: '#64748B', fontWeight: 500 }}>{kpi.sub}</span>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: kpi.accent, whiteSpace: 'nowrap' }}>{kpi.cta}</span>
+              </div>
+            </div>
           </button>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1.35fr 1fr' : '1fr', gap: '16px', alignItems: isDesktop ? 'stretch' : 'start', ...(isDesktop ? { flex: 1, minHeight: 0 } : {}) }}>
-        {/* Hàng đợi */}
-        <div style={{ ...cardStyle, ...(isDesktop ? { height: '100%', overflowY: 'auto' as const } : {}) }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
-            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 900, color: '#0F172A' }}>Hàng đợi cần xử lý</h2>
-            <span style={{ fontSize: '11px', fontWeight: 800, color: '#D97706', backgroundColor: '#FFFBEB', padding: '3px 10px', borderRadius: '999px', whiteSpace: 'nowrap' }}>
-              {pendingApps.length} chờ duyệt
-            </span>
+      {/* Visual 4-Stage Pipeline Banner */}
+      <div style={{ ...surfaceCard, padding: '18px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '15.5px', fontWeight: 800, color: '#0F172A' }}>
+              Quy trình Phễu Xét Tuyển Toàn Quốc (Thời gian thực)
+            </h2>
+            <p style={{ margin: '2px 0 0', fontSize: '12.5px', color: '#64748B' }}>
+              Bấm vào bất kỳ giai đoạn nào để lọc ngay danh sách hồ sơ ở bước đó
+            </p>
           </div>
-          {pendingApps.length === 0 ? (
-            <p style={{ margin: 0, fontSize: '13.5px', color: '#64748B' }}>Không có hồ sơ nào đang chờ duyệt. 🎉</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {pendingApps.map((app) => (
-                <button
-                  key={app.id}
-                  onClick={() => selectApp(app, true)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '12px 4px',
-                    border: 'none',
-                    borderBottom: '1px solid #F1F5F9',
-                    backgroundColor: 'transparent',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    width: '100%',
-                    minWidth: 0,
-                  }}
-                >
-                  <UniversityAvatar code={app.uniCode} size={38} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {app.candidateName} · {app.code}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {app.major} — {app.uniName}
-                    </div>
-                  </div>
-                  <span style={{ fontSize: '12.5px', fontWeight: 800, color: '#2563EB', whiteSpace: 'nowrap' }}>{app.score}đ</span>
-                  <ChevronRight size={16} color="#94A3B8" style={{ flexShrink: 0 }} />
-                </button>
-              ))}
-            </div>
-          )}
-          <button
-            onClick={() => setSection('apps')}
-            style={{ marginTop: '14px', padding: '10px 16px', borderRadius: '12px', border: 'none', backgroundColor: '#2563EB', color: '#FFFFFF', fontSize: '13px', fontWeight: 800, cursor: 'pointer' }}
-          >
-            Xem tất cả hồ sơ
-          </button>
+          <span style={{ fontSize: '12px', fontWeight: 700, color: '#475569', backgroundColor: '#F8FAFC', padding: '5px 12px', borderRadius: '999px', border: '1px solid #E2E8F0' }}>
+            Đang hoạt động: {universitiesList.length} trường ĐH Bắc – Trung – Nam
+          </span>
         </div>
 
-        {/* Phân bổ */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0, ...(isDesktop ? { height: '100%', overflowY: 'auto' as const } : {}) }}>
-          <div style={cardStyle}>
-            <h2 style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: 900, color: '#0F172A' }}>Phân bổ theo trạng thái</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {ALL_STATUSES.map((s) => {
-                const c = countByStatus(s);
-                const pct = totalApps > 0 ? Math.round((c / totalApps) * 100) : 0;
-                return (
-                  <div key={s} style={{ minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '12.5px', marginBottom: '4px' }}>
-                      <span style={{ color: '#334155', fontWeight: 600 }}>{s}</span>
-                      <span style={{ color: '#64748B', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                        {c} · {pct}%
-                      </span>
-                    </div>
-                    <div style={{ height: '8px', borderRadius: '999px', backgroundColor: '#F1F5F9', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${pct}%`, backgroundColor: statusColor(s), borderRadius: '999px' }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{ fontSize: '12px', color: '#64748B', marginTop: '12px' }}>
-              Hồ sơ hợp lệ: <strong style={{ color: '#0F172A' }}>{countByStatus('Hồ sơ hợp lệ')}</strong> · Đã hủy: <strong style={{ color: '#0F172A' }}>{countByStatus('Đã hủy')}</strong> · Đã bị hủy: <strong style={{ color: '#0F172A' }}>{countByStatus('Đã bị hủy')}</strong>
-            </div>
-          </div>
-
-          <div style={cardStyle}>
-            <h2 style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: 900, color: '#0F172A' }}>Hồ sơ theo trường</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {uniCounts.map((u) => (
-                <div key={u.code} style={{ minWidth: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '12.5px', marginBottom: '4px' }}>
-                    <span style={{ color: '#334155', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {u.code} — {u.name}
-                    </span>
-                    <span style={{ color: '#64748B', fontWeight: 700 }}>{u.count}</span>
-                  </div>
-                  <div style={{ height: '8px', borderRadius: '999px', backgroundColor: '#F1F5F9', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${Math.round((u.count / maxUniCount) * 100)}%`, backgroundColor: '#2563EB', borderRadius: '999px' }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Nhật ký xử lý */}
-      <div style={{ ...cardStyle, ...(isDesktop ? { maxHeight: '238px', overflowY: 'auto' as const, flexShrink: 0 } : {}) }}>
-        <h2 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 900, color: '#0F172A' }}>Nhật ký xử lý hồ sơ</h2>
-        <p style={{ margin: '0 0 12px', fontSize: '12.5px', color: '#64748B' }}>Mỗi quyết định duyệt / bổ sung / từ chối đều được ghi lại: ai xử lý, hồ sơ nào, đổi trạng thái ra sao.</p>
-        {processingLog.length === 0 ? (
-          <p style={{ margin: 0, fontSize: '13.5px', color: '#64748B' }}>Chưa có lượt xử lý nào trong phiên này. Hãy vào mục Hồ sơ và xử lý một hồ sơ đang chờ duyệt.</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {processingLog.slice(0, 8).map((log) => (
-              <div key={log.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 2px', borderBottom: '1px solid #F1F5F9', flexWrap: 'wrap', minWidth: 0 }}>
-                <span style={{ fontSize: '12px', color: '#94A3B8', fontWeight: 600, whiteSpace: 'nowrap' }}>{log.time}</span>
-                <span style={{ fontSize: '13px', color: '#0F172A', fontWeight: 700 }}>
-                  {log.actorName} <span style={{ color: '#64748B', fontWeight: 600 }}>({log.actorRole === 'admin' ? 'Admin' : log.uniCode})</span>
-                </span>
-                <span style={{ fontSize: '13px', color: '#334155' }}>
-                  {log.appCode} · {log.candidateName}
-                </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700 }}>
-                  <span style={{ color: statusColor(log.fromStatus) }}>{log.fromStatus}</span>
-                  <span style={{ color: '#94A3B8' }}>→</span>
-                  <span style={{ color: statusColor(log.toStatus) }}>{log.toStatus}</span>
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  const renderApps = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-        <div style={{ minWidth: 0 }}>
-          <h1 style={{ margin: 0, fontSize: isDesktop ? '26px' : '22px', fontWeight: 900, color: '#0F172A' }}>Quản lý hồ sơ xét tuyển</h1>
-          <p style={{ margin: '4px 0 0', fontSize: '13.5px', color: '#64748B' }}>
-            {sortedApps.length}/{totalApps} hồ sơ · Chọn một hồ sơ để xử lý ở khung {isDesktop ? 'bên phải' : 'bên dưới'}
-          </p>
-        </div>
-        <button
-          onClick={() => exportAppsCsv(sortedApps, 'ho-so-unipath.csv')}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '10px 15px', borderRadius: '12px', border: '1.5px solid #2563EB', backgroundColor: '#FFFFFF', color: '#2563EB', fontSize: '13px', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}
-        >
-          <Download size={15} /> Xuất CSV ({sortedApps.length})
-        </button>
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '0 14px', height: '46px', flex: '1 1 260px', minWidth: 0, boxSizing: 'border-box' }}>
-            <Search size={18} color="#94A3B8" style={{ flexShrink: 0 }} />
-            <input
-              value={appSearch}
-              onChange={(e) => {
-                setAppSearch(e.target.value);
-                setAppsPage(1);
-              }}
-              placeholder="Tìm tên thí sinh, mã hồ sơ, ngành, trường..."
-              style={{ flex: 1, border: 'none', outline: 'none', fontSize: '13.5px', color: '#0F172A', backgroundColor: 'transparent', minWidth: 0 }}
-            />
-            {appSearch && (
-              <button onClick={() => setAppSearch('')} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0, display: 'flex', flexShrink: 0 }}>
-                <X size={16} color="#94A3B8" />
-              </button>
-            )}
-          </div>
-          <select value={appSort} onChange={(e) => {
-            setAppSort(e.target.value as AppSort);
-            setAppsPage(1);
-          }} style={{ ...selectStyle, height: '46px' }} aria-label="Sắp xếp hồ sơ">
-            <option value="list">Thứ tự danh sách</option>
-            <option value="scoreDesc">Điểm cao → thấp</option>
-            <option value="scoreAsc">Điểm thấp → cao</option>
-            <option value="nameAsc">Tên thí sinh A–Z</option>
-          </select>
-        </div>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {['Tất cả', ...ALL_STATUSES].map((s) => {
-            const count = s === 'Tất cả' ? totalApps : countByStatus(s as ApplicationStatus);
-            return (
-              <button
-                key={s}
-                onClick={() => {
-                  setAppStatus(s);
-                  setAppsPage(1);
-                }}
-                style={{
-                  padding: '7px 13px',
-                  borderRadius: '999px',
-                  border: appStatus === s ? '1.5px solid #2563EB' : '1px solid #E2E8F0',
-                  backgroundColor: appStatus === s ? '#EFF6FF' : '#FFFFFF',
-                  color: appStatus === s ? '#1D4ED8' : '#475569',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {s} · {count}
-              </button>
-            );
-          })}
-        </div>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 700 }}>Trường:</span>
-          {['Tất cả', ...uniCodesInApps].map((code) => (
+        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '10px' }}>
+          {[
+            { step: 'Bước 1', label: 'Đang chờ xét duyệt', count: pendingApps.length, color: '#B45309', bg: '#FFFBEB', border: '#FDE68A', filter: 'Đang xét duyệt' },
+            { step: 'Bước 2', label: 'Hồ sơ hợp lệ', count: validAppsCount, color: '#0369A1', bg: '#F0F9FF', border: '#BAE6FD', filter: 'Hồ sơ hợp lệ' },
+            { step: 'Bước 3', label: 'Đã trúng tuyển sớm', count: admittedAppsCount, color: '#047857', bg: '#ECFDF5', border: '#A7F3D0', filter: 'Đã trúng tuyển' },
+            { step: 'Cần lưu ý', label: 'Chờ thí sinh bổ sung', count: missingApps.length, color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE', filter: 'Thiếu hồ sơ' },
+          ].map((st) => (
             <button
-              key={code}
-              onClick={() => {
-                setAppUni(code);
-                setAppsPage(1);
-              }}
+              key={st.label}
+              type="button"
+              onClick={() => jumpToFilteredApps(st.filter)}
               style={{
-                padding: '5px 11px',
-                borderRadius: '999px',
-                border: appUni === code ? '1.5px solid #0F172A' : '1px solid #E2E8F0',
-                backgroundColor: appUni === code ? '#0F172A' : '#FFFFFF',
-                color: appUni === code ? '#FFFFFF' : '#475569',
-                fontSize: '12px',
-                fontWeight: 700,
+                padding: '12px 14px',
+                borderRadius: '14px',
+                backgroundColor: st.bg,
+                border: `1px solid ${st.border}`,
+                textAlign: 'left',
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '10px',
               }}
             >
-              {code}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '10.5px', fontWeight: 800, textTransform: 'uppercase', color: st.color, letterSpacing: '0.4px' }}>
+                  {st.step}
+                </div>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', marginTop: '2px' }}>{st.label}</div>
+              </div>
+              <div style={{ fontSize: '22px', fontWeight: 900, color: st.color, flexShrink: 0 }}>{st.count}</div>
             </button>
           ))}
         </div>
       </div>
 
-      {checkedIds.length > 0 && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            flexWrap: 'wrap',
-            backgroundColor: '#0F172A',
-            color: '#FFFFFF',
-            borderRadius: '14px',
-            padding: '10px 14px',
-          }}
-        >
-          <span style={{ fontSize: '13px', fontWeight: 800, marginRight: '2px' }}>Đã chọn {checkedIds.length} hồ sơ</span>
-          <button onClick={() => applyBatch('Hồ sơ hợp lệ')} style={{ padding: '8px 13px', borderRadius: '10px', border: 'none', backgroundColor: '#0284C7', color: '#FFFFFF', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}>
-            Xác nhận hợp lệ
-          </button>
-          <button onClick={() => applyBatch('Đã trúng tuyển')} style={{ padding: '8px 13px', borderRadius: '10px', border: 'none', backgroundColor: '#059669', color: '#FFFFFF', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}>
-            Duyệt trúng tuyển
-          </button>
-          <button onClick={() => applyBatch('Thiếu hồ sơ')} style={{ padding: '8px 13px', borderRadius: '10px', border: 'none', backgroundColor: '#2563EB', color: '#FFFFFF', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}>
-            Yêu cầu bổ sung
-          </button>
-          <button onClick={() => applyBatch('Đã bị hủy')} style={{ padding: '8px 13px', borderRadius: '10px', border: 'none', backgroundColor: '#DC2626', color: '#FFFFFF', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}>
-            Từ chối
-          </button>
-          <button onClick={() => setCheckedIds([])} style={{ padding: '8px 13px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.4)', backgroundColor: 'transparent', color: '#FFFFFF', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', marginLeft: 'auto' }}>
-            Bỏ chọn
-          </button>
-        </div>
-      )}
+      {/* Main 2-Column Workspace: Priority Action Queue + Analytics & Audit Timeline */}
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1.45fr 1fr' : '1fr', gap: '18px', alignItems: 'start' }}>
+        {/* Left: Priority Action Queue */}
+        <div style={{ ...surfaceCard, padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '18px 20px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
+                Hàng đợi Ưu tiên Cần Xử Lý ({actionQueue.length})
+              </h2>
+              <p style={{ margin: '2px 0 0', fontSize: '12.5px', color: '#64748B' }}>
+                Tự động đối chiếu điểm thí sinh với điểm chuẩn ngành của trường đăng ký
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSection('apps')}
+              style={{
+                padding: '7px 13px',
+                borderRadius: '10px',
+                border: '1px solid #E2E8F0',
+                backgroundColor: '#F8FAFC',
+                color: '#2563EB',
+                fontSize: '12.5px',
+                fontWeight: 800,
+                cursor: 'pointer',
+              }}
+            >
+              Mở bảng đầy đủ →
+            </button>
+          </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1.55fr 1fr' : '1fr', gap: '16px', alignItems: 'start' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: 0 }}>
-          {sortedApps.length === 0 && (
-            <div style={{ ...cardStyle, textAlign: 'center', color: '#64748B', fontSize: '13.5px' }}>Không có hồ sơ nào khớp bộ lọc hiện tại.</div>
+          {actionQueue.length === 0 ? (
+            <div style={{ padding: '36px 20px', textAlign: 'center', color: '#64748B', fontSize: '13.5px' }}>
+              🎉 Tuyệt vời! Toàn bộ hồ sơ chờ duyệt và chờ bổ sung đều đã được giải quyết xong.
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="up-table">
+                <thead>
+                  <tr>
+                    <th>Thí sinh</th>
+                    <th>Trường & Ngành</th>
+                    <th>Điểm / Chuẩn</th>
+                    <th>Trạng thái</th>
+                    <th style={{ textAlign: 'right' }}>Tác vụ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {actionQueue.slice(0, 6).map((app) => {
+                    const cutoff = getMajorCutoff(app, universitiesList);
+                    const delta = +(app.score - cutoff).toFixed(2);
+                    return (
+                      <tr key={app.id} className="up-row-hover">
+                        <td>
+                          <div style={{ fontWeight: 800, color: '#0F172A' }}>{app.candidateName}</div>
+                          <div style={{ fontSize: '11.5px', color: '#64748B' }}>{app.code}</div>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <UniversityAvatar code={app.uniCode} size={28} />
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontWeight: 700, color: '#0F172A', maxWidth: '180px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {app.major}
+                              </div>
+                              <div style={{ fontSize: '11.5px', color: '#64748B' }}>{app.uniCode} · {app.uniName}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 800, color: '#0F172A' }}>
+                            {app.score}đ <span style={{ fontWeight: 500, color: '#94A3B8', fontSize: '11.5px' }}>/ {cutoff}đ</span>
+                          </div>
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              color: delta >= 0 ? '#059669' : '#D97706',
+                            }}
+                          >
+                            {delta >= 0 ? `+${delta}đ Đạt chuẩn` : `${delta}đ Dưới chuẩn`}
+                          </span>
+                        </td>
+                        <td>
+                          <StatusBadge status={app.status} />
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button
+                            type="button"
+                            onClick={() => selectAppForReview(app, true)}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: '9px',
+                              border: 'none',
+                              backgroundColor: '#2563EB',
+                              color: '#FFFFFF',
+                              fontSize: '12px',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            Thẩm định →
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
-          {pagedApps.map((app) => {
-            const isSelected = selectedApp?.id === app.id;
-            return (
-              <button
-                key={app.id}
-                onClick={() => selectApp(app, false)}
-                style={{
-                  ...cardStyle,
-                  padding: '14px 16px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  width: '100%',
-                  border: isSelected ? '2px solid #2563EB' : '1px solid #E2E8F0',
-                  backgroundColor: isSelected ? '#F8FBFF' : '#FFFFFF',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                  <span
-                    role="checkbox"
-                    aria-checked={checkedIds.includes(app.id)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleChecked(app.id);
-                    }}
-                    style={{
-                      width: '20px',
-                      height: '20px',
-                      borderRadius: '6px',
-                      border: checkedIds.includes(app.id) ? '2px solid #2563EB' : '2px solid #CBD5E1',
-                      backgroundColor: checkedIds.includes(app.id) ? '#2563EB' : '#FFFFFF',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {checkedIds.includes(app.id) && <Check size={13} color="#FFFFFF" strokeWidth={3.5} />}
-                  </span>
-                  <UniversityAvatar code={app.uniCode} size={34} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{app.candidateName}</div>
-                    <div style={{ fontSize: '11.5px', color: '#64748B' }}>
-                      {app.code} · {app.submittedAt}
-                    </div>
-                  </div>
-                  <StatusChip status={app.status} />
-                </div>
-                <div style={{ fontSize: '12.5px', color: '#334155' }}>
-                  {app.major} — {app.uniName}
-                </div>
-                <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  Điểm: <strong style={{ color: '#2563EB' }}>{app.score}</strong> · {app.phone} · {app.email}
-                </div>
-              </button>
-            );
-          })}
         </div>
 
-        {selectedApp && (
-          <div id="app-inspector" style={{ ...cardStyle, position: isDesktop ? 'sticky' : 'static', top: '24px', scrollMarginTop: '16px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.6px', color: '#2563EB', textTransform: 'uppercase', marginBottom: '8px' }}>Xử lý hồ sơ</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-              <UniversityAvatar code={selectedApp.uniCode} size={40} />
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: '15px', fontWeight: 900, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedApp.candidateName}</div>
-                <div style={{ fontSize: '12px', color: '#64748B' }}>{selectedApp.code}</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px', color: '#334155', marginBottom: '12px' }}>
-              <div>Trường: <strong>{selectedApp.uniName} ({selectedApp.uniCode})</strong></div>
-              <div>Ngành: <strong>{selectedApp.major}</strong></div>
-              <div>Điểm xét tuyển: <strong style={{ color: '#2563EB' }}>{selectedApp.score}</strong></div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                <Phone size={13} color="#64748B" /> {selectedApp.phone} · {selectedApp.email}
-              </div>
-              <div>Nộp lúc: {selectedApp.submittedAt}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                Trạng thái: <StatusChip status={selectedApp.status} />
-              </div>
-              {selectedApp.notes && (
-                <div style={{ fontSize: '12.5px', color: '#64748B', backgroundColor: '#F8FAFC', borderRadius: '10px', padding: '10px', lineHeight: 1.5 }}>{selectedApp.notes}</div>
-              )}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <input
-                type="text"
-                value={reviewerNote}
-                onChange={(e) => setReviewerNote(e.target.value)}
-                placeholder="Ghi chú phản hồi gửi thí sinh (tùy chọn)..."
-                style={{
-                  width: '100%',
-                  padding: '9px 11px',
-                  borderRadius: '10px',
-                  border: '1px solid #CBD5E1',
-                  fontSize: '12.5px',
-                  boxSizing: 'border-box',
-                }}
-              />
-              <button
-                onClick={() => {
-                  updateApplicationStatus(selectedApp.id, 'Hồ sơ hợp lệ', reviewerNote || undefined);
-                  setReviewerNote('');
-                }}
-                disabled={selectedApp.status === 'Hồ sơ hợp lệ'}
-                style={{
-                  padding: '11px',
-                  borderRadius: '12px',
-                  border: '1.5px solid #0284C7',
-                  backgroundColor: '#E0F2FE',
-                  color: '#0369A1',
-                  fontSize: '13.5px',
-                  fontWeight: 800,
-                  cursor: selectedApp.status === 'Hồ sơ hợp lệ' ? 'default' : 'pointer',
-                  opacity: selectedApp.status === 'Hồ sơ hợp lệ' ? 0.5 : 1,
-                }}
-              >
-                ✓ Xác nhận hồ sơ hợp lệ
-              </button>
-              <button
-                onClick={() => {
-                  updateApplicationStatus(selectedApp.id, 'Đã trúng tuyển', reviewerNote || undefined);
-                  setReviewerNote('');
-                }}
-                disabled={selectedApp.status === 'Đã trúng tuyển'}
-                style={{
-                  padding: '12px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  backgroundColor: selectedApp.status === 'Đã trúng tuyển' ? '#A7F3D0' : '#059669',
-                  color: '#FFFFFF',
-                  fontSize: '13.5px',
-                  fontWeight: 800,
-                  cursor: selectedApp.status === 'Đã trúng tuyển' ? 'default' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '7px',
-                }}
-              >
-                <CheckCircle2 size={17} /> Duyệt trúng tuyển
-              </button>
-              <button
-                onClick={() => {
-                  updateApplicationStatus(selectedApp.id, 'Thiếu hồ sơ', reviewerNote || undefined);
-                  setReviewerNote('');
-                }}
-                disabled={selectedApp.status === 'Thiếu hồ sơ'}
-                style={{
-                  padding: '11px',
-                  borderRadius: '12px',
-                  border: '1.5px solid #2563EB',
-                  backgroundColor: '#FFFFFF',
-                  color: '#2563EB',
-                  fontSize: '13.5px',
-                  fontWeight: 800,
-                  cursor: selectedApp.status === 'Thiếu hồ sơ' ? 'default' : 'pointer',
-                  opacity: selectedApp.status === 'Thiếu hồ sơ' ? 0.5 : 1,
-                }}
-              >
-                Yêu cầu bổ sung hồ sơ
-              </button>
-              <button
-                onClick={() => {
-                  updateApplicationStatus(selectedApp.id, 'Đã bị hủy', reviewerNote || undefined);
-                  setReviewerNote('');
-                }}
-                disabled={selectedApp.status === 'Đã bị hủy'}
-                style={{
-                  padding: '11px',
-                  borderRadius: '12px',
-                  border: '1.5px solid #FECACA',
-                  backgroundColor: '#FFFFFF',
-                  color: '#DC2626',
-                  fontSize: '13.5px',
-                  fontWeight: 800,
-                  cursor: selectedApp.status === 'Đã bị hủy' ? 'default' : 'pointer',
-                  opacity: selectedApp.status === 'Đã bị hủy' ? 0.5 : 1,
-                }}
-              >
-                Từ chối hồ sơ
-              </button>
-              <button
-                onClick={() => openApplicationDetail(selectedApp)}
-                style={{ padding: '8px', border: 'none', background: 'none', color: '#475569', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
-              >
-                Xem biên nhận chi tiết
-              </button>
+        {/* Right: Top Schools & Audit Log Timeline */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', minWidth: 0 }}>
+          {/* Top Schools */}
+          <div style={surfaceCard}>
+            <h3 style={{ margin: '0 0 14px', fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>
+              Phân bổ Hồ sơ theo Trường Đại học
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
+              {topUnisByApps.map((u) => (
+                <div
+                  key={u.code}
+                  onClick={() => {
+                    setAppUni(u.code);
+                    setAppStatus('Tất cả');
+                    setSection('apps');
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', fontSize: '12.5px', marginBottom: '4px' }}>
+                    <span style={{ fontWeight: 700, color: '#1E293B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <strong>{u.code}</strong> — {u.name}
+                    </span>
+                    <span style={{ fontWeight: 800, color: '#2563EB', whiteSpace: 'nowrap' }}>{u.count} hồ sơ</span>
+                  </div>
+                  <div style={{ height: '7px', borderRadius: '999px', backgroundColor: '#F1F5F9', overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        height: '100%',
+                        width: `${Math.round((u.count / maxUniAppCount) * 100)}%`,
+                        backgroundColor: u.code === 'PXU' ? '#059669' : '#2563EB',
+                        borderRadius: '999px',
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        )}
+
+          {/* Audit Timeline */}
+          <div style={surfaceCard}>
+            <h3 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>
+              Nhật ký Kiểm toán Gần đây
+            </h3>
+            <p style={{ margin: '0 0 14px', fontSize: '12px', color: '#64748B' }}>
+              Ghi vết tự động mọi quyết định của Admin, ĐH Phú Xuân và Thí sinh
+            </p>
+            {processingLog.length === 0 ? (
+              <div style={{ padding: '16px', borderRadius: '12px', backgroundColor: '#F8FAFC', fontSize: '12.5px', color: '#64748B' }}>
+                Chưa phát sinh quyết định thẩm định mới. Hãy duyệt thử 1 hồ sơ để xem nhật ký ghi vết trực tiếp.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {processingLog.slice(0, 5).map((log) => (
+                  <div
+                    key={log.id}
+                    style={{
+                      display: 'flex',
+                      gap: '10px',
+                      alignItems: 'flex-start',
+                      paddingBottom: '10px',
+                      borderBottom: '1px solid #F1F5F9',
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        backgroundColor: getStatusMeta(log.toStatus).dot,
+                        marginTop: '6px',
+                        flexShrink: 0,
+                      }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0, fontSize: '12.5px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                        <strong style={{ color: '#0F172A' }}>{log.candidateName} ({log.appCode})</strong>
+                        <span style={{ fontSize: '11px', color: '#94A3B8', whiteSpace: 'nowrap' }}>{log.time}</span>
+                      </div>
+                      <div style={{ color: '#475569', marginTop: '2px' }}>
+                        <span>{log.fromStatus}</span> <ArrowRight size={11} style={{ verticalAlign: 'middle' }} />{' '}
+                        <strong style={{ color: getStatusMeta(log.toStatus).color }}>{log.toStatus}</strong>
+                        <span style={{ color: '#94A3B8' }}> · bởi {log.actorName}</span>
+                      </div>
+                      {log.note && (
+                        <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '3px', fontStyle: 'italic' }}>
+                          "{log.note}"
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-      <Pager page={curAppsPage} pageCount={appsPageCount} total={sortedApps.length} unit="hồ sơ" onChange={setAppsPage} />
     </div>
   );
 
-  const renderBookings = () => {
-    const stateMeta: Record<BookingState, { label: string; color: string; bg: string }> = {
-      pending: { label: 'Chờ liên hệ', color: '#B45309', bg: '#FEF3C7' },
-      contacted: { label: 'Đã liên hệ', color: '#1D4ED8', bg: '#DBEAFE' },
-      done: { label: 'Hoàn thành', color: '#047857', bg: '#D1FAE5' },
-    };
-    const chipBtn = (active: boolean): React.CSSProperties => ({
-      padding: '7px 13px',
-      borderRadius: '999px',
-      border: active ? '1px solid #0F172A' : '1px solid #E2E8F0',
-      backgroundColor: active ? '#0F172A' : '#FFFFFF',
-      color: active ? '#FFFFFF' : '#475569',
-      fontSize: '12.5px',
-      fontWeight: 700,
-      cursor: 'pointer',
-      whiteSpace: 'nowrap',
-    });
-    const actBtn = (bg: string): React.CSSProperties => ({
-      padding: '8px 12px',
-      borderRadius: '10px',
-      border: 'none',
-      backgroundColor: bg,
-      color: '#FFFFFF',
-      fontSize: '12px',
-      fontWeight: 800,
-      cursor: 'pointer',
-    });
-    const ghostBtn: React.CSSProperties = {
-      padding: '8px 12px',
-      borderRadius: '10px',
-      border: '1px solid #E2E8F0',
-      backgroundColor: '#FFFFFF',
-      color: '#64748B',
-      fontSize: '12px',
-      fontWeight: 700,
-      cursor: 'pointer',
-    };
+  // =========================================================================
+  // SECTION 2: APPLICATIONS MANAGEMENT (CLEAN DATA TABLE + SMART INSPECTOR)
+  // =========================================================================
+  const renderApps = () => {
+    const selectedCutoff = selectedApp ? getMajorCutoff(selectedApp, universitiesList) : 20;
+    const selectedDelta = selectedApp ? +(selectedApp.score - selectedCutoff).toFixed(2) : 0;
+    const stepIndex = !selectedApp
+      ? 1
+      : selectedApp.status === 'Đã trúng tuyển'
+      ? 3
+      : selectedApp.status === 'Hồ sơ hợp lệ'
+      ? 2
+      : 1;
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div style={{ minWidth: 0 }}>
-          <h1 style={{ margin: 0, fontSize: isDesktop ? '26px' : '22px', fontWeight: 900, color: '#0F172A' }}>Lịch tư vấn tuyển sinh</h1>
-          <p style={{ margin: '4px 0 0', fontSize: '13.5px', color: '#64748B' }}>
-            {bookings.length} lịch hẹn trên toàn hệ thống · {bookingCounts.pending} đang chờ liên hệ — bấm xử lý ngay trên từng lịch
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button style={chipBtn(bkFilter === 'all')} onClick={() => setBkFilter('all')}>
-            Tất cả · {bookingCounts.all}
-          </button>
-          <button style={chipBtn(bkFilter === 'pending')} onClick={() => setBkFilter('pending')}>
-            Chờ liên hệ · {bookingCounts.pending}
-          </button>
-          <button style={chipBtn(bkFilter === 'contacted')} onClick={() => setBkFilter('contacted')}>
-            Đã liên hệ · {bookingCounts.contacted}
-          </button>
-          <button style={chipBtn(bkFilter === 'done')} onClick={() => setBkFilter('done')}>
-            Hoàn thành · {bookingCounts.done}
-          </button>
-        </div>
-        {filteredBookings.length === 0 ? (
-          <div style={{ ...cardStyle, textAlign: 'center', color: '#64748B', fontSize: '13.5px' }}>Không có lịch tư vấn nào ở trạng thái này.</div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
-            {filteredBookings.map((bk) => {
-              const st = bookingStateOf(bk.id);
-              const meta = stateMeta[st];
+        {/* Clean Single-Row Filter Bar */}
+        <div style={{ ...surfaceCard, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                backgroundColor: '#F8FAFC',
+                border: '1px solid #E2E8F0',
+                borderRadius: '11px',
+                padding: '0 12px',
+                height: '40px',
+                flex: '1 1 240px',
+                minWidth: 0,
+              }}
+            >
+              <Search size={16} color="#94A3B8" style={{ flexShrink: 0 }} />
+              <input
+                value={appSearch}
+                onChange={(e) => {
+                  setAppSearch(e.target.value);
+                  setAppsPage(1);
+                }}
+                placeholder="Tìm tên thí sinh, mã hồ sơ, ngành..."
+                style={{ flex: 1, border: 'none', outline: 'none', fontSize: '13px', backgroundColor: 'transparent', color: '#0F172A', minWidth: 0 }}
+              />
+              {appSearch && (
+                <button type="button" onClick={() => setAppSearch('')} style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex' }}>
+                  <X size={15} color="#94A3B8" />
+                </button>
+              )}
+            </div>
+
+            <select
+              value={appUni}
+              onChange={(e) => {
+                setAppUni(e.target.value);
+                setAppsPage(1);
+              }}
+              aria-label="Lọc theo trường đại học"
+              style={{
+                height: '40px',
+                padding: '0 12px',
+                borderRadius: '11px',
+                border: '1px solid #E2E8F0',
+                backgroundColor: '#FFFFFF',
+                fontSize: '12.5px',
+                fontWeight: 700,
+                color: '#334155',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="Tất cả">Tất cả trường có hồ sơ ({uniCodesInApps.length})</option>
+              {uniCodesInApps.map((code) => (
+                <option key={code} value={code}>
+                  {code} — {applications.find((a) => a.uniCode === code)?.uniName || code}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={appSort}
+              onChange={(e) => {
+                setAppSort(e.target.value as AppSort);
+                setAppsPage(1);
+              }}
+              aria-label="Sắp xếp hồ sơ"
+              style={{
+                height: '40px',
+                padding: '0 12px',
+                borderRadius: '11px',
+                border: '1px solid #E2E8F0',
+                backgroundColor: '#FFFFFF',
+                fontSize: '12.5px',
+                fontWeight: 700,
+                color: '#334155',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="list">Mới cập nhật</option>
+              <option value="scoreDesc">Điểm cao → thấp</option>
+              <option value="scoreAsc">Điểm thấp → cao</option>
+              <option value="nameAsc">Tên A → Z</option>
+            </select>
+
+            <button
+              type="button"
+              onClick={() => exportAppsCsv(sortedApps, 'unipath-ho-so-toan-quoc.csv')}
+              style={{
+                height: '40px',
+                padding: '0 14px',
+                borderRadius: '11px',
+                border: '1px solid #CBD5E1',
+                backgroundColor: '#FFFFFF',
+                color: '#0F172A',
+                fontSize: '12.5px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <Download size={14} /> Xuất CSV ({sortedApps.length})
+            </button>
+          </div>
+
+          {/* Segmented Status Tabs */}
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {[
+              { key: 'Tất cả', count: totalApps },
+              { key: 'Đang xét duyệt', count: pendingApps.length },
+              { key: 'Hồ sơ hợp lệ', count: validAppsCount },
+              { key: 'Đã trúng tuyển', count: admittedAppsCount },
+              { key: 'Thiếu hồ sơ', count: missingApps.length },
+              { key: 'Đã hủy / Từ chối', count: cancelledAppsCount },
+            ].map((tab) => {
+              const active = appStatus === tab.key;
               return (
-                <div key={bk.id} style={{ ...cardStyle, padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <UniversityAvatar code={bk.uniCode} size={38} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bk.name}</div>
-                      <div style={{ fontSize: '11.5px', color: '#64748B' }}>
-                        Tư vấn với {bk.uniCode} · {bk.major}
-                      </div>
-                    </div>
-                    <span style={{ padding: '4px 9px', borderRadius: '999px', backgroundColor: meta.bg, color: meta.color, fontSize: '11px', fontWeight: 800, whiteSpace: 'nowrap' }}>{meta.label}</span>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', color: '#334155' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                      <Calendar size={13} color="#7C3AED" /> <strong>{bk.dateTime}</strong>
-                      {bk.channel && (
-                        <span style={{ fontSize: '11px', fontWeight: 700, backgroundColor: '#EFF6FF', color: '#1D4ED8', padding: '2px 7px', borderRadius: '6px' }}>
-                          {bk.channel}
-                        </span>
-                      )}
-                    </span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                      <Phone size={13} color="#64748B" /> {bk.phone} {bk.email ? `· ${bk.email}` : ''}
-                    </span>
-                    {bk.notes && <span style={{ color: '#64748B', lineHeight: 1.5 }}>{bk.notes}</span>}
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '2px' }}>
-                    {st === 'pending' && (
-                      <button style={actBtn('#2563EB')} onClick={() => updateBookingState(bk.id, 'contacted')}>
-                        Đánh dấu đã liên hệ
-                      </button>
-                    )}
-                    {st === 'contacted' && (
-                      <>
-                        <button style={actBtn('#059669')} onClick={() => updateBookingState(bk.id, 'done')}>
-                          Hoàn thành tư vấn
-                        </button>
-                        <button style={ghostBtn} onClick={() => updateBookingState(bk.id, 'pending')}>
-                          Đặt lại
-                        </button>
-                      </>
-                    )}
-                    {st === 'done' && (
-                      <button style={ghostBtn} onClick={() => updateBookingState(bk.id, 'pending')}>
-                        Mở lại lịch
-                      </button>
-                    )}
-                  </div>
-                </div>
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => {
+                    setAppStatus(tab.key);
+                    setAppsPage(1);
+                  }}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '9px',
+                    border: active ? '1px solid #2563EB' : '1px solid transparent',
+                    backgroundColor: active ? '#EFF6FF' : '#F8FAFC',
+                    color: active ? '#1D4ED8' : '#475569',
+                    fontSize: '12px',
+                    fontWeight: active ? 800 : 600,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <span>{tab.key}</span>
+                  <span
+                    style={{
+                      padding: '1px 6px',
+                      borderRadius: '999px',
+                      backgroundColor: active ? '#2563EB' : '#E2E8F0',
+                      color: active ? '#FFFFFF' : '#475569',
+                      fontSize: '10.5px',
+                      fontWeight: 800,
+                    }}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
               );
             })}
           </div>
+        </div>
+
+        {/* Batch Action Bar */}
+        {checkedIds.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              flexWrap: 'wrap',
+              backgroundColor: '#0F172A',
+              color: '#FFFFFF',
+              borderRadius: '14px',
+              padding: '10px 16px',
+              boxShadow: '0 8px 24px rgba(15,23,42,0.18)',
+            }}
+          >
+            <span style={{ fontSize: '13px', fontWeight: 800, marginRight: '6px' }}>
+              Đang chọn {checkedIds.length} hồ sơ:
+            </span>
+            <button type="button" onClick={() => applyBatch('Đã trúng tuyển')} style={{ padding: '7px 12px', borderRadius: '9px', border: 'none', backgroundColor: '#059669', color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>
+              🎓 Duyệt trúng tuyển
+            </button>
+            <button type="button" onClick={() => applyBatch('Hồ sơ hợp lệ')} style={{ padding: '7px 12px', borderRadius: '9px', border: 'none', backgroundColor: '#0284C7', color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>
+              ✓ Xác nhận hợp lệ
+            </button>
+            <button type="button" onClick={() => applyBatch('Thiếu hồ sơ')} style={{ padding: '7px 12px', borderRadius: '9px', border: 'none', backgroundColor: '#2563EB', color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>
+              ⚠️ Yêu cầu bổ sung
+            </button>
+            <button type="button" onClick={() => applyBatch('Đã bị hủy')} style={{ padding: '7px 12px', borderRadius: '9px', border: 'none', backgroundColor: '#DC2626', color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>
+              ✕ Từ chối
+            </button>
+            <button type="button" onClick={() => setCheckedIds([])} style={{ padding: '7px 12px', borderRadius: '9px', border: '1px solid rgba(255,255,255,0.3)', backgroundColor: 'transparent', color: '#FFFFFF', fontSize: '12px', fontWeight: 700, cursor: 'pointer', marginLeft: 'auto' }}>
+              Bỏ chọn
+            </button>
+          </div>
         )}
+
+        {/* Master Table + Smart Inspector Split */}
+        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1.5fr 1fr' : '1fr', gap: '18px', alignItems: 'start' }}>
+          {/* Left: Data Table (Desktop) / Compact Rows (Mobile) */}
+          <div style={{ ...surfaceCard, padding: 0, overflow: 'hidden' }}>
+            {sortedApps.length === 0 ? (
+              <div style={{ padding: '36px 20px', textAlign: 'center', color: '#64748B', fontSize: '13.5px' }}>
+                Không có hồ sơ nào khớp điều kiện lọc hiện tại.
+              </div>
+            ) : isDesktop ? (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="up-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '36px' }}>Chọn</th>
+                      <th>Thí sinh & Mã HS</th>
+                      <th>Trường & Ngành đăng ký</th>
+                      <th>Điểm / Chuẩn</th>
+                      <th>Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pagedApps.map((app) => {
+                      const isSel = selectedApp?.id === app.id;
+                      const cutoff = getMajorCutoff(app, universitiesList);
+                      const delta = +(app.score - cutoff).toFixed(2);
+                      const checked = checkedIds.includes(app.id);
+                      return (
+                        <tr
+                          key={app.id}
+                          onClick={() => selectAppForReview(app)}
+                          style={{
+                            cursor: 'pointer',
+                            backgroundColor: isSel ? '#EFF6FF' : '#FFFFFF',
+                            transition: 'background-color 0.14s ease',
+                          }}
+                        >
+                          <td onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              role="checkbox"
+                              aria-checked={checked}
+                              onClick={() => toggleChecked(app.id)}
+                              style={{
+                                width: '19px',
+                                height: '19px',
+                                borderRadius: '5px',
+                                border: checked ? '2px solid #2563EB' : '1.5px solid #CBD5E1',
+                                backgroundColor: checked ? '#2563EB' : '#FFFFFF',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                padding: 0,
+                              }}
+                            >
+                              {checked && <Check size={12} color="#FFFFFF" strokeWidth={3.5} />}
+                            </button>
+                          </td>
+                          <td>
+                            <div style={{ fontWeight: 800, color: isSel ? '#1D4ED8' : '#0F172A' }}>{app.candidateName}</div>
+                            <div style={{ fontSize: '11.5px', color: '#64748B' }}>{app.code} · {app.submittedAt}</div>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <UniversityAvatar code={app.uniCode} size={28} />
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontWeight: 700, color: '#0F172A', maxWidth: '175px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {app.major}
+                                </div>
+                                <div style={{ fontSize: '11.5px', color: '#64748B' }}>{app.uniCode} · {app.uniName}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <div style={{ fontWeight: 800, color: '#0F172A' }}>
+                              {app.score}đ <span style={{ color: '#94A3B8', fontWeight: 500, fontSize: '11px' }}>/ {cutoff}đ</span>
+                            </div>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: delta >= 0 ? '#059669' : '#D97706' }}>
+                              {delta >= 0 ? `+${delta}đ` : `${delta}đ`}
+                            </span>
+                          </td>
+                          <td>
+                            <StatusBadge status={app.status} />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {pagedApps.map((app) => {
+                  const isSel = selectedApp?.id === app.id;
+                  return (
+                    <div
+                      key={app.id}
+                      onClick={() => selectAppForReview(app)}
+                      style={{
+                        padding: '14px 16px',
+                        borderBottom: '1px solid #F1F5F9',
+                        backgroundColor: isSel ? '#EFF6FF' : '#FFFFFF',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '6px' }}>
+                        <strong style={{ fontSize: '14px', color: '#0F172A' }}>{app.candidateName}</strong>
+                        <StatusBadge status={app.status} />
+                      </div>
+                      <div style={{ fontSize: '12.5px', color: '#334155', fontWeight: 600 }}>
+                        {app.uniCode} — {app.major}
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '3px' }}>
+                        Điểm: <strong style={{ color: '#2563EB' }}>{app.score}đ</strong> · {app.code}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Pagination Footer */}
+            {appsPageCount > 1 && (
+              <div style={{ padding: '12px 16px', borderTop: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap', backgroundColor: '#F8FAFC' }}>
+                <span style={{ fontSize: '12px', color: '#64748B' }}>
+                  Trang <strong>{curAppsPage}</strong> / {appsPageCount} ({sortedApps.length} hồ sơ)
+                </span>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    type="button"
+                    disabled={curAppsPage <= 1}
+                    onClick={() => setAppsPage(curAppsPage - 1)}
+                    style={{ padding: '6px 11px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '12px', fontWeight: 700, cursor: curAppsPage <= 1 ? 'default' : 'pointer', opacity: curAppsPage <= 1 ? 0.45 : 1 }}
+                  >
+                    ← Trước
+                  </button>
+                  <button
+                    type="button"
+                    disabled={curAppsPage >= appsPageCount}
+                    onClick={() => setAppsPage(curAppsPage + 1)}
+                    style={{ padding: '6px 11px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '12px', fontWeight: 700, cursor: curAppsPage >= appsPageCount ? 'default' : 'pointer', opacity: curAppsPage >= appsPageCount ? 0.45 : 1 }}
+                  >
+                    Sau →
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right: Smart Decision Inspector */}
+          {selectedApp && (
+            <div
+              id="admin-app-inspector"
+              style={{
+                ...surfaceCard,
+                position: isDesktop ? 'sticky' : 'static',
+                top: '84px',
+                border: '1.5px solid #BFDBFE',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', gap: '8px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Phiếu Thẩm Định Hồ Sơ
+                </span>
+                <button
+                  type="button"
+                  onClick={() => openApplicationDetail(selectedApp)}
+                  style={{
+                    border: 'none',
+                    background: 'none',
+                    color: '#2563EB',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  Xem biên nhận <ExternalLink size={12} />
+                </button>
+              </div>
+
+              {/* Candidate Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+                <UniversityAvatar code={selectedApp.uniCode} size={44} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '16px', fontWeight: 900, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {selectedApp.candidateName}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748B' }}>
+                    {selectedApp.code} · Nộp {selectedApp.submittedAt}
+                  </div>
+                </div>
+                <StatusBadge status={selectedApp.status} />
+              </div>
+
+              {/* 3-Step Visual Stepper */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '14px' }}>
+                {[
+                  { idx: 1, label: '1. Tiếp nhận' },
+                  { idx: 2, label: '2. Hợp lệ' },
+                  { idx: 3, label: '3. Trúng tuyển' },
+                ].map((s) => {
+                  const done = stepIndex >= s.idx && selectedApp.status !== 'Đã bị hủy' && selectedApp.status !== 'Đã hủy';
+                  return (
+                    <div
+                      key={s.idx}
+                      style={{
+                        padding: '6px 8px',
+                        borderRadius: '8px',
+                        textAlign: 'center',
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        backgroundColor: done ? '#EFF6FF' : '#F8FAFC',
+                        color: done ? '#1D4ED8' : '#94A3B8',
+                        border: done ? '1px solid #BFDBFE' : '1px solid #E2E8F0',
+                      }}
+                    >
+                      {s.label}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Score Comparison Meter */}
+              <div
+                style={{
+                  padding: '12px 14px',
+                  borderRadius: '12px',
+                  backgroundColor: selectedDelta >= 0 ? '#ECFDF5' : '#FFFBEB',
+                  border: selectedDelta >= 0 ? '1px solid #A7F3D0' : '1px solid #FDE68A',
+                  marginBottom: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', marginBottom: '4px' }}>
+                  <span style={{ color: '#334155', fontWeight: 700 }}>
+                    Điểm thí sinh: <strong style={{ fontSize: '15px', color: '#0F172A' }}>{selectedApp.score}đ</strong>
+                  </span>
+                  <span style={{ color: '#475569', fontWeight: 600 }}>
+                    Chuẩn ngành: <strong>{selectedCutoff}đ</strong>
+                  </span>
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 800, color: selectedDelta >= 0 ? '#047857' : '#B45309' }}>
+                  {selectedDelta >= 0
+                    ? `✓ Vượt điểm chuẩn tham chiếu +${selectedDelta}đ — Đủ điều kiện xét duyệt`
+                    : `⚠️ Thấp hơn chuẩn tham chiếu ${selectedDelta}đ — Cân nhắc phương thức học bạ`}
+                </div>
+              </div>
+
+              {/* Application Info Summary */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', color: '#334155', marginBottom: '14px', padding: '10px 12px', backgroundColor: '#F8FAFC', borderRadius: '12px' }}>
+                <div><strong>Trường:</strong> {selectedApp.uniName} ({selectedApp.uniCode})</div>
+                <div><strong>Ngành:</strong> {selectedApp.major}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', color: '#475569' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Phone size={12} /> {selectedApp.phone}</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Mail size={12} /> {selectedApp.email}</span>
+                </div>
+                {selectedApp.notes && (
+                  <div style={{ marginTop: '4px', paddingTop: '6px', borderTop: '1px dashed #E2E8F0', color: '#475569', lineHeight: 1.45 }}>
+                    <strong>Ghi chú hồ sơ:</strong> {selectedApp.notes}
+                  </div>
+                )}
+              </div>
+
+              {/* Quick Reply Note Chips */}
+              <div style={{ marginBottom: '12px' }}>
+                <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                  Ghi chú phản hồi gửi thí sinh (bấm chọn nhanh hoặc tự nhập):
+                </div>
+                <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                  {QUICK_REVIEW_NOTES.map((tpl) => (
+                    <button
+                      key={tpl}
+                      type="button"
+                      onClick={() => setReviewerNote(tpl)}
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: '7px',
+                        border: '1px solid #E2E8F0',
+                        backgroundColor: reviewerNote === tpl ? '#EFF6FF' : '#F8FAFC',
+                        color: reviewerNote === tpl ? '#1D4ED8' : '#475569',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      + {tpl.length > 36 ? tpl.slice(0, 36) + '…' : tpl}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  value={reviewerNote}
+                  onChange={(e) => setReviewerNote(e.target.value)}
+                  placeholder="Nhập nội dung phản hồi gửi về chuông thông báo thí sinh..."
+                  style={{
+                    width: '100%',
+                    padding: '9px 12px',
+                    borderRadius: '10px',
+                    border: '1px solid #CBD5E1',
+                    fontSize: '12.5px',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              {/* Clear Hierarchical Action Buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <button
+                  type="button"
+                  disabled={selectedApp.status === 'Đã trúng tuyển'}
+                  onClick={() => {
+                    updateApplicationStatus(selectedApp.id, 'Đã trúng tuyển', reviewerNote || undefined);
+                    setReviewerNote('');
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '11px',
+                    borderRadius: '11px',
+                    border: 'none',
+                    backgroundColor: selectedApp.status === 'Đã trúng tuyển' ? '#A7F3D0' : '#059669',
+                    color: '#FFFFFF',
+                    fontSize: '13.5px',
+                    fontWeight: 800,
+                    cursor: selectedApp.status === 'Đã trúng tuyển' ? 'default' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <CheckCircle2 size={16} /> Duyệt Trúng Tuyển Sớm
+                </button>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+                  <button
+                    type="button"
+                    disabled={selectedApp.status === 'Hồ sơ hợp lệ'}
+                    onClick={() => {
+                      updateApplicationStatus(selectedApp.id, 'Hồ sơ hợp lệ', reviewerNote || undefined);
+                      setReviewerNote('');
+                    }}
+                    style={{
+                      padding: '8px 6px',
+                      borderRadius: '9px',
+                      border: '1px solid #7DD3FC',
+                      backgroundColor: '#F0F9FF',
+                      color: '#0369A1',
+                      fontSize: '11.5px',
+                      fontWeight: 800,
+                      cursor: selectedApp.status === 'Hồ sơ hợp lệ' ? 'default' : 'pointer',
+                      opacity: selectedApp.status === 'Hồ sơ hợp lệ' ? 0.5 : 1,
+                    }}
+                  >
+                    ✓ Hợp lệ
+                  </button>
+                  <button
+                    type="button"
+                    disabled={selectedApp.status === 'Thiếu hồ sơ'}
+                    onClick={() => {
+                      updateApplicationStatus(selectedApp.id, 'Thiếu hồ sơ', reviewerNote || undefined);
+                      setReviewerNote('');
+                    }}
+                    style={{
+                      padding: '8px 6px',
+                      borderRadius: '9px',
+                      border: '1px solid #93C5FD',
+                      backgroundColor: '#EFF6FF',
+                      color: '#1D4ED8',
+                      fontSize: '11.5px',
+                      fontWeight: 800,
+                      cursor: selectedApp.status === 'Thiếu hồ sơ' ? 'default' : 'pointer',
+                      opacity: selectedApp.status === 'Thiếu hồ sơ' ? 0.5 : 1,
+                    }}
+                  >
+                    ⚠️ Bổ sung
+                  </button>
+                  <button
+                    type="button"
+                    disabled={selectedApp.status === 'Đã bị hủy'}
+                    onClick={() => {
+                      updateApplicationStatus(selectedApp.id, 'Đã bị hủy', reviewerNote || undefined);
+                      setReviewerNote('');
+                    }}
+                    style={{
+                      padding: '8px 6px',
+                      borderRadius: '9px',
+                      border: '1px solid #FECACA',
+                      backgroundColor: '#FEF2F2',
+                      color: '#DC2626',
+                      fontSize: '11.5px',
+                      fontWeight: 800,
+                      cursor: selectedApp.status === 'Đã bị hủy' ? 'default' : 'pointer',
+                      opacity: selectedApp.status === 'Đã bị hủy' ? 0.5 : 1,
+                    }}
+                  >
+                    ✕ Từ chối
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
 
+  // =========================================================================
+  // SECTION 3: 1-1 CONSULTATION BOOKINGS — 3-COLUMN KANBAN PIPELINE
+  // =========================================================================
+  const renderBookings = () => {
+    const columns: { id: BookingState; title: string; dot: string; headerBg: string; border: string; items: typeof bookings }[] = [
+      { id: 'pending', title: 'Chờ liên hệ', dot: '#F59E0B', headerBg: '#FFFBEB', border: '#FDE68A', items: pendingBookings },
+      { id: 'contacted', title: 'Đã liên hệ tư vấn', dot: '#2563EB', headerBg: '#EFF6FF', border: '#BFDBFE', items: contactedBookings },
+      { id: 'done', title: 'Hoàn thành', dot: '#10B981', headerBg: '#ECFDF5', border: '#A7F3D0', items: doneBookings },
+    ];
+
+    const renderBookingCard = (bk: (typeof bookings)[number], st: BookingState) => (
+      <div
+        key={bk.id}
+        style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '14px',
+          border: '1px solid #E2E8F0',
+          padding: '14px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+          boxShadow: '0 2px 6px rgba(15,23,42,0.03)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <UniversityAvatar code={bk.uniCode} size={34} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {bk.name}
+            </div>
+            <div style={{ fontSize: '11.5px', color: '#2563EB', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {bk.uniCode} · {bk.major}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12px', color: '#475569', backgroundColor: '#F8FAFC', padding: '9px 10px', borderRadius: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', flexWrap: 'wrap' }}>
+            <span>🕒 <strong>{bk.dateTime}</strong></span>
+            {bk.channel && (
+              <span style={{ fontSize: '10.5px', fontWeight: 800, padding: '2px 7px', borderRadius: '6px', backgroundColor: '#EFF6FF', color: '#1D4ED8' }}>
+                {bk.channel}
+              </span>
+            )}
+          </div>
+          <div>📞 {bk.phone} {bk.email ? `· ${bk.email}` : ''}</div>
+          {bk.notes && <div style={{ color: '#64748B', fontStyle: 'italic' }}>"{bk.notes}"</div>}
+        </div>
+
+        <div style={{ display: 'flex', gap: '6px' }}>
+          {st === 'pending' && (
+            <button
+              type="button"
+              onClick={() => updateBookingState(bk.id, 'contacted')}
+              style={{ width: '100%', padding: '8px 10px', borderRadius: '9px', border: 'none', backgroundColor: '#2563EB', color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}
+            >
+              📞 Đánh dấu đã liên hệ →
+            </button>
+          )}
+          {st === 'contacted' && (
+            <>
+              <button
+                type="button"
+                onClick={() => updateBookingState(bk.id, 'done')}
+                style={{ flex: 1, padding: '8px 10px', borderRadius: '9px', border: 'none', backgroundColor: '#059669', color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}
+              >
+                ✓ Hoàn thành
+              </button>
+              <button
+                type="button"
+                onClick={() => updateBookingState(bk.id, 'pending')}
+                style={{ padding: '8px 10px', borderRadius: '9px', border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF', color: '#64748B', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+              >
+                Quay lại
+              </button>
+            </>
+          )}
+          {st === 'done' && (
+            <button
+              type="button"
+              onClick={() => updateBookingState(bk.id, 'pending')}
+              style={{ width: '100%', padding: '7px 10px', borderRadius: '9px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', color: '#64748B', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer' }}
+            >
+              Mở lại lịch hẹn
+            </button>
+          )}
+        </div>
+      </div>
+    );
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {!isDesktop && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', backgroundColor: '#FFFFFF', padding: '6px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+            {columns.map((col) => (
+              <button
+                key={col.id}
+                type="button"
+                onClick={() => setMobileBkTab(col.id)}
+                style={{
+                  padding: '8px 6px',
+                  borderRadius: '9px',
+                  border: 'none',
+                  backgroundColor: mobileBkTab === col.id ? '#0F172A' : 'transparent',
+                  color: mobileBkTab === col.id ? '#FFFFFF' : '#475569',
+                  fontSize: '11.5px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
+              >
+                {col.title.split(' ')[0]} ({col.items.length})
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: '16px', alignItems: 'start' }}>
+          {columns
+            .filter((col) => isDesktop || col.id === mobileBkTab)
+            .map((col) => (
+              <div
+                key={col.id}
+                style={{
+                  backgroundColor: '#F8FAFC',
+                  borderRadius: '18px',
+                  border: '1px solid #E2E8F0',
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  minHeight: '280px',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 12px',
+                    borderRadius: '12px',
+                    backgroundColor: col.headerBg,
+                    border: `1px solid ${col.border}`,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: col.dot }} />
+                    <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A' }}>{col.title}</span>
+                  </div>
+                  <span style={{ fontSize: '12px', fontWeight: 900, color: '#0F172A', backgroundColor: '#FFFFFF', padding: '2px 8px', borderRadius: '999px' }}>
+                    {col.items.length}
+                  </span>
+                </div>
+
+                {col.items.length === 0 ? (
+                  <div style={{ padding: '28px 12px', textAlign: 'center', fontSize: '12.5px', color: '#94A3B8' }}>
+                    Không có lịch hẹn nào ở cột này
+                  </div>
+                ) : (
+                  col.items.map((bk) => renderBookingCard(bk, col.id))
+                )}
+              </div>
+            ))}
+        </div>
+      </div>
+    );
+  };
+
+  // =========================================================================
+  // SECTION 4: 30 UNIVERSITIES DATABASE — CLEAN DATA TABLE + INLINE EDIT
+  // =========================================================================
   const renderUnis = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <div style={{ minWidth: 0 }}>
-        <h1 style={{ margin: 0, fontSize: isDesktop ? '26px' : '22px', fontWeight: 900, color: '#0F172A' }}>Cơ sở dữ liệu trường đại học</h1>
-        <p style={{ margin: '4px 0 0', fontSize: '13.5px', color: '#64748B' }}>
-          Đủ {universitiesList.length} trường · Đang hiện {filteredUnis.length} · Chỉ Admin được sửa điểm chuẩn & học phí sàn
-        </p>
-      </div>
-
-      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '0 14px', height: '44px', flex: '1 1 240px', minWidth: 0, boxSizing: 'border-box' }}>
-          <Search size={17} color="#94A3B8" style={{ flexShrink: 0 }} />
+      {/* Toolbar */}
+      <div style={{ ...surfaceCard, padding: '14px 16px', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '11px', padding: '0 12px', height: '40px', flex: '1 1 220px', minWidth: 0 }}>
+          <Search size={16} color="#94A3B8" />
           <input
             value={uniSearch}
             onChange={(e) => {
               setUniSearch(e.target.value);
               setUnisPage(1);
             }}
-            placeholder="Tìm tên trường hoặc mã trường..."
-            style={{ flex: 1, border: 'none', outline: 'none', fontSize: '13.5px', backgroundColor: 'transparent', minWidth: 0 }}
+            placeholder="Tìm tên trường, mã trường, tỉnh/thành..."
+            style={{ flex: 1, border: 'none', outline: 'none', fontSize: '13px', backgroundColor: 'transparent', minWidth: 0 }}
           />
         </div>
-        <select value={uniSort} onChange={(e) => {
-          setUniSort(e.target.value as UniSort);
-          setUnisPage(1);
-        }} style={{ ...selectStyle, height: '44px' }} aria-label="Sắp xếp trường">
-          <option value="name">Tên trường A–Z</option>
+
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {['Tất cả', 'Bắc', 'Trung', 'Nam'].map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => {
+                setUniRegion(r);
+                setUnisPage(1);
+              }}
+              style={{
+                height: '40px',
+                padding: '0 14px',
+                borderRadius: '10px',
+                border: uniRegion === r ? '1.5px solid #2563EB' : '1px solid #E2E8F0',
+                backgroundColor: uniRegion === r ? '#EFF6FF' : '#FFFFFF',
+                color: uniRegion === r ? '#1D4ED8' : '#475569',
+                fontSize: '12.5px',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              {r === 'Tất cả' ? 'Toàn quốc (30)' : `Miền ${r}`}
+            </button>
+          ))}
+        </div>
+
+        <select
+          value={uniSort}
+          onChange={(e) => {
+            setUniSort(e.target.value as UniSort);
+            setUnisPage(1);
+          }}
+          aria-label="Sắp xếp trường"
+          style={{ height: '40px', padding: '0 12px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF', fontSize: '12.5px', fontWeight: 700, color: '#334155', cursor: 'pointer' }}
+        >
+          <option value="name">Tên trường A → Z</option>
           <option value="scoreDesc">Điểm chuẩn cao → thấp</option>
           <option value="tuitionAsc">Học phí thấp → cao</option>
         </select>
-        {['Tất cả', 'Bắc', 'Trung', 'Nam'].map((r) => (
-          <button
-            key={r}
-            onClick={() => {
-              setUniRegion(r);
-              setUnisPage(1);
-            }}
-            style={{
-              padding: '8px 14px',
-              borderRadius: '999px',
-              border: uniRegion === r ? '1.5px solid #2563EB' : '1px solid #E2E8F0',
-              backgroundColor: uniRegion === r ? '#EFF6FF' : '#FFFFFF',
-              color: uniRegion === r ? '#1D4ED8' : '#475569',
-              fontSize: '12.5px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {r === 'Tất cả' ? 'Tất cả' : `Miền ${r}`}
-          </button>
-        ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(258px, 1fr))', gap: '12px' }}>
-        {pagedUnis.map((uni) => {
-          const isEditing = editingUniId === uni.id;
-          return (
-            <div key={uni.id} style={{ ...cardStyle, padding: '16px', border: isEditing ? '2px solid #2563EB' : '1px solid #E2E8F0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                <UniversityAvatar code={uni.code} size={38} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{uni.name}</div>
-                  <div style={{ fontSize: '11.5px', color: '#64748B' }}>
-                    {uni.code} · Miền {uni.region} · {uni.loc}
-                  </div>
-                </div>
-              </div>
-              {!isEditing ? (
-                <>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12.5px', color: '#334155', marginBottom: '12px' }}>
-                    <div style={{ backgroundColor: '#F8FAFC', borderRadius: '10px', padding: '8px 10px', minWidth: 0 }}>
-                      Điểm chuẩn 2024<br />
-                      <strong style={{ fontSize: '15px', color: '#0F172A' }}>{uni.score2024}</strong>
-                    </div>
-                    <div style={{ backgroundColor: '#F8FAFC', borderRadius: '10px', padding: '8px 10px', minWidth: 0 }}>
-                      Học phí từ<br />
-                      <strong style={{ fontSize: '15px', color: '#0F172A' }}>{uni.tuitionMin}tr</strong>
-                      <span style={{ color: '#64748B' }}> /năm</span>
-                    </div>
-                    <div style={{ backgroundColor: '#F8FAFC', borderRadius: '10px', padding: '8px 10px', minWidth: 0 }}>
-                      Việc làm<br />
-                      <strong style={{ fontSize: '15px', color: '#0F172A' }}>{uni.employmentRate}%</strong>
-                    </div>
-                    <div style={{ backgroundColor: '#F8FAFC', borderRadius: '10px', padding: '8px 10px', minWidth: 0 }}>
-                      Ngành đào tạo<br />
-                      <strong style={{ fontSize: '15px', color: '#0F172A' }}>{uni.majors.length}</strong>
-                      <span style={{ color: '#64748B' }}> · ★ {uni.rating}</span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setEditingUniId(uni.id);
-                      setEditScore(uni.score2024);
-                      setEditTuition(uni.tuitionMin);
-                    }}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 13px', borderRadius: '10px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#2563EB', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}
-                  >
-                    <Edit2 size={13} /> Sửa số liệu
-                  </button>
-                </>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
-                    Điểm chuẩn 2024
-                    <input
-                      type="number"
-                      step="0.25"
-                      value={editScore}
-                      onChange={(e) => setEditScore(Number(e.target.value))}
-                      style={{ display: 'block', width: '100%', marginTop: '4px', padding: '9px 11px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '13.5px', boxSizing: 'border-box' }}
-                    />
-                  </label>
-                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
-                    Học phí từ (triệu/năm)
-                    <input
-                      type="number"
-                      step="1"
-                      value={editTuition}
-                      onChange={(e) => setEditTuition(Number(e.target.value))}
-                      style={{ display: 'block', width: '100%', marginTop: '4px', padding: '9px 11px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '13.5px', boxSizing: 'border-box' }}
-                    />
-                  </label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      onClick={() => handleSaveUni(uni.id)}
-                      style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', backgroundColor: '#059669', color: '#FFFFFF', fontSize: '13px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                    >
-                      <Check size={15} /> Lưu
-                    </button>
-                    <button
-                      onClick={() => setEditingUniId(null)}
-                      style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF', color: '#475569', fontSize: '13px', fontWeight: 800, cursor: 'pointer' }}
-                    >
-                      Hủy
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      {filteredUnis.length === 0 && <div style={{ ...cardStyle, textAlign: 'center', color: '#64748B', fontSize: '13.5px' }}>Không tìm thấy trường nào khớp bộ lọc.</div>}
-      <Pager page={curUnisPage} pageCount={unisPageCount} total={filteredUnis.length} unit="trường" onChange={setUnisPage} />
-    </div>
-  );
-
-  const renderAccount = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: isDesktop ? '1160px' : '680px' }}>
-      <h1 style={{ margin: 0, fontSize: isDesktop ? '26px' : '22px', fontWeight: 900, color: '#0F172A' }}>Tài khoản quản trị</h1>
-
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px', flexWrap: 'wrap' }}>
-          <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'linear-gradient(135deg, #1E3A8A, #2563EB)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <ShieldCheck size={28} color="#FFFFFF" />
+      {/* Table / Responsive List */}
+      <div style={{ ...surfaceCard, padding: 0, overflow: 'hidden' }}>
+        {isDesktop ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="up-table">
+              <thead>
+                <tr>
+                  <th>Trường Đại học</th>
+                  <th>Khu vực</th>
+                  <th>Điểm chuẩn 2024</th>
+                  <th>Học phí (triệu/năm)</th>
+                  <th>Việc làm</th>
+                  <th>Số ngành</th>
+                  <th style={{ textAlign: 'right' }}>Chỉnh sửa (Đồng bộ AI)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pagedUnis.map((uni) => {
+                  const isEditing = editingUniId === uni.id;
+                  return (
+                    <tr key={uni.id} className="up-row-hover" style={{ backgroundColor: isEditing ? '#F8FAFF' : undefined }}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <UniversityAvatar code={uni.code} size={34} />
+                          <div>
+                            <div style={{ fontWeight: 800, color: '#0F172A' }}>{uni.name}</div>
+                            <div style={{ fontSize: '11.5px', color: '#64748B' }}>Mã: <strong>{uni.code}</strong> · {uni.loc}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{ padding: '3px 9px', borderRadius: '999px', backgroundColor: '#F1F5F9', color: '#334155', fontSize: '11.5px', fontWeight: 700 }}>
+                          Miền {uni.region}
+                        </span>
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            step="0.25"
+                            min={12}
+                            max={30}
+                            value={editScore}
+                            onChange={(e) => setEditScore(Number(e.target.value))}
+                            style={{ width: '82px', padding: '6px 8px', borderRadius: '8px', border: '1.5px solid #2563EB', fontSize: '13px', fontWeight: 800 }}
+                          />
+                        ) : (
+                          <strong style={{ fontSize: '14px', color: '#2563EB' }}>{uni.score2024}đ</strong>
+                        )}
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            step="1"
+                            min={0}
+                            max={150}
+                            value={editTuition}
+                            onChange={(e) => setEditTuition(Number(e.target.value))}
+                            style={{ width: '82px', padding: '6px 8px', borderRadius: '8px', border: '1.5px solid #2563EB', fontSize: '13px', fontWeight: 800 }}
+                          />
+                        ) : (
+                          <span style={{ fontWeight: 700, color: '#0F172A' }}>
+                            {uni.tuitionMin} – {uni.tuitionMax} tr
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        <span style={{ color: '#059669', fontWeight: 800 }}>{uni.employmentRate}%</span>
+                      </td>
+                      <td>{uni.majors.length} ngành</td>
+                      <td style={{ textAlign: 'right' }}>
+                        {isEditing ? (
+                          <div style={{ display: 'inline-flex', gap: '6px' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleSaveUni(uni.id)}
+                              style={{ padding: '6px 11px', borderRadius: '8px', border: 'none', backgroundColor: '#059669', color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}
+                            >
+                              ✓ Lưu
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingUniId(null)}
+                              style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#475569', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                            >
+                              Hủy
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingUniId(uni.id);
+                              setEditScore(uni.score2024);
+                              setEditTuition(uni.tuitionMin);
+                            }}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: '8px',
+                              border: '1px solid #E2E8F0',
+                              backgroundColor: '#FFFFFF',
+                              color: '#2563EB',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                            }}
+                          >
+                            <Edit2 size={12} /> Sửa chỉ số
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: '17px', fontWeight: 900, color: '#0F172A' }}>{user.name}</div>
-            <div style={{ fontSize: '12.5px', color: '#64748B' }}>{user.title}</div>
-            <div style={{ fontSize: '12.5px', color: '#64748B' }}>
-              {user.email} · {user.organization}
-            </div>
-          </div>
-        </div>
-        <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>
-          Vai trò hiện tại: <strong style={{ color: '#2563EB' }}>Admin Hệ Thống (admin)</strong> — toàn quyền điều phối xét tuyển cho {universitiesList.length} cơ sở giáo dục đại học trên toàn quốc, phê duyệt hồ sơ hàng loạt, theo dõi lịch tư vấn 1-1 và đồng bộ điểm chuẩn thời gian thực sang thuật toán AI Matching.
-        </div>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '14px' }}>
-          <button
-            onClick={openNotifications}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '9px 14px', borderRadius: '11px', border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF', color: '#334155', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}
-          >
-            <Bell size={14} /> Thông báo {unreadNotificationCount > 0 ? `(${unreadNotificationCount})` : ''}
-          </button>
-          <button
-            onClick={openSettings}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '9px 14px', borderRadius: '11px', border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF', color: '#334155', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}
-          >
-            <Settings size={14} /> Cài đặt
-          </button>
-          <button
-            onClick={resetAllData}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '9px 14px', borderRadius: '11px', border: '1px solid #FECACA', backgroundColor: '#FEF2F2', color: '#DC2626', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}
-          >
-            Khôi phục dữ liệu gốc Demo
-          </button>
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1.25fr 1fr' : '1fr', gap: '16px', alignItems: 'start' }}>
-      {/* Ma trận phân quyền */}
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-          <ShieldCheck size={17} color="#2563EB" />
-          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 900, color: '#0F172A' }}>Ma trận phân quyền giữa các user</h2>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.9fr 0.8fr 0.9fr 0.9fr', gap: '8px', padding: '8px 4px', borderBottom: '2px solid #E2E8F0', fontSize: '11.5px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-            <span>Chức năng</span>
-            <span style={{ textAlign: 'center' }}>Admin</span>
-            <span style={{ textAlign: 'center' }}>PXU</span>
-            <span style={{ textAlign: 'center' }}>Thí sinh</span>
-          </div>
-          {PERMISSION_ROWS.map((row) => (
-            <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '1.9fr 0.8fr 0.9fr 0.9fr', gap: '8px', padding: '9px 4px', borderBottom: '1px solid #F1F5F9', fontSize: '12.5px', alignItems: 'center' }}>
-              <span style={{ color: '#334155', fontWeight: 600, minWidth: 0 }}>{row.label}</span>
-              <span style={{ textAlign: 'center', fontWeight: 800, color: row.admin === '—' ? '#CBD5E1' : '#2563EB' }}>{row.admin}</span>
-              <span style={{ textAlign: 'center', fontWeight: 800, color: row.pxu === '—' ? '#CBD5E1' : '#059669' }}>{row.pxu}</span>
-              <span style={{ textAlign: 'center', fontWeight: 800, color: row.student === '—' ? '#CBD5E1' : '#D97706' }}>{row.student}</span>
-            </div>
-          ))}
-        </div>
-        <p style={{ margin: '12px 0 0', fontSize: '12px', color: '#64748B', lineHeight: 1.6 }}>
-          Ma trận này được thực thi ngay trong tầng xử lý của hệ thống (không chỉ ẩn nút): vai trò nào gọi thao tác trái quyền sẽ bị chặn và nhận thông báo. Vai trò được xác định bằng tài khoản đăng nhập — muốn dùng vai trò khác, hãy đăng xuất rồi đăng nhập đúng tài khoản.
-        </p>
-      </div>
-
-      {/* Người dùng hệ thống */}
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-          <Users size={17} color="#2563EB" />
-          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 900, color: '#0F172A' }}>Người dùng hệ thống ({SYSTEM_ACCOUNTS.length + registeredUsers.length})</h2>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {SYSTEM_ACCOUNTS.map((acc) => (
-            <div key={acc.email} style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '10px 2px', borderBottom: '1px solid #F1F5F9', minWidth: 0 }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '11px', backgroundColor: `${acc.color}1A`, color: acc.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 900, flexShrink: 0 }}>
-                {acc.name.charAt(0)}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{acc.name}</div>
-                <div style={{ fontSize: '12px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{acc.email}</div>
-              </div>
-              <span style={{ fontSize: '11px', fontWeight: 800, color: acc.color, backgroundColor: `${acc.color}1A`, padding: '3px 10px', borderRadius: '999px', whiteSpace: 'nowrap' }}>{acc.role}</span>
-            </div>
-          ))}
-          {registeredUsers.map((acc) => (
-            <div key={acc.email} style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '10px 2px', borderBottom: '1px solid #F1F5F9', minWidth: 0 }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '11px', backgroundColor: '#FFF7ED', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 900, flexShrink: 0 }}>
-                {acc.name.charAt(0)}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{acc.name}</div>
-                <div style={{ fontSize: '12px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{acc.email}</div>
-              </div>
-              <span style={{ fontSize: '11px', fontWeight: 800, color: '#D97706', backgroundColor: '#FFF7ED', padding: '3px 10px', borderRadius: '999px', whiteSpace: 'nowrap' }}>Thí sinh (đăng ký)</span>
-            </div>
-          ))}
-        </div>
-        <p style={{ margin: '12px 0 0', fontSize: '12px', color: '#64748B' }}>Gồm 3 tài khoản hệ thống theo vai trò và các tài khoản thí sinh tự đăng ký trên thiết bị này.</p>
-      </div>
-      </div>
-
-      <div style={cardStyle}>
-        {!showLogoutConfirm ? (
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '11px 18px', borderRadius: '12px', border: '1.5px solid #FECACA', backgroundColor: '#FEF2F2', color: '#DC2626', fontSize: '13.5px', fontWeight: 800, cursor: 'pointer' }}
-          >
-            <LogOut size={16} /> Đăng xuất tài khoản
-          </button>
         ) : (
-          <div>
-            <p style={{ margin: '0 0 10px', fontSize: '13.5px', color: '#334155', fontWeight: 600 }}>Bạn chắc chắn muốn đăng xuất khỏi Trung tâm điều hành?</p>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={logout} style={{ padding: '10px 18px', borderRadius: '11px', border: 'none', backgroundColor: '#DC2626', color: '#FFFFFF', fontSize: '13px', fontWeight: 800, cursor: 'pointer' }}>
-                Đăng xuất
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {pagedUnis.map((uni) => {
+              const isEditing = editingUniId === uni.id;
+              return (
+                <div key={uni.id} style={{ padding: '14px 16px', borderBottom: '1px solid #F1F5F9' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                    <UniversityAvatar code={uni.code} size={36} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {uni.name}
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: '#64748B' }}>{uni.code} · Miền {uni.region}</div>
+                    </div>
+                  </div>
+                  {!isEditing ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12.5px' }}>
+                      <span>Điểm chuẩn: <strong style={{ color: '#2563EB' }}>{uni.score2024}đ</strong> · Học phí: <strong>{uni.tuitionMin}tr</strong></span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingUniId(uni.id);
+                          setEditScore(uni.score2024);
+                          setEditTuition(uni.tuitionMin);
+                        }}
+                        style={{ padding: '5px 10px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#2563EB', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Sửa
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '8px', alignItems: 'center' }}>
+                      <input type="number" step="0.25" value={editScore} onChange={(e) => setEditScore(Number(e.target.value))} style={{ width: '100%', padding: '7px', borderRadius: '8px', border: '1px solid #2563EB' }} />
+                      <input type="number" step="1" value={editTuition} onChange={(e) => setEditTuition(Number(e.target.value))} style={{ width: '100%', padding: '7px', borderRadius: '8px', border: '1px solid #2563EB' }} />
+                      <button type="button" onClick={() => handleSaveUni(uni.id)} style={{ padding: '7px 12px', borderRadius: '8px', border: 'none', backgroundColor: '#059669', color: '#FFFFFF', fontWeight: 800 }}>
+                        Lưu
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {unisPageCount > 1 && (
+          <div style={{ padding: '12px 16px', borderTop: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F8FAFC' }}>
+            <span style={{ fontSize: '12px', color: '#64748B' }}>
+              Trang <strong>{curUnisPage}</strong> / {unisPageCount} ({filteredUnis.length} trường)
+            </span>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button type="button" disabled={curUnisPage <= 1} onClick={() => setUnisPage(curUnisPage - 1)} style={{ padding: '6px 11px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '12px', fontWeight: 700, cursor: 'pointer', opacity: curUnisPage <= 1 ? 0.45 : 1 }}>
+                ← Trước
               </button>
-              <button onClick={() => setShowLogoutConfirm(false)} style={{ padding: '10px 18px', borderRadius: '11px', border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF', color: '#475569', fontSize: '13px', fontWeight: 800, cursor: 'pointer' }}>
-                Hủy
+              <button type="button" disabled={curUnisPage >= unisPageCount} onClick={() => setUnisPage(curUnisPage + 1)} style={{ padding: '6px 11px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '12px', fontWeight: 700, cursor: 'pointer', opacity: curUnisPage >= unisPageCount ? 0.45 : 1 }}>
+                Sau →
               </button>
             </div>
           </div>
@@ -1253,165 +1671,326 @@ export const AdminApp: React.FC = () => {
     </div>
   );
 
-  // ---------------------------------------------------------------------
-  // Shell
-  // ---------------------------------------------------------------------
+  // =========================================================================
+  // SECTION 5: RBAC MATRIX & SYSTEM USERS
+  // =========================================================================
+  const renderAccount = () => (
+    <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1.35fr 1fr' : '1fr', gap: '18px', alignItems: 'start' }}>
+      <div style={{ ...surfaceCard, padding: 0, overflow: 'hidden' }}>
+        <div style={{ padding: '18px 20px', borderBottom: '1px solid #F1F5F9' }}>
+          <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
+            Ma trận Phân quyền Bảo mật RBAC (Thực thi tại tầng lõi)
+          </h2>
+          <p style={{ margin: '4px 0 0', fontSize: '12.5px', color: '#64748B' }}>
+            Mọi hành động trái quyền đều bị chặn trực tiếp tại `AppContext` kèm cảnh báo minh bạch
+          </p>
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="up-table">
+            <thead>
+              <tr>
+                <th>Nghiệp vụ hệ thống</th>
+                <th style={{ textAlign: 'center' }}>Admin</th>
+                <th style={{ textAlign: 'center' }}>ĐH Phú Xuân</th>
+                <th style={{ textAlign: 'center' }}>Thí sinh</th>
+              </tr>
+            </thead>
+            <tbody>
+              {PERMISSION_ROWS.map((row) => (
+                <tr key={row.label}>
+                  <td style={{ fontWeight: 600 }}>{row.label}</td>
+                  <td style={{ textAlign: 'center', fontWeight: 800, color: row.admin === '—' ? '#CBD5E1' : '#4F46E5' }}>{row.admin}</td>
+                  <td style={{ textAlign: 'center', fontWeight: 800, color: row.pxu === '—' ? '#CBD5E1' : '#059669' }}>{row.pxu}</td>
+                  <td style={{ textAlign: 'center', fontWeight: 800, color: row.student === '—' ? '#CBD5E1' : '#2563EB' }}>{row.student}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-  const navButton = (item: (typeof NAV_ITEMS)[number], vertical: boolean) => {
-    const active = section === item.id;
-    const badge = item.id === 'apps' && pendingApps.length > 0 ? pendingApps.length : null;
-    return (
-      <button
-        key={item.id}
-        onClick={() => setSection(item.id)}
-        style={{
-          display: 'flex',
-          flexDirection: vertical ? 'row' : 'column',
-          alignItems: 'center',
-          justifyContent: vertical ? 'flex-start' : 'center',
-          gap: vertical ? '11px' : '3px',
-          padding: vertical ? '12px 14px' : '6px 1px',
-          borderRadius: vertical ? '13px' : '0',
-          border: 'none',
-          backgroundColor: vertical ? (active ? '#2563EB' : 'transparent') : 'transparent',
-          color: vertical ? (active ? '#FFFFFF' : '#C7D3E8') : active ? '#2563EB' : '#64748B',
-          fontSize: vertical ? '14px' : '10px',
-          fontWeight: active ? 800 : 600,
-          cursor: 'pointer',
-          flex: vertical ? undefined : 1,
-          width: vertical ? '100%' : undefined,
-          minWidth: 0,
-          position: 'relative',
-        }}
-      >
-        <span style={{ position: 'relative', display: 'flex' }}>
-          {item.icon}
-          {badge !== null && !vertical && (
-            <span style={{ position: 'absolute', top: '-6px', right: '-9px', minWidth: '16px', height: '16px', padding: '0 4px', borderRadius: '999px', backgroundColor: '#DC2626', color: '#FFFFFF', fontSize: '9.5px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
-              {badge}
-            </span>
-          )}
-        </span>
-        <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>
-        {vertical && badge !== null && (
-          <span style={{ marginLeft: 'auto', minWidth: '20px', height: '20px', padding: '0 6px', borderRadius: '999px', backgroundColor: '#DC2626', color: '#FFFFFF', fontSize: '11px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
-            {badge}
-          </span>
-        )}
-        {!vertical && active && <span style={{ width: '18px', height: '3px', borderRadius: '999px', backgroundColor: '#2563EB' }} />}
-      </button>
-    );
-  };
+      <div style={surfaceCard}>
+        <h2 style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
+          Danh sách Tài khoản Hệ thống ({SYSTEM_ACCOUNTS.length + registeredUsers.length})
+        </h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {SYSTEM_ACCOUNTS.map((acc) => (
+            <div key={acc.email} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', borderRadius: '12px', backgroundColor: '#F8FAFC', border: '1px solid #F1F5F9' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: acc.bg, color: acc.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '14px', flexShrink: 0 }}>
+                {acc.name.charAt(0)}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{acc.name}</div>
+                <div style={{ fontSize: '11.5px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{acc.email}</div>
+              </div>
+              <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 9px', borderRadius: '999px', backgroundColor: acc.bg, color: acc.color, whiteSpace: 'nowrap' }}>
+                {acc.role}
+              </span>
+            </div>
+          ))}
 
-  const utilityButtons = (dark: boolean) => (
-    <>
-      <button
-        onClick={openNotifications}
-        aria-label="Thông báo"
-        style={{ position: 'relative', width: '36px', height: '36px', borderRadius: '11px', border: dark ? '1px solid rgba(255,255,255,0.22)' : '1px solid #E2E8F0', backgroundColor: dark ? 'rgba(255,255,255,0.08)' : '#FFFFFF', color: dark ? '#FFFFFF' : '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
-      >
-        <Bell size={16} />
-        {unreadNotificationCount > 0 && (
-          <span style={{ position: 'absolute', top: '-4px', right: '-4px', minWidth: '17px', height: '17px', padding: '0 4px', borderRadius: '999px', backgroundColor: '#EF4444', color: '#FFFFFF', fontSize: '9.5px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
-            {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
-          </span>
-        )}
-      </button>
-      <button
-        onClick={openSettings}
-        aria-label="Cài đặt"
-        style={{ width: '36px', height: '36px', borderRadius: '11px', border: dark ? '1px solid rgba(255,255,255,0.22)' : '1px solid #E2E8F0', backgroundColor: dark ? 'rgba(255,255,255,0.08)' : '#FFFFFF', color: dark ? '#FFFFFF' : '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
-      >
-        <Settings size={16} />
-      </button>
-    </>
+          {registeredUsers.map((acc) => (
+            <div key={acc.email} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', borderRadius: '12px', backgroundColor: '#FFFBEB', border: '1px solid #FEF3C7' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#FEF3C7', color: '#B45309', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '14px', flexShrink: 0 }}>
+                {acc.name.charAt(0)}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>{acc.name}</div>
+                <div style={{ fontSize: '11.5px', color: '#64748B' }}>{acc.email}</div>
+              </div>
+              <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 9px', borderRadius: '999px', backgroundColor: '#FEF3C7', color: '#B45309' }}>
+                Mới đăng ký
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 
-  const content = (
-    <main
-      style={{
-        flex: 1,
-        minWidth: 0,
-        width: '100%',
-        maxWidth: '1160px',
-        margin: '0 auto',
-        padding: isDesktop ? '26px 28px 40px' : '18px 16px 96px',
-        boxSizing: 'border-box',
-        ...(isDesktop ? { height: '100%', overflowY: 'auto' as const } : {}),
-      }}
-    >
+  // =========================================================================
+  // DESKTOP & MOBILE SHELLS (CLEAN SAAS CONTROL CENTER)
+  // =========================================================================
+  const renderMainBody = () => (
+    <>
       {section === 'dashboard' && renderDashboard()}
       {section === 'apps' && renderApps()}
       {section === 'bookings' && renderBookings()}
       {section === 'unis' && renderUnis()}
       {section === 'account' && renderAccount()}
-    </main>
+    </>
   );
 
   if (isDesktop) {
     return (
-      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: '#EDF1F7', width: '100%' }}>
+      <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', width: '100%' }}>
+        {/* Sticky Left Sidebar */}
         <aside
           style={{
-            width: '262px',
+            width: '252px',
             flexShrink: 0,
-            background: 'linear-gradient(180deg, #0B1B36 0%, #12295A 100%)',
+            backgroundColor: '#0F172A',
             color: '#FFFFFF',
             display: 'flex',
             flexDirection: 'column',
-            padding: '22px 16px',
-            height: '100%',
-            overflowY: 'auto',
+            padding: '20px 14px',
+            position: 'sticky',
+            top: 0,
+            height: '100vh',
             boxSizing: 'border-box',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '0 6px 20px', borderBottom: '1px solid rgba(255,255,255,0.12)', marginBottom: '18px' }}>
-            <div style={{ width: '42px', height: '42px', borderRadius: '13px', backgroundColor: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <ShieldCheck size={23} color="#FFFFFF" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 8px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '16px' }}>
+            <div style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'linear-gradient(135deg, #4F46E5 0%, #2563EB 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <ShieldCheck size={21} color="#FFFFFF" />
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: '15.5px', fontWeight: 900, lineHeight: 1.2 }}>UniPath Admin</div>
-              <div style={{ fontSize: '11.5px', color: '#9DB4DC' }}>Trung tâm điều hành</div>
+              <div style={{ fontSize: '15px', fontWeight: 900, letterSpacing: '-0.2px' }}>UniPath Admin</div>
+              <div style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600 }}>Control Center 2026</div>
             </div>
           </div>
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>{NAV_ITEMS.map((item) => navButton(item, true))}</nav>
-          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ display: 'flex', gap: '8px' }}>{utilityButtons(true)}</div>
-            <div style={{ backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: '14px', padding: '13px' }}>
-              <div style={{ fontSize: '13px', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name}</div>
-              <div style={{ fontSize: '11.5px', color: '#9DB4DC', marginBottom: '9px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email}</div>
-              <button
-                onClick={() => setSection('account')}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '9px', border: '1px solid rgba(255,255,255,0.25)', background: 'transparent', color: '#FFFFFF', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
-              >
-                <LogOut size={13} /> Tài khoản & đăng xuất
-              </button>
+
+          <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.6px', padding: '0 10px 8px' }}>
+            Phân hệ quản trị
+          </div>
+
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {NAV_ITEMS.map((item) => {
+              const active = section === item.id;
+              const badge =
+                item.id === 'apps' && pendingApps.length > 0
+                  ? pendingApps.length
+                  : item.id === 'bookings' && pendingBookings.length > 0
+                  ? pendingBookings.length
+                  : null;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setSection(item.id);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 12px',
+                    borderRadius: '11px',
+                    border: 'none',
+                    backgroundColor: active ? '#2563EB' : 'transparent',
+                    color: active ? '#FFFFFF' : '#CBD5E1',
+                    fontSize: '13.5px',
+                    fontWeight: active ? 800 : 600,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    width: '100%',
+                    transition: 'background-color 0.15s ease',
+                  }}
+                >
+                  {item.icon}
+                  <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
+                  {badge !== null && (
+                    <span
+                      style={{
+                        padding: '1px 7px',
+                        borderRadius: '999px',
+                        backgroundColor: active ? '#FFFFFF' : '#F59E0B',
+                        color: active ? '#1D4ED8' : '#451A03',
+                        fontSize: '11px',
+                        fontWeight: 900,
+                      }}
+                    >
+                      {badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+
+          <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ padding: '10px 12px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.05)', fontSize: '11.5px', color: '#94A3B8', lineHeight: 1.5 }}>
+              <div style={{ color: '#E2E8F0', fontWeight: 700, marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Sparkles size={13} color="#60A5FA" /> Đồng bộ trực tiếp
+              </div>
+              Mọi thay đổi điểm chuẩn và trạng thái hồ sơ được phản ánh tức thì sang Cổng Thí sinh.
             </div>
+            <button
+              type="button"
+              onClick={resetAllData}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                padding: '9px 12px',
+                borderRadius: '10px',
+                border: '1px solid rgba(255,255,255,0.14)',
+                backgroundColor: 'transparent',
+                color: '#CBD5E1',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              <RotateCcw size={13} /> Khôi phục dữ liệu mẫu
+            </button>
           </div>
         </aside>
-        {content}
+
+        {/* Right Content Area with Sticky Topbar */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <header
+            style={{
+              height: '64px',
+              backgroundColor: '#FFFFFF',
+              borderBottom: '1px solid #E2E8F0',
+              padding: '0 28px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '16px',
+              position: 'sticky',
+              top: 0,
+              zIndex: 60,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+              <span style={{ fontSize: '12.5px', color: '#64748B', fontWeight: 600 }}>Trung tâm Điều hành</span>
+              <ChevronRight size={14} color="#94A3B8" />
+              <h1 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {currentNavMeta.label}
+              </h1>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={openNotifications}
+                aria-label="Thông báo"
+                style={{
+                  position: 'relative',
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '11px',
+                  border: '1px solid #E2E8F0',
+                  backgroundColor: '#F8FAFC',
+                  color: '#334155',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <Bell size={17} />
+                {unreadNotificationCount > 0 && (
+                  <span style={{ position: 'absolute', top: '-4px', right: '-4px', minWidth: '17px', height: '17px', padding: '0 4px', borderRadius: '999px', backgroundColor: '#EF4444', color: '#FFFFFF', fontSize: '10px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                  </span>
+                )}
+              </button>
+
+              <AccountRoleMenu variant="light" />
+            </div>
+          </header>
+
+          <main style={{ flex: 1, maxWidth: '1260px', width: '100%', margin: '0 auto', padding: '24px 28px 48px', boxSizing: 'border-box' }}>
+            {renderMainBody()}
+          </main>
+        </div>
       </div>
     );
   }
 
-  // Mobile shell
+  // Mobile Shell
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#EDF1F7', width: '100%', maxWidth: '520px', margin: '0 auto', display: 'flex', flexDirection: 'column', overflowX: 'clip' }}>
-      <header style={{ background: 'linear-gradient(135deg, #0B1B36 0%, #1D4ED8 100%)', color: '#FFFFFF', padding: '14px 14px 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={{ width: '36px', height: '36px', borderRadius: '11px', backgroundColor: 'rgba(255,255,255,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <ShieldCheck size={20} color="#FFFFFF" />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '15px', fontWeight: 900, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>UniPath Admin</div>
-          <div style={{ fontSize: '11px', color: '#B9CCF2', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {user.name}
+    <div style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', width: '100%', maxWidth: '520px', margin: '0 auto', display: 'flex', flexDirection: 'column', overflowX: 'clip' }}>
+      <header
+        style={{
+          backgroundColor: '#0F172A',
+          color: '#FFFFFF',
+          padding: '12px 14px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '8px',
+          position: 'sticky',
+          top: 0,
+          zIndex: 60,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
+          <div style={{ width: '34px', height: '34px', borderRadius: '10px', backgroundColor: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <ShieldCheck size={18} color="#FFFFFF" />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: '14px', fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>UniPath Admin</div>
+            <div style={{ fontSize: '11px', color: '#94A3B8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentNavMeta.shortLabel}</div>
           </div>
         </div>
-        <span style={{ fontSize: '10px', fontWeight: 800, backgroundColor: '#F59E0B', color: '#451A03', padding: '4px 8px', borderRadius: '999px', whiteSpace: 'nowrap', flexShrink: 0 }}>{pendingApps.length} chờ</span>
-        {utilityButtons(true)}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={openNotifications}
+            aria-label="Thông báo"
+            style={{ position: 'relative', width: '34px', height: '34px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.1)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          >
+            <Bell size={16} />
+            {unreadNotificationCount > 0 && (
+              <span style={{ position: 'absolute', top: '-4px', right: '-4px', minWidth: '16px', height: '16px', borderRadius: '999px', backgroundColor: '#EF4444', color: '#FFFFFF', fontSize: '9.5px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {unreadNotificationCount}
+              </span>
+            )}
+          </button>
+          <AccountRoleMenu variant="dark" compact />
+        </div>
       </header>
 
-      {content}
+      <main style={{ flex: 1, padding: '16px 14px 96px', boxSizing: 'border-box' }}>
+        {renderMainBody()}
+      </main>
 
       <nav
         style={{
@@ -1423,15 +2002,40 @@ export const AdminApp: React.FC = () => {
           margin: '0 auto',
           backgroundColor: '#FFFFFF',
           borderTop: '1px solid #E2E8F0',
-          boxShadow: '0 -4px 24px rgba(0,0,0,0.07)',
+          boxShadow: '0 -4px 20px rgba(15,23,42,0.06)',
           display: 'flex',
           paddingTop: '6px',
           paddingBottom: 'max(10px, env(safe-area-inset-bottom, 12px))',
-          boxSizing: 'border-box',
           zIndex: 80,
         }}
       >
-        {NAV_ITEMS.map((item) => navButton(item, false))}
+        {NAV_ITEMS.map((item) => {
+          const active = section === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setSection(item.id)}
+              style={{
+                flex: 1,
+                border: 'none',
+                backgroundColor: 'transparent',
+                color: active ? '#2563EB' : '#64748B',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '3px',
+                fontSize: '10px',
+                fontWeight: active ? 800 : 600,
+                cursor: 'pointer',
+                padding: '4px 2px',
+              }}
+            >
+              {item.icon}
+              <span>{item.shortLabel}</span>
+            </button>
+          );
+        })}
       </nav>
     </div>
   );

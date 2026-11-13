@@ -62,8 +62,9 @@ Mọi nút bấm trên hệ thống đều được kết nối đúng chức n�
 | **Logo UniPath (Header Desktop)** | Đưa người dùng về màn hình chính | Chuyển về **Tab 0 (Trang chủ)** và cuộn mượt lên đầu trang |
 | **Thanh Điều Hướng 5 Tabs** | Chuyển đổi giữa 5 phân hệ của Cổng Thí sinh | **Tab 0:** Trang chủ • **Tab 1:** Trắc nghiệm Holland • **Tab 2:** Gợi ý AI • **Tab 3:** EduFair LIVE • **Tab 4:** Hồ sơ & Cá nhân |
 | **Chuông Thông Báo (`Bell`)** | Mở trung tâm thông báo theo đúng vai trò/email | Mở **`NotificationsModal`** hiển thị số tin chưa đọc thực tế (`unreadNotificationCount`), đánh dấu đã đọc & điều hướng nhanh |
+| **Menu Tài Khoản & Đổi Vai Trò (`AccountRoleMenu`)** | Mở menu tài khoản góc phải trên ở cả 3 cổng | Hiển thị danh tính hiện tại, **chuyển nhanh 1-Click giữa 3 cổng (`Thí sinh` ↔ `ĐH Phú Xuân` ↔ `Admin`)**, mở Cài đặt, Khôi phục dữ liệu gốc hoặc Đăng xuất ngay |
+| **Thanh Hành Trình 4 Bước (Tab 0)** | Theo dõi tiến độ cá nhân `0/4 → 4/4` & điều hướng 1 chạm | `① Test Holland` → `② AI Phân tích` → `③ Tư vấn 1-1` → `④ Nộp hồ sơ sớm` (tự động đánh dấu `✓` khi hoàn tất) |
 | **Trợ Lý AI (`Bot`)** | Mở cố vấn tuyển sinh ảo 24/7 | Mở **`ChatBotModal`** lưu lịch sử trò chuyện riêng biệt theo từng tài khoản |
-| **Cài Đặt (`Settings`)** | Mở bảng tùy chỉnh âm thanh, thông tin nhóm & khôi phục dữ liệu | Mở **`SettingsModal`** (Bật/tắt âm thanh UI, xem bản quyền Nhóm UP5, **Khôi phục dữ liệu gốc Demo** 1-click) |
 | **Khung Tìm Kiếm & Bộ Lọc Miền** | Tìm theo tên trường, mã trường, tỉnh/thành hoặc tên ngành đào tạo | Gợi ý tức thì (Autocomplete) và lọc danh sách 30 trường theo `Tất cả` / `Bắc` / `Trung` / `Nam` |
 | **Nhấn vào Thẻ Trường Đại Học** | Xem hồ sơ tuyển sinh toàn diện của trường | Mở **`UniversityDetailModal`** (Điểm chuẩn 3 năm, danh sách ngành, học phí, học bổng, OJT, nút *Hỏi AI*, *Tư vấn 1-1*, *Nộp hồ sơ*) |
 | **Nút Trái Tim (`Heart`)** | Lưu / bỏ lưu trường đại học yêu thích | Cập nhật `favoriteIds` trong kho dữ liệu riêng của người dùng, đồng bộ sang Tab 4 |

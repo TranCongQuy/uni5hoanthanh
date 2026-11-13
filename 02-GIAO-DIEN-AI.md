@@ -25,12 +25,11 @@ UniPath 2.0 được thiết kế với triết lý **nhận diện ngữ cảnh
 
 ## 2. HỆ THỐNG MÀU SẮC, TYPOGRAPHY & CAM KẾT CHỐNG TRÀN (ZERO OVERFLOW)
 
-### 2.1. Ngôn ngữ màu sắc theo ngữ nghĩa nghiệp vụ
-- **Primary Royal Blue (`#2563EB` / `#1D4ED8`):** Biểu trưng cho công nghệ giáo dục, sự tin cậy và cổng thông tin tuyển sinh chuẩn mực.
-- **PXU Academic Emerald (`#059669` / `#10B981`):** Sắc xanh lục bảo nhận diện Cổng Tuyển sinh Trường Đại học Phú Xuân (PXU), trạng thái **Đã trúng tuyển** và nhóm trường **An Toàn**.
-- **Info Sky Blue (`#0369A1` / `#0EA5E9`):** Trạng thái **Hồ sơ hợp lệ** và thông báo bổ sung minh chứng.
-- **Warm Amber (`#D97706` / `#F59E0B`):** Trạng thái **Đang xét duyệt**, nhóm trường **Vừa Sức** và huy hiệu Hội viên **UniPath VIP**.
-- **Crimson Red (`#DC2626` / `#EF4444`):** Trạng thái **Đã bị hủy**, nhóm trường **Thử Thách** và tín hiệu phát sóng trực tiếp **EduFair LIVE**.
+### 2.1. Hệ thống Nhận diện 3 Cổng Độc lập ("Nhìn 3 Giây Hiểu Ngay" — UI/UX 3.0)
+- **Cổng Thí sinh (`MobileView` / `DesktopView` — Clean White & Royal Blue `#2563EB`):** Không gian học thuật sáng thoáng, tích hợp **Thanh Hành trình Chọn Trường 4 Bước** trên Trang chủ, băng chuyền trường nổi bật điều khiển chủ động (không tự nhảy gây rối mắt), và Trung tâm Hồ sơ Tab 4 phân tách rõ **3 tab con** (`Hồ sơ xét tuyển` | `Lịch tư vấn 1-1` | `Trường đã lưu`) kèm **Banner cảnh báo ưu tiên** khi trúng tuyển sớm hoặc thiếu minh chứng.
+- **Cổng ĐH Phú Xuân (`UniversityApp.tsx` — Executive Emerald `#064E3B` & `#059669` trên nền `#F8FAFC`):** Giao diện CRM Tuyển sinh hiện đại với Sidebar trái cố định, **Bộ đối soát Điểm thí sinh vs Điểm chuẩn ngành PXU & Gợi ý Học bổng OJT tự động**, chip phản hồi nhanh 1-Click và bảng điều phối lịch hẹn 1-1 dạng **Kanban 3 cột** (`Chờ liên hệ` → `Đã liên hệ` → `Hoàn thành`).
+- **Cổng Quản trị Hệ thống (`AdminApp.tsx` — Deep Slate Navy `#0F172A` & Indigo `#4F46E5`):** Trung tâm điều hành SaaS toàn quốc với 4 thẻ KPI bấm lọc tức thì, phễu xét tuyển 4 giai đoạn, bảng dữ liệu chuẩn SaaS (`.up-table`) kết hợp **Smart Inspector Panel** (tiến trình 3 bước, thanh so sánh điểm chuẩn, chip ghi chú nhanh) và bảng 30 trường sửa trực tiếp trên dòng.
+- **Menu Tài khoản & Chuyển vai trò 1-Click (`AccountRoleMenu.tsx`):** Đồng bộ ở góc phải trên cùng của cả 3 cổng, hiển thị rõ vai trò hiện tại và cho phép chuyển nhanh giữa `Thí sinh` ↔ `ĐH Phú Xuân` ↔ `Admin` hoặc đăng xuất chỉ với 1 cú nhấp chuột.
 
 ### 2.2. Kỹ thuật chống tràn ngang tuyệt đối (`360px` → `1920px`)
 - Sử dụng `overflow-x: clip` trên `html, body` và `#root` thay vì `overflow-x: hidden`, vừa triệt tiêu 100% thanh cuộn ngang ngoài ý muốn vừa bảo toàn hoạt động chuẩn xác của các thanh tiêu đề `position: sticky`.

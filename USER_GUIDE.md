@@ -40,7 +40,8 @@ UniPath 2.0 tự động nhận diện kích thước màn hình thiết bị th
 - **Thanh công cụ trên cùng:**
   - **Chuông thông báo (`Bell`):** Hiển thị huy hiệu đỏ đếm chính xác số thông báo chưa đọc (kết quả duyệt hồ sơ, lịch hẹn 1-1, tin học bổng). Bấm vào từng thông báo để đánh dấu đã đọc và nhảy đến đúng trang liên quan.
   - **Trợ lý AI (`Bot`):** Hỏi đáp 24/7 về điểm chuẩn, học phí, ngành học và chương trình OJT.
-  - **Cài đặt (`Settings`):** Bật/tắt âm thanh giao diện, xem thông tin bản quyền Nhóm UP5 và khôi phục dữ liệu mẫu.
+  - **Menu Tài khoản & Đổi vai trò nhanh (`AccountRoleMenu` góc phải trên):** Xem tài khoản đang đăng nhập, chuyển đổi 1-Click giữa 3 cổng (`Thí sinh` ↔ `ĐH Phú Xuân` ↔ `Admin`) phục vụ bảo vệ đồ án, mở Cài đặt âm thanh/bản quyền UP5, khôi phục dữ liệu mẫu hoặc đăng xuất ngay lập tức.
+- **Lộ trình Chọn Trường 4 Bước trực quan:** Nằm ngay dưới Banner chính, tự động đánh dấu hoàn thành (`✓`) cho từng bước (`① Test Holland` → `② AI Phân tích 30 trường` → `③ Tư vấn 1-1` → `④ Nộp hồ sơ sớm`) và cho phép bấm vào từng bước để thực hiện ngay.
 - **Tìm kiếm & Lọc vùng miền:** Nhập tên trường, mã trường (ví dụ: `PXU`, `BKA`, `FTU`), tỉnh/thành phố hoặc tên ngành học (ví dụ: `Công nghệ thông tin`, `Marketing`), kết hợp bộ lọc `Tất cả` / `Bắc` / `Trung` / `Nam`.
 - **Thao tác trên thẻ trường:**
   - Bấm biểu tượng **Trái tim** để lưu trường yêu thích.

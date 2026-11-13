@@ -13,11 +13,13 @@ import {
   GraduationCap,
   Briefcase,
   X,
+  CheckCircle2,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import type { University } from '../../types';
 import { pickReferenceCutoff, admissionPercent } from '../../services/MatchingService';
 import { UniversityAvatar, ImageSafe, AppFooter, EmptyState } from '../common/UI';
+import { AccountRoleMenu } from '../common/AccountRoleMenu';
 
 // % phù hợp hiển thị trên thẻ trường: dùng CHUNG thuật toán với AI Matching và
 // trang chi tiết trường (ngành tham chiếu + bảng bậc %), không còn số cứng.
@@ -48,6 +50,10 @@ export const HomeTab: React.FC = () => {
     setSearchKeyword,
     universitiesList,
     hollandResult,
+    aiMatchState,
+    myBookings,
+    myApplications,
+    openBookConsultation,
   } = useApp();
 
   const [selectedRegion, setSelectedRegion] = useState<string>('Tất cả');
@@ -121,47 +127,17 @@ export const HomeTab: React.FC = () => {
 
   const featuredScrollRef = React.useRef<HTMLDivElement>(null);
   const [featuredIndex, setFeaturedIndex] = useState(0);
-  const [isCarouselHovered, setIsCarouselHovered] = useState(false);
-  const carouselDirectionRef = React.useRef<'forward' | 'backward'>('forward');
 
-  // Auto transition: Left-to-Right, and at the end bounce Right-to-Left
-  useEffect(() => {
-    if (isCarouselHovered) return;
-
-    const interval = setInterval(() => {
-      setFeaturedIndex((prev) => {
-        const totalItems = 9; // 8 universities + 1 "Xem tất cả" card
-        if (carouselDirectionRef.current === 'forward') {
-          if (prev < totalItems - 1) {
-            return prev + 1;
-          } else {
-            carouselDirectionRef.current = 'backward';
-            return prev - 1;
-          }
-        } else {
-          if (prev > 0) {
-            return prev - 1;
-          } else {
-            carouselDirectionRef.current = 'forward';
-            return prev + 1;
-          }
-        }
-      });
-    }, 3500);
-
-    return () => clearInterval(interval);
-  }, [isCarouselHovered]);
-
-  // Smooth scroll container to match featuredIndex
-  useEffect(() => {
+  const scrollToFeatured = (idx: number) => {
+    setFeaturedIndex(idx);
     if (featuredScrollRef.current) {
       const cardWidth = 284; // 270px width + 14px gap
       featuredScrollRef.current.scrollTo({
-        left: featuredIndex * cardWidth,
+        left: idx * cardWidth,
         behavior: 'smooth',
       });
     }
-  }, [featuredIndex]);
+  };
 
   const scrollToAllUniversities = () => {
     setSelectedRegion('Tất cả');
@@ -172,28 +148,62 @@ export const HomeTab: React.FC = () => {
     }
   };
 
+  const journeySteps = [
+    {
+      num: '1',
+      title: 'Test Holland',
+      sub: hollandResult ? `Mã ${hollandResult.primaryCode}` : '12 câu hỏi',
+      done: Boolean(hollandResult),
+      onClick: () => setActiveTab(1),
+    },
+    {
+      num: '2',
+      title: 'AI Phân tích',
+      sub: aiMatchState.hasEvaluated ? `${aiMatchState.score} điểm` : 'Dự báo 30 ĐH',
+      done: Boolean(aiMatchState.hasEvaluated),
+      onClick: () => setActiveTab(2),
+    },
+    {
+      num: '3',
+      title: 'Tư vấn 1-1',
+      sub: myBookings.length > 0 ? `${myBookings.length} lịch hẹn` : 'Đặt lịch hẹn',
+      done: myBookings.length > 0 || compareIds.length >= 2,
+      onClick: () => openBookConsultation(),
+    },
+    {
+      num: '4',
+      title: 'Nộp hồ sơ',
+      sub: myApplications.length > 0 ? `${myApplications.length} hồ sơ` : 'Xét tuyển sớm',
+      done: myApplications.length > 0,
+      onClick: () => (myApplications.length > 0 ? setActiveTab(4) : scrollToAllUniversities()),
+    },
+  ];
+  const completedStepsCount = journeySteps.filter((s) => s.done).length;
+  const nextStepIdx = journeySteps.findIndex((s) => !s.done);
+
   return (
     <div className="home-container" style={{ paddingBottom: '96px' }}>
-      {/* 1. Header 64dp */}
+      {/* 1. Header 64dp with 1-Click Account & Role Menu */}
       <header
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '12px 20px',
+          padding: '10px 16px',
           height: '64px',
           backgroundColor: '#FFFFFF',
           borderBottom: '1px solid #F1F5F9',
           position: 'sticky',
           top: 0,
           zIndex: 40,
+          gap: '8px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
           <div
             style={{
-              width: '44px',
-              height: '44px',
+              width: '40px',
+              height: '40px',
               borderRadius: '50%',
               overflow: 'hidden',
               border: '2px solid #2563EB',
@@ -214,17 +224,16 @@ export const HomeTab: React.FC = () => {
               }}
             />
           </div>
-          <div>
-            <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 500 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 500 }}>
               {getGreeting()}
             </div>
             <div
               style={{
-                fontSize: '16px',
-                fontWeight: 700,
+                fontSize: '14.5px',
+                fontWeight: 800,
                 color: '#0F172A',
                 lineHeight: 1.2,
-                maxWidth: '160px',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -235,40 +244,40 @@ export const HomeTab: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
           {/* Notifications button */}
           <button
             onClick={openNotifications}
             aria-label="Thông báo"
             style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '50%',
-              backgroundColor: '#FFFFFF',
+              width: '38px',
+              height: '38px',
+              borderRadius: '11px',
+              backgroundColor: '#F8FAFC',
               border: '1px solid #E2E8F0',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               position: 'relative',
               color: '#1E293B',
+              flexShrink: 0,
             }}
           >
-            <Bell size={20} />
+            <Bell size={18} />
             {unreadNotificationCount > 0 && (
               <span
                 style={{
                   position: 'absolute',
-                  top: '5px',
-                  right: '5px',
-                  minWidth: '17px',
-                  height: '17px',
-                  padding: '0 4px',
+                  top: '2px',
+                  right: '2px',
+                  minWidth: '16px',
+                  height: '16px',
+                  padding: '0 3px',
                   borderRadius: '999px',
                   backgroundColor: '#EF4444',
                   color: '#FFFFFF',
-                  fontSize: '10px',
+                  fontSize: '9.5px',
                   fontWeight: 800,
                   display: 'flex',
                   alignItems: 'center',
@@ -286,21 +295,25 @@ export const HomeTab: React.FC = () => {
             onClick={openChatBot}
             aria-label="Trợ lý AI"
             style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '50%',
+              width: '38px',
+              height: '38px',
+              borderRadius: '11px',
               backgroundColor: '#2563EB',
               border: 'none',
-              boxShadow: '0 4px 12px rgba(37,99,235,0.3)',
+              boxShadow: '0 4px 10px rgba(37,99,235,0.25)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               color: '#FFFFFF',
+              flexShrink: 0,
             }}
           >
-            <Bot size={22} />
+            <Bot size={19} />
           </button>
+
+          {/* Account & 1-Click Role Switcher */}
+          <AccountRoleMenu variant="light" compact />
         </div>
       </header>
 
@@ -702,6 +715,96 @@ export const HomeTab: React.FC = () => {
                 }}
               />
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 2B. 4-Step Student Journey Stepper ("Nhìn 3 Giây Hiểu Ngay") */}
+      <div style={{ padding: '6px 20px 8px' }}>
+        <div
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '20px',
+            border: '1px solid #E2E8F0',
+            padding: '13px 14px',
+            boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', gap: '8px' }}>
+            <div style={{ fontSize: '12.5px', fontWeight: 800, color: '#0F172A' }}>
+              🎯 Hành trình Chọn Trường 4 Bước
+            </div>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 800,
+                padding: '2px 8px',
+                borderRadius: '999px',
+                backgroundColor: completedStepsCount === 4 ? '#ECFDF5' : '#EFF6FF',
+                color: completedStepsCount === 4 ? '#047857' : '#2563EB',
+              }}
+            >
+              {completedStepsCount}/4 hoàn tất
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+            {journeySteps.map((step, idx) => {
+              const isNext = idx === nextStepIdx;
+              return (
+                <button
+                  key={step.num}
+                  type="button"
+                  onClick={step.onClick}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 10px',
+                    borderRadius: '13px',
+                    border: step.done
+                      ? '1px solid #A7F3D0'
+                      : isNext
+                      ? '1.5px solid #2563EB'
+                      : '1px solid #E2E8F0',
+                    backgroundColor: step.done ? '#F0FDF4' : isNext ? '#EFF6FF' : '#F8FAFC',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    minWidth: 0,
+                  }}
+                >
+                  {step.done ? (
+                    <CheckCircle2 size={18} color="#059669" style={{ flexShrink: 0 }} />
+                  ) : (
+                    <span
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        backgroundColor: isNext ? '#2563EB' : '#CBD5E1',
+                        color: '#FFFFFF',
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {step.num}
+                    </span>
+                  )}
+                  <span style={{ minWidth: 0, flex: 1 }}>
+                    <span style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {step.title}
+                    </span>
+                    <span style={{ display: 'block', fontSize: '10.5px', fontWeight: 600, color: step.done ? '#047857' : isNext ? '#1D4ED8' : '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {step.sub}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -1258,13 +1361,15 @@ export const HomeTab: React.FC = () => {
           </div>
         </div>
 
-        {/* Horizontal Snap Scroll with Auto-bounce & Direction reversal */}
+        {/* Horizontal Snap Scroll (User-controlled, zero auto-jump) */}
         <div
           ref={featuredScrollRef}
-          onMouseEnter={() => setIsCarouselHovered(true)}
-          onMouseLeave={() => setIsCarouselHovered(false)}
-          onTouchStart={() => setIsCarouselHovered(true)}
-          onTouchEnd={() => setIsCarouselHovered(false)}
+          onScroll={(e) => {
+            const idx = Math.round(e.currentTarget.scrollLeft / 284);
+            if (idx >= 0 && idx <= 8 && idx !== featuredIndex) {
+              setFeaturedIndex(idx);
+            }
+          }}
           style={{
             display: 'flex',
             gap: '14px',
@@ -1512,7 +1617,7 @@ export const HomeTab: React.FC = () => {
             return (
               <button
                 key={idx}
-                onClick={() => setFeaturedIndex(idx)}
+                onClick={() => scrollToFeatured(idx)}
                 style={{
                   minWidth: isActive ? (isLast ? '46px' : '26px') : '18px',
                   height: '20px',

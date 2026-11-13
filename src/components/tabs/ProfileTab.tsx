@@ -3,7 +3,6 @@ import {
   User,
   Settings,
   Crown,
-  CheckCircle2,
   Heart,
   ChevronRight,
   LogOut,
@@ -13,11 +12,14 @@ import {
   FileText,
   Calendar,
   LogIn,
+  AlertCircle,
+  Award,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { getHollandName } from '../../data/MockData';
 import { getStatusMeta } from '../../types';
 import { Button, UniversityAvatar, AppFooter } from '../common/UI';
+import { AccountRoleMenu } from '../common/AccountRoleMenu';
 import { LineChart } from '../charts/LineChart';
 
 export const ProfileTab: React.FC = () => {
@@ -48,9 +50,12 @@ export const ProfileTab: React.FC = () => {
 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [subTab, setSubTab] = useState<'apps' | 'bookings' | 'saved'>('apps');
 
   // Favorite universities objects
   const favoriteUnis = universitiesList.filter((u) => favoriteIds.includes(u.id));
+  const admittedApp = myApplications.find((a) => a.status === 'Đã trúng tuyển');
+  const missingDocApp = myApplications.find((a) => a.status === 'Thiếu hồ sơ');
 
   const handleConfirmUpgrade = () => {
     upgradePremium('Gói Không Giới Hạn');
@@ -58,23 +63,23 @@ export const ProfileTab: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '20px 20px 104px', display: 'flex', flexDirection: 'column' }}>
-      {/* 1. User Info Header Card */}
+    <div style={{ padding: '16px 18px 104px', display: 'flex', flexDirection: 'column' }}>
+      {/* 1. User Info Header Card with Account & 1-Click Role Menu */}
       <div
         style={{
           backgroundColor: '#FFFFFF',
-          borderRadius: '24px',
-          padding: '20px',
+          borderRadius: '22px',
+          padding: '18px',
           border: '1px solid #E2E8F0',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
-          marginBottom: '20px',
+          boxShadow: '0 2px 10px rgba(15, 23, 42, 0.04)',
+          marginBottom: '14px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
           <div
             style={{
-              width: '68px',
-              height: '68px',
+              width: '60px',
+              height: '60px',
               borderRadius: '50%',
               overflow: 'hidden',
               border: profile.isPremium ? '3px solid #F59E0B' : '2px solid #2563EB',
@@ -98,7 +103,7 @@ export const ProfileTab: React.FC = () => {
               <h3
                 style={{
                   margin: 0,
-                  fontSize: '18px',
+                  fontSize: '17px',
                   fontWeight: 800,
                   color: '#0F172A',
                   whiteSpace: 'nowrap',
@@ -113,744 +118,637 @@ export const ProfileTab: React.FC = () => {
                   style={{
                     backgroundColor: '#FEF3C7',
                     color: '#B45309',
-                    fontSize: '11px',
+                    fontSize: '10.5px',
                     fontWeight: 800,
                     padding: '2px 6px',
                     borderRadius: '8px',
-                    display: 'flex',
+                    display: 'inline-flex',
                     alignItems: 'center',
                     gap: '2px',
+                    flexShrink: 0,
                   }}
                 >
-                  <Crown size={12} /> PRO
+                  <Crown size={11} /> VIP
                 </span>
               )}
             </div>
 
-            <div style={{ fontSize: '13px', color: '#64748B', marginTop: '2px' }}>
+            <div style={{ fontSize: '12.5px', color: '#64748B', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {!isLoggedIn || isGuest ? 'Tài khoản khách trải nghiệm' : `${profile.grade} • ${profile.school}`}
             </div>
-            <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '2px' }}>
+            <div style={{ fontSize: '11.5px', color: '#94A3B8', marginTop: '1px' }}>
               {profile.province}
             </div>
           </div>
 
-          <button
-            onClick={openSettings}
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              backgroundColor: '#F8FAFC',
-              border: '1px solid #E2E8F0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: '#64748B',
-              flexShrink: 0,
-            }}
-          >
-            <Settings size={20} />
-          </button>
+          <AccountRoleMenu variant="light" compact />
         </div>
 
-        {/* Target goal pill & Action buttons */}
+        {/* Target goal pill */}
         <div
           style={{
             backgroundColor: '#EFF6FF',
-            borderRadius: '14px',
-            padding: '10px 14px',
-            marginBottom: '14px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            borderRadius: '12px',
+            padding: '9px 12px',
+            marginBottom: '12px',
+            fontSize: '12px',
+            color: '#1E40AF',
+            lineHeight: 1.4,
           }}
         >
-          <div style={{ fontSize: '12px', color: '#1E40AF', lineHeight: 1.4 }}>
-            <strong>Mục tiêu:</strong> {profile.targetMajor} — {profile.dreamUni}
-          </div>
+          <strong>Mục tiêu:</strong> {profile.targetMajor} — {profile.dreamUni}
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
           {!isLoggedIn || isGuest ? (
-            <Button
-              variant="primary"
-              size="M"
-              fullWidth
-              onClick={openAuthModal}
-            >
+            <Button variant="primary" size="M" fullWidth onClick={openAuthModal}>
               Đăng nhập / Đăng ký tài khoản
             </Button>
           ) : (
-            <Button
-              variant="tonal"
-              size="M"
-              fullWidth
-              icon={<Edit3 size={16} />}
-              onClick={openEditProfile}
-            >
+            <Button variant="tonal" size="M" fullWidth icon={<Edit3 size={16} />} onClick={openEditProfile}>
               Chỉnh sửa thông tin hồ sơ
             </Button>
           )}
         </div>
       </div>
 
-      {/* 2. Unipath Premium Banner Card with Flame Effect */}
-      {!profile.isPremium ? (
+      {/* 2. Priority Action Alerts (Early Admission Certificate / Supplement Required) */}
+      {isLoggedIn && !isGuest && admittedApp && (
         <div
           style={{
-            background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 45%, #FDE68A 100%)',
-            border: '2px solid #F59E0B',
-            borderRadius: '26px',
-            padding: '22px 20px',
-            marginBottom: '24px',
-            position: 'relative',
-            overflow: 'hidden',
-            boxShadow: '0 10px 30px rgba(245, 158, 11, 0.25), 0 0 15px rgba(239, 68, 68, 0.15)',
+            background: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)',
+            border: '1.5px solid #6EE7B7',
+            borderRadius: '18px',
+            padding: '14px 16px',
+            marginBottom: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
           }}
         >
-          {/* Shimmering light beam across the card */}
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '40%',
-              height: '100%',
-              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
-              animation: 'shimmerBeam 3.5s infinite linear',
-              pointerEvents: 'none',
-              zIndex: 1,
-            }}
-          />
-
-          {/* Header row: Crown + Title + -50% Flame badge */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '14px',
-              position: 'relative',
-              zIndex: 2,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div
-                style={{
-                  width: '46px',
-                  height: '46px',
-                  borderRadius: '16px',
-                  background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#D97706',
-                  boxShadow: '0 4px 12px rgba(217, 119, 6, 0.25)',
-                  border: '1.5px solid #FCD34D',
-                  animation: 'floatBob 3s ease-in-out infinite',
-                }}
-              >
-                <Crown size={26} fill="#F59E0B" color="#B45309" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '11px', backgroundColor: '#059669', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Award size={19} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#065F46' }}>
+                🎉 Chúc mừng Đã trúng tuyển sớm!
               </div>
-              <div>
-                <span style={{ fontSize: '18px', fontWeight: 900, color: '#78350F' }}>
-                  Unipath Premium
-                </span>
-                <div style={{ fontSize: '11px', color: '#92400E', fontWeight: 600 }}>
-                  Gói quyền lợi hướng nghiệp trọn gói
-                </div>
+              <div style={{ fontSize: '11.5px', color: '#047857', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {admittedApp.uniName} • {admittedApp.major}
               </div>
             </div>
-
-            {/* BỐC LỬA -50% FLAME BADGE */}
-            <div
-              style={{
-                background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 50%, #B91C1C 100%)',
-                color: '#FFFFFF',
-                fontSize: '12px',
-                fontWeight: 900,
-                padding: '5px 12px',
-                borderRadius: '20px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                animation: 'fireFlicker 1.6s infinite ease-in-out',
-                letterSpacing: '0.3px',
-                cursor: 'pointer',
-                textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-                border: '1px solid #FECACA',
-              }}
-            >
-              <span style={{ fontSize: '15px' }}>🔥</span>
-              <span>-50% GIẢM SỐC</span>
-            </div>
-          </div>
-
-          {/* Price row */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '2px', position: 'relative', zIndex: 2 }}>
-            <span
-              style={{
-                fontSize: '34px',
-                fontWeight: 900,
-                background: 'linear-gradient(135deg, #B45309 0%, #D97706 60%, #78350F 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                letterSpacing: '-0.5px',
-              }}
-            >
-              199.000đ
-            </span>
-            <span style={{ fontSize: '14px', color: '#78350F', fontWeight: 700 }}>/năm</span>
-            <span
-              style={{
-                marginLeft: 'auto',
-                fontSize: '11px',
-                fontWeight: 800,
-                color: '#DC2626',
-                backgroundColor: '#FEE2E2',
-                padding: '3px 8px',
-                borderRadius: '8px',
-                border: '1px solid #FECACA',
-              }}
-            >
-              ⚡ Ưu đãi chỉ hôm nay
-            </span>
-          </div>
-
-          <div style={{ fontSize: '14px', color: '#92400E', textDecoration: 'line-through', marginBottom: '16px', position: 'relative', zIndex: 2 }}>
-            399.000đ/năm
-          </div>
-
-          {/* 4 Benefits with green checks */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', position: 'relative', zIndex: 2 }}>
-            {[
-              'Bộ đề & Tài liệu ôn thi ĐGNL độc quyền',
-              'Trợ lý AI hướng nghiệp 24/7 phân tích chuyên sâu',
-              'Phân tích cơ hội đỗ AI không giới hạn số trường',
-              'Giao diện siêu tốc, không quảng cáo làm phiền',
-            ].map((text, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div
-                  style={{
-                    width: '22px',
-                    height: '22px',
-                    borderRadius: '50%',
-                    backgroundColor: '#10B981',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#FFFFFF',
-                    flexShrink: 0,
-                    boxShadow: '0 2px 6px rgba(16,185,129,0.3)',
-                  }}
-                >
-                  <CheckCircle2 size={14} />
-                </div>
-                <span style={{ fontSize: '13px', color: '#78350F', fontWeight: 600 }}>
-                  {text}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Upgrade Button with Shine Effect */}
-          <button
-            onClick={() => setShowUpgradeModal(true)}
-            style={{
-              width: '100%',
-              height: '52px',
-              borderRadius: '16px',
-              border: 'none',
-              background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 50%, #B91C1C 100%)',
-              color: '#FFFFFF',
-              fontSize: '15px',
-              fontWeight: 800,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              cursor: 'pointer',
-              boxShadow: '0 6px 20px rgba(239, 68, 68, 0.4), 0 0 10px rgba(245, 158, 11, 0.3)',
-              position: 'relative',
-              overflow: 'hidden',
-              zIndex: 2,
-            }}
-          >
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '30%',
-                height: '100%',
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
-                animation: 'shimmerBeam 2.5s infinite linear',
-              }}
-            />
-            <span>🔥 Nâng cấp ngay — Mở khóa trọn bộ</span>
-            <span style={{ fontSize: '18px' }}>→</span>
-          </button>
-        </div>
-      ) : (
-        /* Already Premium Card */
-        <div
-          style={{
-            background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-            borderRadius: '24px',
-            padding: '20px',
-            color: '#FFFFFF',
-            marginBottom: '24px',
-            boxShadow: '0 4px 14px rgba(16, 185, 129, 0.25)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-            <Crown size={24} color="#FDE68A" />
-            <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 800 }}>
-              Hội viên Unipath VIP Premium
-            </h4>
-          </div>
-          <p style={{ margin: 0, fontSize: '13px', opacity: 0.9 }}>
-            Bạn đang sử dụng trọn vẹn toàn bộ tính năng cao cấp của Unipath đến 2027.
-          </p>
-        </div>
-      )}
-
-      {/* 3. Parent / Student Dashboard: Tiến độ ĐGNL */}
-      <div
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '24px',
-          padding: '20px',
-          border: '1px solid #E2E8F0',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-          marginBottom: '24px',
-        }}
-      >
-        <h4 style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-          Dashboard Theo dõi Năng lực THPT
-        </h4>
-
-        {/* 3 stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '18px' }}>
-          <div style={{ backgroundColor: '#F8FAFC', padding: '10px', borderRadius: '16px', textAlign: 'center' }}>
-            <div style={{ fontSize: '20px', fontWeight: 800, color: '#2563EB' }}>855</div>
-            <div style={{ fontSize: '11px', color: '#64748B' }}>Điểm ĐGNL</div>
-          </div>
-          <div style={{ backgroundColor: '#F8FAFC', padding: '10px', borderRadius: '16px', textAlign: 'center' }}>
-            <div style={{ fontSize: '20px', fontWeight: 800, color: '#10B981' }}>18</div>
-            <div style={{ fontSize: '11px', color: '#64748B' }}>Đề đã làm</div>
-          </div>
-          <div style={{ backgroundColor: '#F8FAFC', padding: '10px', borderRadius: '16px', textAlign: 'center' }}>
-            <div style={{ fontSize: '20px', fontWeight: 800, color: '#F59E0B' }}>{favoriteIds.length}</div>
-            <div style={{ fontSize: '11px', color: '#64748B' }}>Mục tiêu</div>
-          </div>
-        </div>
-
-        {/* Line Chart */}
-        <div style={{ marginBottom: '8px' }}>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B', display: 'block', marginBottom: '8px' }}>
-            Tiến độ điểm thi Đánh giá năng lực theo tháng:
-          </span>
-          <LineChart height={130} />
-        </div>
-      </div>
-
-      {/* 4. Holland RIASEC Result Summary */}
-      <div
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '24px',
-          padding: '20px',
-          border: '1px solid #E2E8F0',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-          marginBottom: '24px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Compass size={20} color="#2563EB" />
-            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-              Kết quả trắc nghiệm RIASEC
-            </h4>
-          </div>
-          {hollandResult && (
-            <span style={{ fontSize: '12px', color: '#94A3B8' }}>{hollandResult.completedAt}</span>
-          )}
-        </div>
-
-        {hollandResult ? (
-          <div>
-            <div
-              style={{
-                backgroundColor: '#EFF6FF',
-                borderRadius: '16px',
-                padding: '12px 14px',
-                marginBottom: '12px',
-              }}
-            >
-              <div style={{ fontSize: '15px', fontWeight: 800, color: '#1D4ED8' }}>
-                Mã {hollandResult.primaryCode} — {getHollandName(hollandResult.primaryCode)}
-              </div>
-              <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
-                Top 3 nhóm nổi trội: {hollandResult.topCodes.join(' - ')}
-              </div>
-            </div>
-            <Button
-              variant="tonal"
-              size="M"
-              fullWidth
-              onClick={() => openCareerPath(hollandResult.primaryCode)}
-            >
-              Xem lộ trình phát triển nghề nghiệp
-            </Button>
-          </div>
-        ) : (
-          <div style={{ textAlign: 'center', padding: '16px 0' }}>
-            <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#64748B' }}>
-              Bạn chưa hoàn thành bài khảo sát tính cách nào.
-            </p>
-            <Button variant="tonal" size="M" onClick={() => setActiveTab(1)}>
-              Làm trắc nghiệm ngay
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* 5. Submitted Applications Section */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <FileText size={20} color="#2563EB" />
-            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-              Hồ sơ xét tuyển của bạn ({myApplications.length})
-            </h4>
-          </div>
-          {myApplications.length > 0 && (
-            <button
-              onClick={openAllApplications}
-              style={{
-                border: 'none',
-                backgroundColor: '#EFF6FF',
-                color: '#2563EB',
-                fontSize: '12px',
-                fontWeight: 800,
-                padding: '4px 10px',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '2px',
-              }}
-            >
-              Xem tất cả →
-            </button>
-          )}
-        </div>
-
-        {myApplications.length === 0 ? (
-          <div
-            style={{
-              padding: '24px',
-              backgroundColor: '#FFFFFF',
-              borderRadius: '20px',
-              textAlign: 'center',
-              border: '1px dashed #CBD5E1',
-            }}
-          >
-            <FileText size={28} color="#CBD5E1" style={{ margin: '0 auto 8px' }} />
-            <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#64748B' }}>
-              {!isLoggedIn || isGuest
-                ? 'Đăng nhập tài khoản thí sinh để nộp và theo dõi hồ sơ xét tuyển đại học trực tuyến.'
-                : 'Bạn chưa nộp hồ sơ xét tuyển nào. Hãy chọn trường và nộp hồ sơ trực tuyến ngay!'}
-            </p>
-            <Button
-              variant="tonal"
-              size="M"
-              onClick={() => (!isLoggedIn || isGuest ? openAuthModal() : setActiveTab(0))}
-            >
-              {!isLoggedIn || isGuest ? 'Đăng nhập ngay' : 'Khám phá trường ngay'}
-            </Button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {myApplications.slice(0, 2).map((app) => {
-              const meta = getStatusMeta(app.status);
-              return (
-                <div
-                  key={app.id}
-                  onClick={() => openApplicationDetail(app)}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '20px',
-                    border: '1.5px solid #E2E8F0',
-                    padding: '16px',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', gap: '8px' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 800, color: '#2563EB', backgroundColor: '#EFF6FF', padding: '3px 8px', borderRadius: '8px' }}>
-                      {app.code}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '11px',
-                        fontWeight: 800,
-                        color: meta.color,
-                        backgroundColor: meta.bg,
-                        border: `1px solid ${meta.border}`,
-                        padding: '3px 8px',
-                        borderRadius: '8px',
-                      }}
-                    >
-                      {meta.label}
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-                    <UniversityAvatar code={app.uniCode} size={38} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {app.uniName}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#64748B' }}>
-                        {app.major}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #F1F5F9', paddingTop: '10px', fontSize: '12px' }}>
-                    <span style={{ color: '#94A3B8' }}>
-                      Thời gian: {app.submittedAt}
-                    </span>
-                    <span style={{ color: '#2563EB', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      Xem chi tiết hồ sơ <ChevronRight size={14} />
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-
-            {myApplications.length > 2 && (
-              <Button
-                variant="tonal"
-                size="M"
-                fullWidth
-                onClick={openAllApplications}
-              >
-                Xem tất cả {myApplications.length} hồ sơ (chia theo trạng thái) →
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* 5B. 1-1 Consultation Bookings Section */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Calendar size={20} color="#0D9488" />
-            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-              Lịch hẹn tư vấn 1-1 ({myBookings.length})
-            </h4>
           </div>
           <button
-            onClick={() => openBookConsultation()}
+            type="button"
+            onClick={() => openApplicationDetail(admittedApp)}
             style={{
-              border: 'none',
-              backgroundColor: '#F0FDFA',
-              color: '#0D9488',
-              fontSize: '12px',
-              fontWeight: 800,
-              padding: '4px 10px',
+              padding: '7px 11px',
               borderRadius: '10px',
+              border: 'none',
+              backgroundColor: '#059669',
+              color: '#FFFFFF',
+              fontSize: '11.5px',
+              fontWeight: 800,
               cursor: 'pointer',
               flexShrink: 0,
             }}
           >
-            + Đặt lịch mới
+            Xem giấy báo
           </button>
         </div>
+      )}
 
-        {myBookings.length === 0 ? (
-          <div
+      {isLoggedIn && !isGuest && missingDocApp && (
+        <div
+          style={{
+            backgroundColor: '#FFFBEB',
+            border: '1.5px solid #FCD34D',
+            borderRadius: '18px',
+            padding: '14px 16px',
+            marginBottom: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '11px', backgroundColor: '#D97706', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <AlertCircle size={19} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#92400E' }}>
+                Cần bổ sung minh chứng ({missingDocApp.code})
+              </div>
+              <div style={{ fontSize: '11.5px', color: '#B45309', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {missingDocApp.uniName} đang chờ bạn cập nhật
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => openApplicationDetail(missingDocApp)}
             style={{
-              padding: '20px',
-              backgroundColor: '#FFFFFF',
-              borderRadius: '20px',
-              textAlign: 'center',
-              border: '1px dashed #CBD5E1',
+              padding: '7px 11px',
+              borderRadius: '10px',
+              border: 'none',
+              backgroundColor: '#D97706',
+              color: '#FFFFFF',
+              fontSize: '11.5px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              flexShrink: 0,
             }}
           >
-            <Calendar size={26} color="#CBD5E1" style={{ margin: '0 auto 8px' }} />
-            <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#64748B' }}>
-              Đặt lịch gặp gỡ trực tiếp 1-1 cùng giảng viên và ban tuyển sinh các trường đại học.
-            </p>
-            <Button variant="tonal" size="M" onClick={() => openBookConsultation()}>
-              Đặt lịch tư vấn 1-1 ngay
-            </Button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {myBookings.map((bk) => {
-              const st = bookingStates[bk.id] || 'pending';
-              const badge =
-                st === 'done'
-                  ? { label: 'Hoàn thành', color: '#059669', bg: '#ECFDF5', border: '#A7F3D0' }
-                  : st === 'contacted'
-                  ? { label: 'Đã liên hệ', color: '#2563EB', bg: '#EFF6FF', border: '#BFDBFE' }
-                  : { label: 'Chờ liên hệ', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' };
+            Bổ sung ngay
+          </button>
+        </div>
+      )}
 
-              return (
-                <div
-                  key={bk.id}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '18px',
-                    border: '1px solid #E2E8F0',
-                    padding: '14px 16px',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', gap: '8px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>
-                      {bk.uniName || `Trường ${bk.uniCode}`} ({bk.uniCode})
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '11px',
-                        fontWeight: 800,
-                        color: badge.color,
-                        backgroundColor: badge.bg,
-                        border: `1px solid ${badge.border}`,
-                        padding: '2px 8px',
-                        borderRadius: '8px',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {badge.label}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '12.5px', color: '#2563EB', fontWeight: 700, marginBottom: '4px' }}>
-                    Ngành tư vấn: {bk.major}
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#64748B' }}>
-                    🕒 {bk.dateTime} {bk.channel ? `• ${bk.channel}` : ''}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+      {/* 3. Clean 3-Sub-Tab Switcher ("Nhìn 3 Giây Hiểu Ngay") */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '6px',
+          padding: '5px',
+          backgroundColor: '#E2E8F0',
+          borderRadius: '15px',
+          marginBottom: '18px',
+        }}
+      >
+        {[
+          { id: 'apps' as const, label: `Hồ sơ (${myApplications.length})` },
+          { id: 'bookings' as const, label: `Lịch 1-1 (${myBookings.length})` },
+          { id: 'saved' as const, label: `Đã lưu (${favoriteUnis.length})` },
+        ].map((tab) => {
+          const active = subTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setSubTab(tab.id)}
+              style={{
+                padding: '9px 6px',
+                borderRadius: '11px',
+                border: 'none',
+                backgroundColor: active ? '#FFFFFF' : 'transparent',
+                color: active ? '#2563EB' : '#475569',
+                fontSize: '12px',
+                fontWeight: active ? 800 : 700,
+                cursor: 'pointer',
+                boxShadow: active ? '0 2px 6px rgba(15, 23, 42, 0.08)' : 'none',
+                transition: 'all 0.15s ease',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
-      {/* 6. Wishlist (Trường yêu thích) */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Heart size={20} color="#EF4444" fill="#EF4444" />
-            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-              Trường đã lưu ({favoriteUnis.length})
-            </h4>
-          </div>
-        </div>
-
-        {favoriteUnis.length === 0 ? (
-          <div
-            style={{
-              padding: '24px',
-              backgroundColor: '#FFFFFF',
-              borderRadius: '20px',
-              textAlign: 'center',
-              border: '1px dashed #CBD5E1',
-            }}
-          >
-            <Heart size={28} color="#CBD5E1" style={{ margin: '0 auto 8px' }} />
-            <p style={{ margin: 0, fontSize: '13px', color: '#64748B' }}>
-              Chưa có trường nào được lưu. Bấm biểu tượng trái tim để lưu trường bạn yêu thích!
-            </p>
-          </div>
-        ) : (
-          <div
-            style={{
-              display: 'flex',
-              gap: '12px',
-              overflowX: 'auto',
-              paddingBottom: '6px',
-            }}
-          >
-            {favoriteUnis.map((uni) => (
-              <div
-                key={uni.id}
-                onClick={() => openUniDetail(uni.id)}
+      {/* SUB-TAB 1: SUBMITTED APPLICATIONS */}
+      {subTab === 'apps' && (
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FileText size={20} color="#2563EB" />
+              <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
+                Hồ sơ xét tuyển ({myApplications.length})
+              </h4>
+            </div>
+            {myApplications.length > 0 && (
+              <button
+                onClick={openAllApplications}
                 style={{
-                  minWidth: '220px',
-                  width: '220px',
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '20px',
-                  border: '1px solid #E2E8F0',
-                  padding: '12px',
+                  border: 'none',
+                  backgroundColor: '#EFF6FF',
+                  color: '#2563EB',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  padding: '5px 10px',
+                  borderRadius: '10px',
                   cursor: 'pointer',
-                  flexShrink: 0,
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '2px',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                  <UniversityAvatar code={uni.code} size={40} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: '13px',
-                        fontWeight: 700,
-                        color: '#0F172A',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {uni.name}
+                Mở toàn màn hình →
+              </button>
+            )}
+          </div>
+
+          {myApplications.length === 0 ? (
+            <div
+              style={{
+                padding: '24px',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '20px',
+                textAlign: 'center',
+                border: '1px dashed #CBD5E1',
+              }}
+            >
+              <FileText size={28} color="#CBD5E1" style={{ margin: '0 auto 8px' }} />
+              <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#64748B' }}>
+                {!isLoggedIn || isGuest
+                  ? 'Đăng nhập tài khoản thí sinh để nộp và theo dõi hồ sơ xét tuyển đại học trực tuyến.'
+                  : 'Bạn chưa nộp hồ sơ xét tuyển nào. Hãy chọn trường và nộp hồ sơ trực tuyến ngay!'}
+              </p>
+              <Button
+                variant="tonal"
+                size="M"
+                onClick={() => (!isLoggedIn || isGuest ? openAuthModal() : setActiveTab(0))}
+              >
+                {!isLoggedIn || isGuest ? 'Đăng nhập ngay' : 'Khám phá trường ngay'}
+              </Button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {myApplications.map((app) => {
+                const meta = getStatusMeta(app.status);
+                return (
+                  <div
+                    key={app.id}
+                    onClick={() => openApplicationDetail(app)}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '20px',
+                      border: '1.5px solid #E2E8F0',
+                      padding: '16px',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', gap: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 800, color: '#2563EB', backgroundColor: '#EFF6FF', padding: '3px 8px', borderRadius: '8px' }}>
+                        {app.code}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          color: meta.color,
+                          backgroundColor: meta.bg,
+                          border: `1px solid ${meta.border}`,
+                          padding: '3px 8px',
+                          borderRadius: '8px',
+                        }}
+                      >
+                        {meta.label}
+                      </span>
                     </div>
-                    <div style={{ fontSize: '11px', color: '#64748B' }}>
-                      {uni.code} • {uni.region}
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+                      <UniversityAvatar code={app.uniCode} size={38} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {app.uniName}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#64748B' }}>
+                          {app.major}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #F1F5F9', paddingTop: '10px', fontSize: '12px' }}>
+                      <span style={{ color: '#94A3B8' }}>
+                        Nộp lúc: {app.submittedAt}
+                      </span>
+                      <span style={{ color: '#2563EB', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {app.status === 'Thiếu hồ sơ' ? 'Bổ sung ngay' : 'Chi tiết'} <ChevronRight size={14} />
+                      </span>
                     </div>
                   </div>
-                </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
-                <div style={{ fontSize: '12px', fontWeight: 700, color: '#2563EB', marginBottom: '8px' }}>
-                  {uni.tuitionMin} - {uni.tuitionMax} tr/năm
-                </div>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFavorite(uni.id);
-                  }}
-                  style={{
-                    width: '100%',
-                    padding: '6px',
-                    borderRadius: '10px',
-                    backgroundColor: '#FEF2F2',
-                    color: '#EF4444',
-                    border: 'none',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '4px',
-                  }}
-                >
-                  <Trash2 size={12} /> Bỏ lưu
-                </button>
-              </div>
-            ))}
+      {/* SUB-TAB 2: 1-1 CONSULTATION BOOKINGS */}
+      {subTab === 'bookings' && (
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Calendar size={20} color="#0D9488" />
+              <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
+                Lịch hẹn tư vấn 1-1 ({myBookings.length})
+              </h4>
+            </div>
+            <button
+              onClick={() => openBookConsultation()}
+              style={{
+                border: 'none',
+                backgroundColor: '#F0FDFA',
+                color: '#0D9488',
+                fontSize: '12px',
+                fontWeight: 800,
+                padding: '5px 10px',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              + Đặt lịch mới
+            </button>
           </div>
-        )}
-      </div>
+
+          {myBookings.length === 0 ? (
+            <div
+              style={{
+                padding: '20px',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '20px',
+                textAlign: 'center',
+                border: '1px dashed #CBD5E1',
+              }}
+            >
+              <Calendar size={26} color="#CBD5E1" style={{ margin: '0 auto 8px' }} />
+              <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#64748B' }}>
+                Đặt lịch gặp gỡ trực tiếp 1-1 cùng giảng viên và ban tuyển sinh các trường đại học.
+              </p>
+              <Button variant="tonal" size="M" onClick={() => openBookConsultation()}>
+                Đặt lịch tư vấn 1-1 ngay
+              </Button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {myBookings.map((bk) => {
+                const st = bookingStates[bk.id] || 'pending';
+                const badge =
+                  st === 'done'
+                    ? { label: 'Hoàn thành', color: '#059669', bg: '#ECFDF5', border: '#A7F3D0' }
+                    : st === 'contacted'
+                    ? { label: 'Đã liên hệ', color: '#2563EB', bg: '#EFF6FF', border: '#BFDBFE' }
+                    : { label: 'Chờ liên hệ', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' };
+
+                return (
+                  <div
+                    key={bk.id}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '18px',
+                      border: '1px solid #E2E8F0',
+                      padding: '14px 16px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', gap: '8px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>
+                        {bk.uniName || `Trường ${bk.uniCode}`} ({bk.uniCode})
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          color: badge.color,
+                          backgroundColor: badge.bg,
+                          border: `1px solid ${badge.border}`,
+                          padding: '2px 8px',
+                          borderRadius: '8px',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {badge.label}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '12.5px', color: '#2563EB', fontWeight: 700, marginBottom: '4px' }}>
+                      Ngành tư vấn: {bk.major}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748B' }}>
+                      🕒 {bk.dateTime} {bk.channel ? `• ${bk.channel}` : ''}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* SUB-TAB 3: SAVED UNIVERSITIES, HOLLAND & THPT ROADMAP */}
+      {subTab === 'saved' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '24px' }}>
+          {/* Saved Wishlist */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <Heart size={20} color="#EF4444" fill="#EF4444" />
+              <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
+                Trường đã lưu ({favoriteUnis.length})
+              </h4>
+            </div>
+
+            {favoriteUnis.length === 0 ? (
+              <div
+                style={{
+                  padding: '22px',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '20px',
+                  textAlign: 'center',
+                  border: '1px dashed #CBD5E1',
+                }}
+              >
+                <Heart size={26} color="#CBD5E1" style={{ margin: '0 auto 8px' }} />
+                <p style={{ margin: 0, fontSize: '13px', color: '#64748B' }}>
+                  Chưa có trường nào được lưu. Bấm biểu tượng trái tim để lưu trường bạn yêu thích!
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '6px' }}>
+                {favoriteUnis.map((uni) => (
+                  <div
+                    key={uni.id}
+                    onClick={() => openUniDetail(uni.id)}
+                    style={{
+                      minWidth: '220px',
+                      width: '220px',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '20px',
+                      border: '1px solid #E2E8F0',
+                      padding: '12px',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                      <UniversityAvatar code={uni.code} size={40} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {uni.name}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#64748B' }}>
+                          {uni.code} • {uni.region}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#2563EB', marginBottom: '8px' }}>
+                      {uni.tuitionMin} - {uni.tuitionMax} tr/năm
+                    </div>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(uni.id);
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '6px',
+                        borderRadius: '10px',
+                        backgroundColor: '#FEF2F2',
+                        color: '#EF4444',
+                        border: 'none',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      <Trash2 size={12} /> Bỏ lưu
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Holland RIASEC Result Summary */}
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '22px',
+              padding: '18px',
+              border: '1px solid #E2E8F0',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Compass size={20} color="#2563EB" />
+                <h4 style={{ margin: 0, fontSize: '15.5px', fontWeight: 800, color: '#0F172A' }}>
+                  Định hướng Holland RIASEC
+                </h4>
+              </div>
+              {hollandResult && (
+                <span style={{ fontSize: '11.5px', color: '#94A3B8' }}>{hollandResult.completedAt}</span>
+              )}
+            </div>
+
+            {hollandResult ? (
+              <div>
+                <div style={{ backgroundColor: '#EFF6FF', borderRadius: '14px', padding: '12px 14px', marginBottom: '12px' }}>
+                  <div style={{ fontSize: '14.5px', fontWeight: 800, color: '#1D4ED8' }}>
+                    Mã {hollandResult.primaryCode} — {getHollandName(hollandResult.primaryCode)}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
+                    Top 3 nhóm nổi trội: {hollandResult.topCodes.join(' - ')}
+                  </div>
+                </div>
+                <Button variant="tonal" size="M" fullWidth onClick={() => openCareerPath(hollandResult.primaryCode)}>
+                  Xem lộ trình nghề nghiệp THPT
+                </Button>
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '12px 0' }}>
+                <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#64748B' }}>
+                  Bạn chưa hoàn thành bài khảo sát tính cách nào.
+                </p>
+                <Button variant="tonal" size="M" onClick={() => setActiveTab(1)}>
+                  Làm trắc nghiệm ngay
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Dashboard Theo dõi Năng lực THPT */}
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '22px',
+              padding: '18px',
+              border: '1px solid #E2E8F0',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+            }}
+          >
+            <h4 style={{ margin: '0 0 12px', fontSize: '15.5px', fontWeight: 800, color: '#0F172A' }}>
+              Theo dõi Năng lực THPT
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '14px' }}>
+              <div style={{ backgroundColor: '#F8FAFC', padding: '10px', borderRadius: '14px', textAlign: 'center' }}>
+                <div style={{ fontSize: '19px', fontWeight: 800, color: '#2563EB' }}>855</div>
+                <div style={{ fontSize: '11px', color: '#64748B' }}>Điểm ĐGNL</div>
+              </div>
+              <div style={{ backgroundColor: '#F8FAFC', padding: '10px', borderRadius: '14px', textAlign: 'center' }}>
+                <div style={{ fontSize: '19px', fontWeight: 800, color: '#10B981' }}>18</div>
+                <div style={{ fontSize: '11px', color: '#64748B' }}>Đề đã làm</div>
+              </div>
+              <div style={{ backgroundColor: '#F8FAFC', padding: '10px', borderRadius: '14px', textAlign: 'center' }}>
+                <div style={{ fontSize: '19px', fontWeight: 800, color: '#F59E0B' }}>{favoriteIds.length}</div>
+                <div style={{ fontSize: '11px', color: '#64748B' }}>Mục tiêu</div>
+              </div>
+            </div>
+            <div>
+              <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#1E293B', display: 'block', marginBottom: '8px' }}>
+                Tiến độ điểm thi Đánh giá năng lực theo tháng:
+              </span>
+              <LineChart height={125} />
+            </div>
+          </div>
+
+          {/* Compact UniPath VIP Card */}
+          <div
+            style={{
+              background: profile.isPremium
+                ? 'linear-gradient(135deg, #059669 0%, #047857 100%)'
+                : 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+              borderRadius: '22px',
+              padding: '18px',
+              color: '#FFFFFF',
+              boxShadow: '0 6px 18px rgba(217, 119, 6, 0.2)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <Crown size={20} color="#FDE68A" />
+              <h4 style={{ margin: 0, fontSize: '15.5px', fontWeight: 800 }}>
+                {profile.isPremium ? 'Hội viên UniPath VIP Đã Kích Hoạt' : 'Nâng cấp Hội viên UniPath VIP'}
+              </h4>
+            </div>
+            <p style={{ margin: '0 0 12px', fontSize: '12.5px', opacity: 0.92, lineHeight: 1.5 }}>
+              {profile.isPremium
+                ? 'Bạn đã mở khóa ưu tiên xếp lịch tư vấn 1-1 và trọn bộ phân tích chuyên sâu 30 trường.'
+                : 'Mở khóa ưu tiên xếp lịch tư vấn 1-1 cùng chuyên gia và báo cáo phân tích sâu (Demo miễn phí).'}
+            </p>
+            {!profile.isPremium && (
+              <button
+                type="button"
+                onClick={() => setShowUpgradeModal(true)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  backgroundColor: '#FFFFFF',
+                  color: '#B45309',
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
+              >
+                Kích hoạt Gói VIP (Demo) →
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 6. Action Menu Links */}
       <div

@@ -3,103 +3,77 @@ import {
   LayoutDashboard,
   FileText,
   GraduationCap,
-  User,
-  LogOut,
+  ShieldCheck,
   Search,
   Clock,
   CheckCircle2,
-  AlertCircle,
   X,
   ChevronRight,
   Award,
   Briefcase,
-  MapPin,
-  Star,
-  School,
   Bell,
-  Settings,
   Calendar,
   Download,
   Phone,
-  ShieldCheck,
+  Mail,
   Edit2,
   Check,
+  Lock,
+  ExternalLink,
+  ArrowRight,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import type { BookingState } from '../../context/AppContext';
+import { getStatusMeta } from '../../types';
 import type { ApplicationRecord, ApplicationStatus } from '../../types';
 import { UniversityAvatar } from '../common/UI';
-
-// =========================================================================
-// UNIVERSITY APP v2 — Cổng tuyển sinh ĐH Phú Xuân (khung giao diện riêng)
-// Điều hướng riêng: Tổng quan / Hồ sơ PXU / Tư vấn / Ngành học / Tài khoản.
-// Dữ liệu phân lập tuyệt đối theo uniCode 'PXU': hồ sơ, lịch tư vấn và nhật
-// ký xử lý chỉ của PXU; hệ thống tự chặn thao tác trái quyền ở tầng xử lý.
-// =========================================================================
+import { AccountRoleMenu } from '../common/AccountRoleMenu';
 
 type UniSection = 'dashboard' | 'apps' | 'bookings' | 'programs' | 'account';
 type AppSort = 'list' | 'scoreDesc' | 'scoreAsc' | 'nameAsc';
 
-const NAV_ITEMS: { id: UniSection; label: string; icon: React.ReactNode }[] = [
-  { id: 'dashboard', label: 'Tổng quan', icon: <LayoutDashboard size={20} /> },
-  { id: 'apps', label: 'Hồ sơ PXU', icon: <FileText size={20} /> },
-  { id: 'bookings', label: 'Tư vấn', icon: <Calendar size={20} /> },
-  { id: 'programs', label: 'Ngành học', icon: <GraduationCap size={20} /> },
-  { id: 'account', label: 'Tài khoản', icon: <User size={20} /> },
-];
-
-const PXU_STATUSES: ApplicationStatus[] = ['Đang xét duyệt', 'Hồ sơ hợp lệ', 'Thiếu hồ sơ', 'Đã trúng tuyển', 'Đã hủy', 'Đã bị hủy'];
-
-const statusColor = (status: ApplicationStatus): string => {
-  switch (status) {
-    case 'Đã trúng tuyển':
-      return '#059669';
-    case 'Hồ sơ hợp lệ':
-      return '#0EA5E9';
-    case 'Thiếu hồ sơ':
-      return '#2563EB';
-    case 'Đang xét duyệt':
-      return '#D97706';
-    case 'Đã bị hủy':
-      return '#DC2626';
-    default:
-      return '#64748B';
-  }
-};
-
-const StatusChip: React.FC<{ status: ApplicationStatus }> = ({ status }) => (
-  <span
-    style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '5px',
-      padding: '3px 10px',
-      borderRadius: '999px',
-      fontSize: '11px',
-      fontWeight: 800,
-      color: statusColor(status),
-      backgroundColor: `${statusColor(status)}1A`,
-      whiteSpace: 'nowrap',
-      flexShrink: 0,
-    }}
-  >
-    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: statusColor(status), flexShrink: 0 }} />
-    {status}
-  </span>
-);
-
-const cardStyle: React.CSSProperties = {
-  backgroundColor: '#FFFFFF',
-  borderRadius: '20px',
-  border: '1px solid #DCE8E1',
-  boxShadow: '0 4px 18px rgba(6, 78, 59, 0.05)',
-  padding: '20px',
-  boxSizing: 'border-box',
-  minWidth: 0,
-};
-
 const EMERALD = '#059669';
 const EMERALD_DARK = '#064E3B';
+
+const NAV_ITEMS: { id: UniSection; label: string; shortLabel: string; icon: React.ReactNode }[] = [
+  { id: 'dashboard', label: 'Tổng quan Tuyển sinh', shortLabel: 'Tổng quan', icon: <LayoutDashboard size={19} /> },
+  { id: 'apps', label: 'Hồ sơ nộp vào PXU', shortLabel: 'Hồ sơ PXU', icon: <FileText size={19} /> },
+  { id: 'bookings', label: 'Lịch tư vấn 1-1 PXU', shortLabel: 'Tư vấn 1-1', icon: <Calendar size={19} /> },
+  { id: 'programs', label: 'Ngành học & Chỉ tiêu OJT', shortLabel: 'Ngành học', icon: <GraduationCap size={19} /> },
+  { id: 'account', label: 'Phân quyền Đơn vị', shortLabel: 'Đơn vị', icon: <ShieldCheck size={19} /> },
+];
+
+const PXU_QUICK_NOTES = [
+  'Chúc mừng em đủ điều kiện Trúng tuyển sớm đợt 1 vào ĐH Phú Xuân!',
+  'Đề xuất xét cấp Học bổng Doanh nghiệp OJT 50% học phí học kỳ đầu.',
+  'Vui lòng bổ sung ảnh chụp Học bạ THPT học kỳ 1 lớp 12 rõ nét.',
+  'Vui lòng bổ sung ảnh chụp CCCD 2 mặt để hoàn tất hồ sơ xét tuyển.',
+];
+
+const StatusBadge: React.FC<{ status: ApplicationStatus }> = ({ status }) => {
+  const m = getStatusMeta(status);
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        padding: '4px 10px',
+        borderRadius: '999px',
+        fontSize: '11.5px',
+        fontWeight: 800,
+        color: m.color,
+        backgroundColor: m.bg,
+        border: `1px solid ${m.border}`,
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+      }}
+    >
+      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: m.dot, flexShrink: 0 }} />
+      {m.label}
+    </span>
+  );
+};
 
 const exportAppsCsv = (rows: ApplicationRecord[], filename: string) => {
   const header = 'Mã hồ sơ,Thí sinh,Trường,Ngành,Điểm,Trạng thái,SĐT,Email,Ngày nộp';
@@ -116,6 +90,16 @@ const exportAppsCsv = (rows: ApplicationRecord[], filename: string) => {
   URL.revokeObjectURL(url);
 };
 
+const surfaceCard: React.CSSProperties = {
+  backgroundColor: '#FFFFFF',
+  borderRadius: '18px',
+  border: '1px solid #E2E8F0',
+  boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)',
+  padding: '20px',
+  boxSizing: 'border-box',
+  minWidth: 0,
+};
+
 export const UniversityApp: React.FC = () => {
   const {
     user,
@@ -130,8 +114,6 @@ export const UniversityApp: React.FC = () => {
     openApplicationDetail,
     openNotifications,
     unreadNotificationCount,
-    openSettings,
-    logout,
     viewMode,
   } = useApp();
 
@@ -139,35 +121,51 @@ export const UniversityApp: React.FC = () => {
   const [section, setSection] = useState<UniSection>('dashboard');
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [reviewerNote, setReviewerNote] = useState('');
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [appSearch, setAppSearch] = useState('');
   const [appStatus, setAppStatus] = useState<string>('Tất cả');
+  const [appMajor, setAppMajor] = useState<string>('Tất cả');
   const [appSort, setAppSort] = useState<AppSort>('list');
+  const [mobileBkTab, setMobileBkTab] = useState<BookingState>('pending');
 
-  // --- Quản lý điểm chuẩn & học phí riêng của PXU ---
+  // PXU Cutoff & Tuition inline editor
   const [isEditingPxu, setIsEditingPxu] = useState(false);
-  const [pxuScoreInput, setPxuScoreInput] = useState<number>(25.2);
+  const [pxuScoreInput, setPxuScoreInput] = useState<number>(18.5);
   const [pxuTuitionInput, setPxuTuitionInput] = useState<number>(18);
 
-  // --- Dữ liệu riêng của PXU (phân lập theo uniCode) ---
+  // Strict PXU Data Isolation
   const pxuUni = universitiesList.find((u) => u.code === 'PXU');
   const pxuApps = applications.filter((a) => a.uniCode === 'PXU');
   const pxuBookings = bookings.filter((b) => b.uniCode === 'PXU');
-  const bookingStateOf = (id: string): BookingState => bookingStates[id] || 'pending';
   const pxuLog = processingLog.filter((l) => l.uniCode === 'PXU');
+
+  const bookingStateOf = (id: string): BookingState => bookingStates[id] || 'pending';
+  const pendingBookings = pxuBookings.filter((b) => bookingStateOf(b.id) === 'pending');
+  const contactedBookings = pxuBookings.filter((b) => bookingStateOf(b.id) === 'contacted');
+  const doneBookings = pxuBookings.filter((b) => bookingStateOf(b.id) === 'done');
+
   const countByStatus = (s: ApplicationStatus) => pxuApps.filter((a) => a.status === s).length;
   const pendingApps = pxuApps.filter((a) => a.status === 'Đang xét duyệt');
   const missingApps = pxuApps.filter((a) => a.status === 'Thiếu hồ sơ');
+  const validCount = countByStatus('Hồ sơ hợp lệ');
+  const admittedCount = countByStatus('Đã trúng tuyển');
 
-  const majorApps = (major: string) => pxuApps.filter((a) => a.major.toLowerCase().includes(major.toLowerCase()));
-  const majorCount = (major: string) => majorApps(major).length;
+  const getPxuMajorCutoff = (major: string): number => {
+    if (!pxuUni) return 18.5;
+    return pxuUni.cutoffScores[major] ?? pxuUni.score2024;
+  };
 
   const filteredApps = pxuApps.filter((a) => {
     const matchStatus = appStatus === 'Tất cả' || a.status === appStatus;
+    const matchMajor = appMajor === 'Tất cả' || a.major === appMajor;
     const kw = appSearch.trim().toLowerCase();
-    const matchKw = !kw || a.candidateName.toLowerCase().includes(kw) || a.code.toLowerCase().includes(kw) || a.major.toLowerCase().includes(kw);
-    return matchStatus && matchKw;
+    const matchKw =
+      !kw ||
+      a.candidateName.toLowerCase().includes(kw) ||
+      a.code.toLowerCase().includes(kw) ||
+      a.major.toLowerCase().includes(kw);
+    return matchStatus && matchMajor && matchKw;
   });
+
   const sortedApps = [...filteredApps].sort((a, b) => {
     if (appSort === 'scoreDesc') return b.score - a.score;
     if (appSort === 'scoreAsc') return a.score - b.score;
@@ -176,1002 +174,1227 @@ export const UniversityApp: React.FC = () => {
   });
 
   const selectedApp: ApplicationRecord | null =
-    pxuApps.find((a) => a.id === selectedAppId) || pendingApps[0] || pxuApps[0] || null;
+    pxuApps.find((a) => a.id === selectedAppId) || pendingApps[0] || sortedApps[0] || pxuApps[0] || null;
 
-  const selectApp = (app: ApplicationRecord, goToApps: boolean) => {
+  const selectAppForReview = (app: ApplicationRecord, switchTab = false) => {
     setSelectedAppId(app.id);
-    if (goToApps) setSection('apps');
-    if (!isDesktop) {
-      window.setTimeout(() => {
-        document.getElementById("app-inspector")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, goToApps ? 180 : 80);
-    }
+    if (switchTab) setSection('apps');
+    window.setTimeout(() => {
+      document.getElementById('pxu-app-inspector')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 90);
   };
 
-  const selectStyle: React.CSSProperties = {
-    padding: '9px 12px',
-    borderRadius: '11px',
-    border: '1px solid #DCE8E1',
-    backgroundColor: '#FFFFFF',
-    fontSize: '12.5px',
-    fontWeight: 700,
-    color: '#334155',
-    outline: 'none',
-    cursor: 'pointer',
-    maxWidth: '100%',
+  const jumpToMajorApps = (major: string) => {
+    setAppMajor(major);
+    setAppStatus('Tất cả');
+    setSection('apps');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // ---------------------------------------------------------------------
+  const currentNavMeta = NAV_ITEMS.find((i) => i.id === section) || NAV_ITEMS[0];
+
+  // =========================================================================
+  // SECTION 1: PXU EXECUTIVE DASHBOARD
+  // =========================================================================
   const renderDashboard = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Hero của trường */}
+      {/* Sleek PXU Campus Executive Banner */}
       <div
         style={{
-          borderRadius: '24px',
+          borderRadius: '20px',
           overflow: 'hidden',
           position: 'relative',
-          minHeight: isDesktop ? '190px' : '160px',
-          display: 'flex',
-          alignItems: 'flex-end',
           backgroundColor: EMERALD_DARK,
+          color: '#FFFFFF',
+          padding: isDesktop ? '24px 28px' : '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '20px',
+          flexWrap: 'wrap',
         }}
       >
-        <img src="/images/campus_pxu.jpg" alt="Đại học Phú Xuân" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55 }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(6,60,44,0.92) 0%, rgba(6,95,70,0.65) 55%, rgba(6,95,70,0.15) 100%)' }} />
-        <div style={{ position: 'relative', padding: isDesktop ? '26px' : '20px', color: '#FFFFFF', maxWidth: '640px', minWidth: 0 }}>
-          <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', color: '#A7F3D0', marginBottom: '6px' }}>
-            Cổng tuyển sinh · Mùa tuyển sinh 2026
+        <img
+          src="/images/campus_pxu.jpg"
+          alt="Đại học Phú Xuân"
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.28 }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(95deg, rgba(4,47,46,0.96) 0%, rgba(6,78,59,0.88) 60%, rgba(5,150,105,0.72) 100%)',
+          }}
+        />
+
+        <div style={{ position: 'relative', maxWidth: '680px', minWidth: 0 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '999px', backgroundColor: 'rgba(167,243,208,0.16)', border: '1px solid rgba(167,243,208,0.35)', fontSize: '11px', fontWeight: 800, color: '#A7F3D0', marginBottom: '10px' }}>
+            <Lock size={12} /> Cổng CRM Tuyển sinh Độc quyền · Cô lập dữ liệu riêng PXU
           </div>
-          <h1 style={{ margin: '0 0 6px', fontSize: isDesktop ? '27px' : '22px', fontWeight: 900, lineHeight: 1.25 }}>Trường Đại học Phú Xuân (PXU)</h1>
-          <p style={{ margin: 0, fontSize: '13.5px', lineHeight: 1.55, color: '#D1FAE5' }}>
-            {pxuUni?.desc || 'Trường đại học tiên phong đào tạo theo mô hình thực chiến gắn liền doanh nghiệp tại cố đô Huế.'}
+          <h2 style={{ margin: '0 0 6px', fontSize: isDesktop ? '24px' : '20px', fontWeight: 900, lineHeight: 1.25 }}>
+            Trường Đại học Phú Xuân (PXU) — Kỳ Tuyển Sinh 2026
+          </h2>
+          <p style={{ margin: 0, fontSize: '13px', color: '#D1FAE5', lineHeight: 1.55 }}>
+            Đào tạo thực chiến gắn liền doanh nghiệp (OJT ngay từ năm nhất) tại Cố đô Huế · Điểm chuẩn tham chiếu hiện hành:{' '}
+            <strong>{pxuUni?.score2024 ?? 18.5}đ</strong> · Học phí: <strong>{pxuUni?.tuitionMin ?? 18}–{pxuUni?.tuitionMax ?? 22} triệu/năm</strong>.
           </p>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
-            {[
-              `Học phí ${pxuUni ? `${pxuUni.tuitionMin}–${pxuUni.tuitionMax}` : '18–22'} triệu/năm`,
-              `Việc làm sau tốt nghiệp ${pxuUni?.employmentRate ?? 92}%`,
-              `${pxuBookings.length} lịch tư vấn đã đặt`,
-            ].map((chip) => (
-              <span key={chip} style={{ fontSize: '11.5px', fontWeight: 700, backgroundColor: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.3)', padding: '4px 11px', borderRadius: '999px', whiteSpace: 'nowrap' }}>
-                {chip}
-              </span>
-            ))}
-          </div>
+        </div>
+
+        <div style={{ position: 'relative', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setSection('programs')}
+            style={{
+              padding: '10px 16px',
+              borderRadius: '11px',
+              border: '1px solid rgba(255,255,255,0.35)',
+              backgroundColor: 'rgba(255,255,255,0.14)',
+              color: '#FFFFFF',
+              fontSize: '12.5px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              backdropFilter: 'blur(6px)',
+            }}
+          >
+            ⚙️ Cấu hình Điểm chuẩn & OJT
+          </button>
+          <button
+            type="button"
+            onClick={() => exportAppsCsv(pxuApps, 'danh-sach-thi-sinh-pxu-2026.csv')}
+            style={{
+              padding: '10px 16px',
+              borderRadius: '11px',
+              border: 'none',
+              backgroundColor: '#FFFFFF',
+              color: EMERALD_DARK,
+              fontSize: '12.5px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <Download size={14} /> Xuất danh sách PXU
+          </button>
         </div>
       </div>
 
-      {/* KPI của trường */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(132px, 1fr))', gap: '12px' }}>
+      {/* 4 Actionable KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '14px' }}>
         {[
-          { label: 'Hồ sơ vào PXU', value: pxuApps.length, icon: <FileText size={19} color={EMERALD} />, bg: '#ECFDF5' },
-          { label: 'Đang chờ duyệt', value: countByStatus('Đang xét duyệt'), icon: <Clock size={19} color="#D97706" />, bg: '#FFFBEB' },
-          { label: 'Thiếu hồ sơ', value: countByStatus('Thiếu hồ sơ'), icon: <AlertCircle size={19} color="#2563EB" />, bg: '#EFF6FF' },
-          { label: 'Đã trúng tuyển PXU', value: countByStatus('Đã trúng tuyển'), icon: <CheckCircle2 size={19} color={EMERALD} />, bg: '#ECFDF5' },
-          { label: 'Lịch tư vấn PXU', value: pxuBookings.length, icon: <Calendar size={19} color="#7C3AED" />, bg: '#F5F3FF' },
+          {
+            title: 'Tổng hồ sơ nộp PXU',
+            value: pxuApps.length,
+            sub: `${pxuUni?.majors.length ?? 6} ngành đào tạo OJT`,
+            accent: EMERALD,
+            bg: '#ECFDF5',
+            icon: <FileText size={20} color={EMERALD} />,
+            onClick: () => {
+              setAppStatus('Tất cả');
+              setSection('apps');
+            },
+          },
+          {
+            title: 'Chờ Hội đồng PXU duyệt',
+            value: pendingApps.length,
+            sub: `${missingApps.length} hồ sơ chờ thí sinh bổ sung`,
+            accent: '#D97706',
+            bg: '#FFFBEB',
+            icon: <Clock size={20} color="#D97706" />,
+            onClick: () => {
+              setAppStatus('Đang xét duyệt');
+              setSection('apps');
+            },
+          },
+          {
+            title: 'Đã trúng tuyển sớm PXU',
+            value: admittedCount,
+            sub: `${validCount} hồ sơ hợp lệ vòng sơ duyệt`,
+            accent: '#047857',
+            bg: '#D1FAE5',
+            icon: <CheckCircle2 size={20} color="#047857" />,
+            onClick: () => {
+              setAppStatus('Đã trúng tuyển');
+              setSection('apps');
+            },
+          },
+          {
+            title: 'Lịch tư vấn 1-1 PXU',
+            value: pxuBookings.length,
+            sub: `${pendingBookings.length} thí sinh đang chờ gọi`,
+            accent: '#2563EB',
+            bg: '#EFF6FF',
+            icon: <Calendar size={20} color="#2563EB" />,
+            onClick: () => setSection('bookings'),
+          },
         ].map((kpi) => (
-          <div key={kpi.label} style={{ ...cardStyle, padding: '15px' }}>
-            <div style={{ width: '38px', height: '38px', borderRadius: '12px', backgroundColor: kpi.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '9px' }}>
-              {kpi.icon}
+          <button
+            key={kpi.title}
+            type="button"
+            onClick={kpi.onClick}
+            className="up-card-interactive"
+            style={{
+              ...surfaceCard,
+              padding: '18px',
+              textAlign: 'left',
+              cursor: 'pointer',
+              borderTop: `3px solid ${kpi.accent}`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#64748B' }}>{kpi.title}</span>
+              <span style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: kpi.bg, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                {kpi.icon}
+              </span>
             </div>
-            <div style={{ fontSize: '25px', fontWeight: 900, color: '#0F172A', lineHeight: 1.1 }}>{kpi.value}</div>
-            <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 600, marginTop: '2px' }}>{kpi.label}</div>
-          </div>
+            <div>
+              <div style={{ fontSize: isDesktop ? '28px' : '24px', fontWeight: 900, color: '#0F172A', lineHeight: 1.1 }}>{kpi.value}</div>
+              <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '5px' }}>{kpi.sub}</div>
+            </div>
+          </button>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1.35fr 1fr' : '1fr', gap: '16px', alignItems: 'start' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
-          {/* Hàng đợi */}
-          <div style={cardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
-              <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 900, color: '#0F172A' }}>Hồ sơ chờ duyệt vào PXU</h2>
-              <span style={{ fontSize: '11px', fontWeight: 800, color: '#D97706', backgroundColor: '#FFFBEB', padding: '3px 10px', borderRadius: '999px', whiteSpace: 'nowrap' }}>{pendingApps.length} hồ sơ</span>
+      {/* 2-Column Workspace: Pending Candidates Table + Major Breakdown */}
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1.45fr 1fr' : '1fr', gap: '18px', alignItems: 'start' }}>
+        <div style={{ ...surfaceCard, padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '18px 20px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
+                Thí sinh Đăng ký PXU Cần Xét Duyệt ({pendingApps.length + missingApps.length})
+              </h3>
+              <p style={{ margin: '2px 0 0', fontSize: '12.5px', color: '#64748B' }}>
+                Hệ thống tự động đối chiếu điểm xét tuyển với điểm chuẩn ngành PXU & đề xuất Học bổng OJT
+              </p>
             </div>
-            {pendingApps.length === 0 ? (
-              <p style={{ margin: 0, fontSize: '13.5px', color: '#64748B' }}>Hiện không có hồ sơ nào chờ PXU duyệt.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {pendingApps.map((app) => (
-                  <button
-                    key={app.id}
-                    onClick={() => selectApp(app, true)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px 4px',
-                      border: 'none',
-                      borderBottom: '1px solid #EEF4F0',
-                      backgroundColor: 'transparent',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      width: '100%',
-                      minWidth: 0,
-                    }}
-                  >
-                    <UniversityAvatar code="PXU" size={38} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {app.candidateName} · {app.code}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {app.major} · Nộp {app.submittedAt}
-                      </div>
-                    </div>
-                    <span style={{ fontSize: '12.5px', fontWeight: 800, color: EMERALD, whiteSpace: 'nowrap' }}>{app.score}đ</span>
-                    <ChevronRight size={16} color="#94A3B8" style={{ flexShrink: 0 }} />
-                  </button>
-                ))}
-              </div>
-            )}
             <button
+              type="button"
               onClick={() => setSection('apps')}
-              style={{ marginTop: '14px', padding: '10px 16px', borderRadius: '12px', border: 'none', backgroundColor: EMERALD, color: '#FFFFFF', fontSize: '13px', fontWeight: 800, cursor: 'pointer' }}
+              style={{ padding: '7px 12px', borderRadius: '9px', border: '1px solid #A7F3D0', backgroundColor: '#ECFDF5', color: EMERALD_DARK, fontSize: '12px', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}
             >
-              Xem tất cả hồ sơ PXU
+              Tất cả ({pxuApps.length}) →
             </button>
           </div>
 
-          {/* Phễu tuyển sinh PXU */}
-          <div style={cardStyle}>
-            <h2 style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: 900, color: '#0F172A' }}>Phễu tuyển sinh PXU</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {(
-                [
-                  { label: 'Tổng hồ sơ nộp vào PXU', value: pxuApps.length, color: EMERALD },
-                  { label: 'Đang xét duyệt', value: countByStatus('Đang xét duyệt'), color: '#D97706' },
-                  { label: 'Hồ sơ hợp lệ', value: countByStatus('Hồ sơ hợp lệ'), color: '#0EA5E9' },
-                  { label: 'Đã trúng tuyển', value: countByStatus('Đã trúng tuyển'), color: EMERALD },
-                ] as const
-              ).map((step) => {
-                const pct = pxuApps.length > 0 ? Math.round((step.value / pxuApps.length) * 100) : 0;
-                return (
-                  <div key={step.label} style={{ minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '12.5px', marginBottom: '4px' }}>
-                      <span style={{ color: '#334155', fontWeight: 600 }}>{step.label}</span>
-                      <span style={{ color: '#64748B', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                        {step.value} · {pct}%
-                      </span>
-                    </div>
-                    <div style={{ height: '8px', borderRadius: '999px', backgroundColor: '#EEF4F0', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${pct}%`, backgroundColor: step.color, borderRadius: '999px' }} />
-                    </div>
-                  </div>
-                );
-              })}
+          {pxuApps.length === 0 ? (
+            <div style={{ padding: '32px 20px', textAlign: 'center', color: '#64748B', fontSize: '13.5px' }}>
+              Chưa có hồ sơ nào nộp vào ĐH Phú Xuân.
             </div>
-          </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="up-table">
+                <thead>
+                  <tr>
+                    <th>Thí sinh</th>
+                    <th>Ngành đăng ký tại PXU</th>
+                    <th>Đối chiếu Điểm chuẩn</th>
+                    <th>Trạng thái</th>
+                    <th style={{ textAlign: 'right' }}>Xét duyệt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pxuApps.slice(0, 6).map((app) => {
+                    const cutoff = getPxuMajorCutoff(app.major);
+                    const delta = +(app.score - cutoff).toFixed(2);
+                    return (
+                      <tr key={app.id} className="up-row-hover">
+                        <td>
+                          <div style={{ fontWeight: 800, color: '#0F172A' }}>{app.candidateName}</div>
+                          <div style={{ fontSize: '11.5px', color: '#64748B' }}>{app.code}</div>
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 700, color: '#0F172A' }}>{app.major}</div>
+                          <div style={{ fontSize: '11.5px', color: '#64748B' }}>Nộp {app.submittedAt}</div>
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 800, color: '#0F172A' }}>
+                            {app.score}đ <span style={{ fontSize: '11.5px', fontWeight: 500, color: '#94A3B8' }}>/ Chuẩn {cutoff}đ</span>
+                          </div>
+                          <span style={{ fontSize: '11px', fontWeight: 800, color: delta >= 4 ? '#047857' : delta >= 0 ? EMERALD : '#D97706' }}>
+                            {delta >= 4 ? `🌟 +${delta}đ (Đề xuất HB OJT)` : delta >= 0 ? `✓ +${delta}đ Đạt chuẩn` : `${delta}đ Cần xét HBạ`}
+                          </span>
+                        </td>
+                        <td>
+                          <StatusBadge status={app.status} />
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button
+                            type="button"
+                            onClick={() => selectAppForReview(app, true)}
+                            style={{ padding: '6px 12px', borderRadius: '9px', border: 'none', backgroundColor: EMERALD, color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                          >
+                            Xử lý →
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
-          {/* Theo ngành */}
-          <div style={cardStyle}>
-            <h2 style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: 900, color: '#0F172A' }}>Hồ sơ theo ngành của PXU</h2>
+        {/* Right: Major Distribution + Recent PXU Council Log */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div style={surfaceCard}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>
+                Hồ sơ theo Ngành Đào tạo PXU
+              </h3>
+              <span style={{ fontSize: '11px', color: '#64748B' }}>Bấm ngành để lọc</span>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {(pxuUni?.majors || []).map((major) => {
-                const c = majorCount(major);
-                const pct = pxuApps.length > 0 ? Math.round((c / pxuApps.length) * 100) : 0;
+                const count = pxuApps.filter((a) => a.major === major).length;
+                const pct = pxuApps.length > 0 ? Math.round((count / pxuApps.length) * 100) : 0;
+                const cutoff = getPxuMajorCutoff(major);
                 return (
-                  <div key={major} style={{ minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '12.5px', marginBottom: '4px' }}>
-                      <span style={{ color: '#334155', fontWeight: 600 }}>{major}</span>
-                      <span style={{ color: '#64748B', fontWeight: 700, whiteSpace: 'nowrap' }}>{c} hồ sơ</span>
+                  <div
+                    key={major}
+                    onClick={() => jumpToMajorApps(major)}
+                    style={{ cursor: 'pointer', padding: '6px 8px', borderRadius: '10px', backgroundColor: '#F8FAFC' }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', marginBottom: '4px', gap: '8px' }}>
+                      <span style={{ fontWeight: 700, color: '#0F172A' }}>{major}</span>
+                      <span style={{ fontSize: '11.5px', color: '#64748B', whiteSpace: 'nowrap' }}>
+                        Chuẩn <strong>{cutoff}đ</strong> · <strong style={{ color: EMERALD }}>{count} HS</strong>
+                      </span>
                     </div>
-                    <div style={{ height: '8px', borderRadius: '999px', backgroundColor: '#EEF4F0', overflow: 'hidden' }}>
+                    <div style={{ height: '6px', borderRadius: '999px', backgroundColor: '#E2E8F0', overflow: 'hidden' }}>
                       <div style={{ height: '100%', width: `${pct}%`, backgroundColor: EMERALD, borderRadius: '999px' }} />
                     </div>
                   </div>
                 );
               })}
             </div>
-            <button onClick={() => setSection('programs')} style={{ marginTop: '12px', padding: 0, border: 'none', background: 'none', color: EMERALD, fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}>
-              Xem chi tiết ngành & điểm chuẩn →
+          </div>
+
+          <div style={surfaceCard}>
+            <h3 style={{ margin: '0 0 10px', fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>
+              Nhật ký Hội đồng Tuyển sinh PXU
+            </h3>
+            {pxuLog.length === 0 ? (
+              <div style={{ fontSize: '12.5px', color: '#64748B' }}>Chưa có quyết định mới nào được ghi nhận.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {pxuLog.slice(0, 4).map((log) => (
+                  <div key={log.id} style={{ fontSize: '12.5px', paddingBottom: '8px', borderBottom: '1px solid #F1F5F9' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px' }}>
+                      <strong style={{ color: '#0F172A' }}>{log.candidateName} ({log.appCode})</strong>
+                      <span style={{ fontSize: '11px', color: '#94A3B8' }}>{log.time}</span>
+                    </div>
+                    <div style={{ color: '#475569', marginTop: '2px' }}>
+                      {log.fromStatus} <ArrowRight size={11} style={{ verticalAlign: 'middle' }} />{' '}
+                      <strong style={{ color: getStatusMeta(log.toStatus).color }}>{log.toStatus}</strong>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // =========================================================================
+  // SECTION 2: PXU APPLICATIONS & OJT DECISION ASSISTANT
+  // =========================================================================
+  const renderApps = () => {
+    const selectedCutoff = selectedApp ? getPxuMajorCutoff(selectedApp.major) : 18.5;
+    const selectedDelta = selectedApp ? +(selectedApp.score - selectedCutoff).toFixed(2) : 0;
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {/* Clean Single-Row Toolbar */}
+        <div style={{ ...surfaceCard, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '11px', padding: '0 12px', height: '40px', flex: '1 1 220px', minWidth: 0 }}>
+              <Search size={16} color="#94A3B8" />
+              <input
+                value={appSearch}
+                onChange={(e) => setAppSearch(e.target.value)}
+                placeholder="Tìm tên thí sinh, mã hồ sơ PXU..."
+                style={{ flex: 1, border: 'none', outline: 'none', fontSize: '13px', backgroundColor: 'transparent', minWidth: 0 }}
+              />
+              {appSearch && (
+                <button type="button" onClick={() => setAppSearch('')} style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex' }}>
+                  <X size={15} color="#94A3B8" />
+                </button>
+              )}
+            </div>
+
+            <select
+              value={appMajor}
+              onChange={(e) => setAppMajor(e.target.value)}
+              aria-label="Lọc theo ngành đào tạo PXU"
+              style={{ height: '40px', padding: '0 12px', borderRadius: '11px', border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF', fontSize: '12.5px', fontWeight: 700, color: '#334155', cursor: 'pointer' }}
+            >
+              <option value="Tất cả">Tất cả ngành đào tạo PXU</option>
+              {(pxuUni?.majors || []).map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+
+            <select
+              value={appSort}
+              onChange={(e) => setAppSort(e.target.value as AppSort)}
+              aria-label="Sắp xếp"
+              style={{ height: '40px', padding: '0 12px', borderRadius: '11px', border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF', fontSize: '12.5px', fontWeight: 700, color: '#334155', cursor: 'pointer' }}
+            >
+              <option value="list">Mới nộp gần nhất</option>
+              <option value="scoreDesc">Điểm cao → thấp</option>
+              <option value="scoreAsc">Điểm thấp → cao</option>
+              <option value="nameAsc">Tên A → Z</option>
+            </select>
+
+            <button
+              type="button"
+              onClick={() => exportAppsCsv(sortedApps, 'ho-so-xet-tuyen-pxu.csv')}
+              style={{ height: '40px', padding: '0 14px', borderRadius: '11px', border: `1px solid ${EMERALD}`, backgroundColor: '#ECFDF5', color: EMERALD_DARK, fontSize: '12.5px', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Download size={14} /> Xuất CSV ({sortedApps.length})
             </button>
           </div>
 
-          {/* Nhắc bổ sung */}
-          <div style={{ ...cardStyle, border: '1px solid #BFDBFE', backgroundColor: '#F8FBFF' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-              <AlertCircle size={17} color="#2563EB" />
-              <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 900, color: '#0F172A' }}>Hồ sơ cần bổ sung</h2>
-            </div>
-            {missingApps.length === 0 ? (
-              <p style={{ margin: 0, fontSize: '13px', color: '#64748B' }}>Không có hồ sơ PXU nào đang thiếu giấy tờ.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {missingApps.map((app) => (
-                  <button key={app.id} onClick={() => selectApp(app, true)} style={{ textAlign: 'left', border: 'none', background: 'none', padding: 0, cursor: 'pointer', minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>
-                      {app.candidateName} · {app.code}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#475569', lineHeight: 1.5 }}>{app.notes || 'Cần bổ sung giấy tờ theo yêu cầu của Hội đồng tuyển sinh.'}</div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Lịch tư vấn sắp tới */}
-          <div style={cardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '10px' }}>
-              <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 900, color: '#0F172A' }}>Lịch tư vấn PXU</h2>
-              <span style={{ fontSize: '11px', fontWeight: 800, color: '#7C3AED', backgroundColor: '#F5F3FF', padding: '3px 10px', borderRadius: '999px', whiteSpace: 'nowrap' }}>{pxuBookings.length} lịch</span>
-            </div>
-            {pxuBookings.length === 0 ? (
-              <p style={{ margin: 0, fontSize: '13px', color: '#64748B' }}>Chưa có thí sinh nào đặt lịch tư vấn với PXU.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
-                {pxuBookings.slice(0, 3).map((bk) => (
-                  <div key={bk.id} style={{ fontSize: '12.5px', color: '#334155', minWidth: 0 }}>
-                    <strong style={{ color: '#0F172A' }}>{bk.name}</strong> · {bk.major}
-                    <div style={{ color: '#64748B' }}>
-                      {bk.dateTime} · {bk.phone}
-                    </div>
-                  </div>
-                ))}
-                <button onClick={() => setSection('bookings')} style={{ padding: 0, border: 'none', background: 'none', color: EMERALD, fontSize: '12.5px', fontWeight: 800, cursor: 'pointer', textAlign: 'left' }}>
-                  Xem tất cả lịch tư vấn →
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Nhật ký PXU */}
-          <div style={cardStyle}>
-            <h2 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 900, color: '#0F172A' }}>Nhật ký xử lý hồ sơ PXU</h2>
-            <p style={{ margin: '0 0 12px', fontSize: '12.5px', color: '#64748B' }}>Các quyết định đã thực hiện trên hồ sơ nộp vào PXU trong phiên này.</p>
-            {pxuLog.length === 0 ? (
-              <p style={{ margin: 0, fontSize: '13px', color: '#64748B' }}>Chưa có lượt xử lý nào. Vào mục Hồ sơ PXU để duyệt hồ sơ đang chờ.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {pxuLog.slice(0, 6).map((log) => (
-                  <div key={log.id} style={{ padding: '9px 2px', borderBottom: '1px solid #EEF4F0' }}>
-                    <div style={{ fontSize: '12px', color: '#94A3B8', fontWeight: 600 }}>{log.time}</div>
-                    <div style={{ fontSize: '13px', color: '#334155' }}>
-                      <strong style={{ color: '#0F172A' }}>{log.actorName}</strong> · {log.appCode} · {log.candidateName}
-                    </div>
-                    <div style={{ fontSize: '12px', fontWeight: 700 }}>
-                      <span style={{ color: statusColor(log.fromStatus) }}>{log.fromStatus}</span>
-                      <span style={{ color: '#94A3B8' }}> → </span>
-                      <span style={{ color: statusColor(log.toStatus) }}>{log.toStatus}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderApps = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-        <div style={{ minWidth: 0 }}>
-          <h1 style={{ margin: 0, fontSize: isDesktop ? '26px' : '22px', fontWeight: 900, color: '#0F172A' }}>Hồ sơ nộp vào ĐH Phú Xuân</h1>
-          <p style={{ margin: '4px 0 0', fontSize: '13.5px', color: '#64748B' }}>
-            {sortedApps.length}/{pxuApps.length} hồ sơ · Dữ liệu phân lập: cổng này chỉ thấy hồ sơ đăng ký vào PXU
-          </p>
-        </div>
-        <button
-          onClick={() => exportAppsCsv(sortedApps, 'ho-so-pxu.csv')}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '10px 15px', borderRadius: '12px', border: `1.5px solid ${EMERALD}`, backgroundColor: '#FFFFFF', color: EMERALD, fontSize: '13px', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}
-        >
-          <Download size={15} /> Xuất CSV ({sortedApps.length})
-        </button>
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#FFFFFF', border: '1px solid #DCE8E1', borderRadius: '14px', padding: '0 14px', height: '46px', flex: '1 1 260px', minWidth: 0, boxSizing: 'border-box' }}>
-            <Search size={18} color="#94A3B8" style={{ flexShrink: 0 }} />
-            <input
-              value={appSearch}
-              onChange={(e) => setAppSearch(e.target.value)}
-              placeholder="Tìm tên thí sinh, mã hồ sơ, ngành..."
-              style={{ flex: 1, border: 'none', outline: 'none', fontSize: '13.5px', color: '#0F172A', backgroundColor: 'transparent', minWidth: 0 }}
-            />
-            {appSearch && (
-              <button onClick={() => setAppSearch('')} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0, display: 'flex', flexShrink: 0 }}>
-                <X size={16} color="#94A3B8" />
-              </button>
-            )}
-          </div>
-          <select value={appSort} onChange={(e) => setAppSort(e.target.value as AppSort)} style={{ ...selectStyle, height: '46px' }} aria-label="Sắp xếp hồ sơ">
-            <option value="list">Thứ tự danh sách</option>
-            <option value="scoreDesc">Điểm cao → thấp</option>
-            <option value="scoreAsc">Điểm thấp → cao</option>
-            <option value="nameAsc">Tên thí sinh A–Z</option>
-          </select>
-        </div>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {['Tất cả', ...PXU_STATUSES].map((s) => {
-            const count = s === 'Tất cả' ? pxuApps.length : countByStatus(s as ApplicationStatus);
-            return (
-              <button
-                key={s}
-                onClick={() => setAppStatus(s)}
-                style={{
-                  padding: '7px 13px',
-                  borderRadius: '999px',
-                  border: appStatus === s ? `1.5px solid ${EMERALD}` : '1px solid #DCE8E1',
-                  backgroundColor: appStatus === s ? '#ECFDF5' : '#FFFFFF',
-                  color: appStatus === s ? EMERALD_DARK : '#475569',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {s} · {count}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1.55fr 1fr' : '1fr', gap: '16px', alignItems: 'start' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: 0 }}>
-          {sortedApps.length === 0 && <div style={{ ...cardStyle, textAlign: 'center', color: '#64748B', fontSize: '13.5px' }}>Không có hồ sơ PXU nào khớp bộ lọc hiện tại.</div>}
-          {sortedApps.map((app) => {
-            const isSelected = selectedApp?.id === app.id;
-            return (
-              <button
-                key={app.id}
-                onClick={() => selectApp(app, false)}
-                style={{
-                  ...cardStyle,
-                  padding: '14px 16px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  width: '100%',
-                  border: isSelected ? `2px solid ${EMERALD}` : '1px solid #DCE8E1',
-                  backgroundColor: isSelected ? '#F7FCF9' : '#FFFFFF',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                  <UniversityAvatar code="PXU" size={34} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{app.candidateName}</div>
-                    <div style={{ fontSize: '11.5px', color: '#64748B' }}>
-                      {app.code} · {app.submittedAt}
-                    </div>
-                  </div>
-                  <StatusChip status={app.status} />
-                </div>
-                <div style={{ fontSize: '12.5px', color: '#334155' }}>{app.major} — Đại học Phú Xuân</div>
-                <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  Điểm: <strong style={{ color: EMERALD }}>{app.score}</strong> · {app.phone} · {app.email}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {selectedApp && (
-          <div id="app-inspector" style={{ ...cardStyle, position: isDesktop ? 'sticky' : 'static', top: '24px', scrollMarginTop: '16px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.6px', color: EMERALD, textTransform: 'uppercase', marginBottom: '8px' }}>Hội đồng tuyển sinh PXU xử lý</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-              <UniversityAvatar code="PXU" size={40} />
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: '15px', fontWeight: 900, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedApp.candidateName}</div>
-                <div style={{ fontSize: '12px', color: '#64748B' }}>{selectedApp.code}</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px', color: '#334155', marginBottom: '12px' }}>
-              <div>Ngành đăng ký: <strong>{selectedApp.major}</strong></div>
-              <div>Điểm xét tuyển: <strong style={{ color: EMERALD }}>{selectedApp.score}</strong></div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                <Phone size={13} color="#64748B" /> {selectedApp.phone} · {selectedApp.email}
-              </div>
-              <div>Nộp lúc: {selectedApp.submittedAt}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                Trạng thái: <StatusChip status={selectedApp.status} />
-              </div>
-              {selectedApp.notes && <div style={{ fontSize: '12.5px', color: '#64748B', backgroundColor: '#F7FAF8', borderRadius: '10px', padding: '10px', lineHeight: 1.5 }}>{selectedApp.notes}</div>}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <input
-                type="text"
-                value={reviewerNote}
-                onChange={(e) => setReviewerNote(e.target.value)}
-                placeholder="Nhập phản hồi gửi thí sinh PXU (tùy chọn)..."
-                style={{
-                  width: '100%',
-                  padding: '9px 11px',
-                  borderRadius: '10px',
-                  border: '1px solid #DCE8E1',
-                  fontSize: '12.5px',
-                  boxSizing: 'border-box',
-                }}
-              />
-              <button
-                onClick={() => {
-                  updateApplicationStatus(selectedApp.id, 'Hồ sơ hợp lệ', reviewerNote || undefined);
-                  setReviewerNote('');
-                }}
-                disabled={selectedApp.status === 'Hồ sơ hợp lệ'}
-                style={{
-                  padding: '11px',
-                  borderRadius: '12px',
-                  border: '1.5px solid #0284C7',
-                  backgroundColor: '#E0F2FE',
-                  color: '#0369A1',
-                  fontSize: '13.5px',
-                  fontWeight: 800,
-                  cursor: selectedApp.status === 'Hồ sơ hợp lệ' ? 'default' : 'pointer',
-                  opacity: selectedApp.status === 'Hồ sơ hợp lệ' ? 0.5 : 1,
-                }}
-              >
-                ✓ Xác nhận hồ sơ hợp lệ
-              </button>
-              <button
-                onClick={() => {
-                  updateApplicationStatus(selectedApp.id, 'Đã trúng tuyển', reviewerNote || undefined);
-                  setReviewerNote('');
-                }}
-                disabled={selectedApp.status === 'Đã trúng tuyển'}
-                style={{
-                  padding: '12px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  backgroundColor: selectedApp.status === 'Đã trúng tuyển' ? '#A7F3D0' : EMERALD,
-                  color: '#FFFFFF',
-                  fontSize: '13.5px',
-                  fontWeight: 800,
-                  cursor: selectedApp.status === 'Đã trúng tuyển' ? 'default' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '7px',
-                }}
-              >
-                <CheckCircle2 size={17} /> Duyệt trúng tuyển PXU
-              </button>
-              <button
-                onClick={() => {
-                  updateApplicationStatus(selectedApp.id, 'Thiếu hồ sơ', reviewerNote || undefined);
-                  setReviewerNote('');
-                }}
-                disabled={selectedApp.status === 'Thiếu hồ sơ'}
-                style={{
-                  padding: '11px',
-                  borderRadius: '12px',
-                  border: '1.5px solid #2563EB',
-                  backgroundColor: '#FFFFFF',
-                  color: '#2563EB',
-                  fontSize: '13.5px',
-                  fontWeight: 800,
-                  cursor: selectedApp.status === 'Thiếu hồ sơ' ? 'default' : 'pointer',
-                  opacity: selectedApp.status === 'Thiếu hồ sơ' ? 0.5 : 1,
-                }}
-              >
-                Yêu cầu bổ sung hồ sơ
-              </button>
-              <button
-                onClick={() => {
-                  updateApplicationStatus(selectedApp.id, 'Đã bị hủy', reviewerNote || undefined);
-                  setReviewerNote('');
-                }}
-                disabled={selectedApp.status === 'Đã bị hủy'}
-                style={{
-                  padding: '11px',
-                  borderRadius: '12px',
-                  border: '1.5px solid #FECACA',
-                  backgroundColor: '#FFFFFF',
-                  color: '#DC2626',
-                  fontSize: '13.5px',
-                  fontWeight: 800,
-                  cursor: selectedApp.status === 'Đã bị hủy' ? 'default' : 'pointer',
-                  opacity: selectedApp.status === 'Đã bị hủy' ? 0.5 : 1,
-                }}
-              >
-                Từ chối hồ sơ
-              </button>
-              <button
-                onClick={() => openApplicationDetail(selectedApp)}
-                style={{ padding: '8px', border: 'none', background: 'none', color: '#475569', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
-              >
-                Xem biên nhận chi tiết
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  const renderBookings = () => {
-    const stateMeta: Record<BookingState, { label: string; color: string; bg: string }> = {
-      pending: { label: 'Chờ liên hệ', color: '#B45309', bg: '#FEF3C7' },
-      contacted: { label: 'Đã liên hệ', color: '#1D4ED8', bg: '#DBEAFE' },
-      done: { label: 'Hoàn thành', color: '#047857', bg: '#D1FAE5' },
-    };
-    const pendingCount = pxuBookings.filter((b) => bookingStateOf(b.id) === 'pending').length;
-    const actBtn = (bg: string): React.CSSProperties => ({
-      padding: '8px 12px',
-      borderRadius: '10px',
-      border: 'none',
-      backgroundColor: bg,
-      color: '#FFFFFF',
-      fontSize: '12px',
-      fontWeight: 800,
-      cursor: 'pointer',
-    });
-    const ghostBtn: React.CSSProperties = {
-      padding: '8px 12px',
-      borderRadius: '10px',
-      border: '1px solid #E2E8F0',
-      backgroundColor: '#FFFFFF',
-      color: '#64748B',
-      fontSize: '12px',
-      fontWeight: 700,
-      cursor: 'pointer',
-    };
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div style={{ minWidth: 0 }}>
-          <h1 style={{ margin: 0, fontSize: isDesktop ? '26px' : '22px', fontWeight: 900, color: '#0F172A' }}>Lịch tư vấn với ĐH Phú Xuân</h1>
-          <p style={{ margin: '4px 0 0', fontSize: '13.5px', color: '#64748B' }}>
-            {pxuBookings.length} lịch hẹn đặt riêng với PXU · {pendingCount} đang chờ liên hệ — xử lý ngay trên từng lịch
-          </p>
-        </div>
-        {pxuBookings.length === 0 ? (
-          <div style={{ ...cardStyle, textAlign: 'center', color: '#64748B', fontSize: '13.5px' }}>Chưa có lịch tư vấn nào được đặt với PXU.</div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: '12px' }}>
-            {pxuBookings.map((bk) => {
-              const st = bookingStateOf(bk.id);
-              const meta = stateMeta[st];
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {['Tất cả', 'Đang xét duyệt', 'Hồ sơ hợp lệ', 'Đã trúng tuyển', 'Thiếu hồ sơ', 'Đã bị hủy'].map((st) => {
+              const active = appStatus === st;
+              const cnt = st === 'Tất cả' ? pxuApps.length : countByStatus(st as ApplicationStatus);
               return (
-                <div key={bk.id} style={{ ...cardStyle, padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <UniversityAvatar code="PXU" size={38} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bk.name}</div>
-                      <div style={{ fontSize: '11.5px', color: '#64748B' }}>Ngành quan tâm: {bk.major}</div>
-                    </div>
-                    <span style={{ padding: '4px 9px', borderRadius: '999px', backgroundColor: meta.bg, color: meta.color, fontSize: '11px', fontWeight: 800, whiteSpace: 'nowrap' }}>{meta.label}</span>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', color: '#334155' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                      <Calendar size={13} color="#7C3AED" /> <strong>{bk.dateTime}</strong>
-                      {bk.channel && (
-                        <span style={{ fontSize: '11px', fontWeight: 700, backgroundColor: '#ECFDF5', color: EMERALD_DARK, padding: '2px 7px', borderRadius: '6px' }}>
-                          {bk.channel}
-                        </span>
-                      )}
-                    </span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                      <Phone size={13} color="#64748B" /> {bk.phone} {bk.email ? `· ${bk.email}` : ''}
-                    </span>
-                    {bk.notes && <span style={{ color: '#64748B', lineHeight: 1.5 }}>{bk.notes}</span>}
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 'auto' }}>
-                    {st === 'pending' && (
-                      <button style={actBtn('#059669')} onClick={() => updateBookingState(bk.id, 'contacted')}>
-                        Đánh dấu đã liên hệ
-                      </button>
-                    )}
-                    {st === 'contacted' && (
-                      <>
-                        <button style={actBtn('#047857')} onClick={() => updateBookingState(bk.id, 'done')}>
-                          Hoàn thành tư vấn
-                        </button>
-                        <button style={ghostBtn} onClick={() => updateBookingState(bk.id, 'pending')}>
-                          Đặt lại
-                        </button>
-                      </>
-                    )}
-                    {st === 'done' && (
-                      <button style={ghostBtn} onClick={() => updateBookingState(bk.id, 'pending')}>
-                        Mở lại lịch
-                      </button>
-                    )}
-                  </div>
-                </div>
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => setAppStatus(st)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '9px',
+                    border: active ? `1px solid ${EMERALD}` : '1px solid transparent',
+                    backgroundColor: active ? '#ECFDF5' : '#F8FAFC',
+                    color: active ? EMERALD_DARK : '#475569',
+                    fontSize: '12px',
+                    fontWeight: active ? 800 : 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {st} ({cnt})
+                </button>
               );
             })}
           </div>
-        )}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1.45fr 1fr' : '1fr', gap: '18px', alignItems: 'start' }}>
+          {/* Left: PXU Candidate Table */}
+          <div style={{ ...surfaceCard, padding: 0, overflow: 'hidden' }}>
+            {sortedApps.length === 0 ? (
+              <div style={{ padding: '36px 20px', textAlign: 'center', color: '#64748B', fontSize: '13.5px' }}>
+                Không có hồ sơ PXU nào khớp bộ lọc hiện tại.
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="up-table">
+                  <thead>
+                    <tr>
+                      <th>Thí sinh & Mã HS</th>
+                      <th>Ngành đăng ký PXU</th>
+                      <th>Điểm / Chuẩn PXU</th>
+                      <th>Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedApps.map((app) => {
+                      const isSel = selectedApp?.id === app.id;
+                      const cutoff = getPxuMajorCutoff(app.major);
+                      const delta = +(app.score - cutoff).toFixed(2);
+                      return (
+                        <tr
+                          key={app.id}
+                          onClick={() => selectAppForReview(app)}
+                          style={{
+                            cursor: 'pointer',
+                            backgroundColor: isSel ? '#ECFDF5' : '#FFFFFF',
+                          }}
+                        >
+                          <td>
+                            <div style={{ fontWeight: 800, color: isSel ? EMERALD_DARK : '#0F172A' }}>{app.candidateName}</div>
+                            <div style={{ fontSize: '11.5px', color: '#64748B' }}>{app.code} · {app.submittedAt}</div>
+                          </td>
+                          <td>
+                            <div style={{ fontWeight: 700, color: '#0F172A' }}>{app.major}</div>
+                            <div style={{ fontSize: '11.5px', color: '#64748B' }}>{app.phone}</div>
+                          </td>
+                          <td>
+                            <div style={{ fontWeight: 800, color: '#0F172A' }}>
+                              {app.score}đ <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 500 }}>/ {cutoff}đ</span>
+                            </div>
+                            <span style={{ fontSize: '11px', fontWeight: 800, color: delta >= 0 ? EMERALD : '#D97706' }}>
+                              {delta >= 4 ? `🌟 +${delta}đ (HB OJT)` : delta >= 0 ? `+${delta}đ Đạt` : `${delta}đ`}
+                            </span>
+                          </td>
+                          <td>
+                            <StatusBadge status={app.status} />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Right: PXU Smart OJT Admission Inspector */}
+          {selectedApp && (
+            <div
+              id="pxu-app-inspector"
+              style={{
+                ...surfaceCard,
+                position: isDesktop ? 'sticky' : 'static',
+                top: '84px',
+                border: '1.5px solid #A7F3D0',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: EMERALD, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Hội Đồng Tuyển Sinh PXU · Thẩm Định
+                </span>
+                <button
+                  type="button"
+                  onClick={() => openApplicationDetail(selectedApp)}
+                  style={{ border: 'none', background: 'none', color: EMERALD, fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                >
+                  Biên nhận <ExternalLink size={12} />
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+                <UniversityAvatar code="PXU" size={44} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '16px', fontWeight: 900, color: '#0F172A' }}>{selectedApp.candidateName}</div>
+                  <div style={{ fontSize: '12px', color: '#64748B' }}>{selectedApp.code} · {selectedApp.major}</div>
+                </div>
+                <StatusBadge status={selectedApp.status} />
+              </div>
+
+              {/* Automatic PXU Cutoff & OJT Scholarship Recommender */}
+              <div
+                style={{
+                  padding: '13px 14px',
+                  borderRadius: '14px',
+                  backgroundColor: selectedDelta >= 0 ? '#ECFDF5' : '#FFFBEB',
+                  border: selectedDelta >= 0 ? '1px solid #6EE7B7' : '1px solid #FDE68A',
+                  marginBottom: '14px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', marginBottom: '5px' }}>
+                  <span>Điểm xét tuyển: <strong style={{ fontSize: '15px', color: '#0F172A' }}>{selectedApp.score}đ</strong></span>
+                  <span>Chuẩn ngành PXU: <strong>{selectedCutoff}đ</strong></span>
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 800, color: selectedDelta >= 0 ? EMERALD_DARK : '#B45309', lineHeight: 1.45 }}>
+                  {selectedDelta >= 4
+                    ? `🌟 Vượt chuẩn +${selectedDelta}đ — Đủ điều kiện Trúng tuyển sớm & Đề xuất xét Học bổng Tài năng OJT (50%–100%)!`
+                    : selectedDelta >= 0
+                    ? `✓ Đạt ngưỡng điểm chuẩn ngành (+${selectedDelta}đ) — Đủ điều kiện duyệt Trúng tuyển sớm vào PXU.`
+                    : `⚠️ Thấp hơn chuẩn điểm thi (${selectedDelta}đ) — Khuyến nghị hướng dẫn thí sinh bổ sung Học bạ THPT 5 kỳ.`}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', color: '#334155', backgroundColor: '#F8FAFC', padding: '10px 12px', borderRadius: '12px', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Phone size={12} /> {selectedApp.phone}</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Mail size={12} /> {selectedApp.email}</span>
+                </div>
+                {selectedApp.notes && (
+                  <div style={{ paddingTop: '6px', borderTop: '1px dashed #E2E8F0', color: '#475569' }}>
+                    <strong>Ghi chú:</strong> {selectedApp.notes}
+                  </div>
+                )}
+              </div>
+
+              {/* 1-Click PXU Quick Reply Chips */}
+              <div style={{ marginBottom: '12px' }}>
+                <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                  Mẫu phản hồi nhanh của Ban Tuyển sinh ĐH Phú Xuân:
+                </div>
+                <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                  {PXU_QUICK_NOTES.map((tpl) => (
+                    <button
+                      key={tpl}
+                      type="button"
+                      onClick={() => setReviewerNote(tpl)}
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: '7px',
+                        border: reviewerNote === tpl ? `1px solid ${EMERALD}` : '1px solid #E2E8F0',
+                        backgroundColor: reviewerNote === tpl ? '#ECFDF5' : '#F8FAFC',
+                        color: reviewerNote === tpl ? EMERALD_DARK : '#475569',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      + {tpl.length > 38 ? tpl.slice(0, 38) + '…' : tpl}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  value={reviewerNote}
+                  onChange={(e) => setReviewerNote(e.target.value)}
+                  placeholder="Nhập lời nhắn gửi trực tiếp tới thí sinh đăng ký PXU..."
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '12.5px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              {/* Hierarchical Action Buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <button
+                  type="button"
+                  disabled={selectedApp.status === 'Đã trúng tuyển'}
+                  onClick={() => {
+                    updateApplicationStatus(selectedApp.id, 'Đã trúng tuyển', reviewerNote || undefined);
+                    setReviewerNote('');
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '11px',
+                    borderRadius: '11px',
+                    border: 'none',
+                    backgroundColor: selectedApp.status === 'Đã trúng tuyển' ? '#A7F3D0' : EMERALD,
+                    color: '#FFFFFF',
+                    fontSize: '13.5px',
+                    fontWeight: 800,
+                    cursor: selectedApp.status === 'Đã trúng tuyển' ? 'default' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <CheckCircle2 size={16} /> Duyệt Trúng Tuyển ĐH Phú Xuân
+                </button>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+                  <button
+                    type="button"
+                    disabled={selectedApp.status === 'Hồ sơ hợp lệ'}
+                    onClick={() => {
+                      updateApplicationStatus(selectedApp.id, 'Hồ sơ hợp lệ', reviewerNote || undefined);
+                      setReviewerNote('');
+                    }}
+                    style={{ padding: '8px 6px', borderRadius: '9px', border: '1px solid #7DD3FC', backgroundColor: '#F0F9FF', color: '#0369A1', fontSize: '11.5px', fontWeight: 800, cursor: 'pointer', opacity: selectedApp.status === 'Hồ sơ hợp lệ' ? 0.5 : 1 }}
+                  >
+                    ✓ Hợp lệ
+                  </button>
+                  <button
+                    type="button"
+                    disabled={selectedApp.status === 'Thiếu hồ sơ'}
+                    onClick={() => {
+                      updateApplicationStatus(selectedApp.id, 'Thiếu hồ sơ', reviewerNote || undefined);
+                      setReviewerNote('');
+                    }}
+                    style={{ padding: '8px 6px', borderRadius: '9px', border: '1px solid #93C5FD', backgroundColor: '#EFF6FF', color: '#1D4ED8', fontSize: '11.5px', fontWeight: 800, cursor: 'pointer', opacity: selectedApp.status === 'Thiếu hồ sơ' ? 0.5 : 1 }}
+                  >
+                    ⚠️ Bổ sung
+                  </button>
+                  <button
+                    type="button"
+                    disabled={selectedApp.status === 'Đã bị hủy'}
+                    onClick={() => {
+                      updateApplicationStatus(selectedApp.id, 'Đã bị hủy', reviewerNote || undefined);
+                      setReviewerNote('');
+                    }}
+                    style={{ padding: '8px 6px', borderRadius: '9px', border: '1px solid #FECACA', backgroundColor: '#FEF2F2', color: '#DC2626', fontSize: '11.5px', fontWeight: 800, cursor: 'pointer', opacity: selectedApp.status === 'Đã bị hủy' ? 0.5 : 1 }}
+                  >
+                    ✕ Từ chối
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
 
-  const renderPrograms = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <div style={{ minWidth: 0 }}>
-        <h1 style={{ margin: 0, fontSize: isDesktop ? '26px' : '22px', fontWeight: 900, color: '#0F172A' }}>Ngành đào tạo & chỉ tiêu PXU</h1>
-        <p style={{ margin: '4px 0 0', fontSize: '13.5px', color: '#64748B' }}>
-          {pxuUni ? `${pxuUni.majors.length} ngành đào tạo · Điểm chuẩn 2024 và tình hình hồ sơ theo từng ngành` : 'Đang tải dữ liệu trường...'}
-        </p>
-      </div>
+  // =========================================================================
+  // SECTION 3: PXU 1-1 CONSULTATIONS — 3-COLUMN KANBAN
+  // =========================================================================
+  const renderBookings = () => {
+    const columns: { id: BookingState; title: string; dot: string; headerBg: string; border: string; items: typeof pxuBookings }[] = [
+      { id: 'pending', title: 'Chờ liên hệ', dot: '#F59E0B', headerBg: '#FFFBEB', border: '#FDE68A', items: pendingBookings },
+      { id: 'contacted', title: 'Đã liên hệ tư vấn', dot: '#2563EB', headerBg: '#EFF6FF', border: '#BFDBFE', items: contactedBookings },
+      { id: 'done', title: 'Hoàn thành', dot: '#10B981', headerBg: '#ECFDF5', border: '#A7F3D0', items: doneBookings },
+    ];
 
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {!isDesktop && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', backgroundColor: '#FFFFFF', padding: '6px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+            {columns.map((col) => (
+              <button
+                key={col.id}
+                type="button"
+                onClick={() => setMobileBkTab(col.id)}
+                style={{
+                  padding: '8px 6px',
+                  borderRadius: '9px',
+                  border: 'none',
+                  backgroundColor: mobileBkTab === col.id ? EMERALD : 'transparent',
+                  color: mobileBkTab === col.id ? '#FFFFFF' : '#475569',
+                  fontSize: '11.5px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
+              >
+                {col.title.split(' ')[0]} ({col.items.length})
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: '16px', alignItems: 'start' }}>
+          {columns
+            .filter((col) => isDesktop || col.id === mobileBkTab)
+            .map((col) => (
+              <div
+                key={col.id}
+                style={{
+                  backgroundColor: '#F8FAFC',
+                  borderRadius: '18px',
+                  border: '1px solid #E2E8F0',
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  minHeight: '260px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '12px', backgroundColor: col.headerBg, border: `1px solid ${col.border}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: col.dot }} />
+                    <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A' }}>{col.title}</span>
+                  </div>
+                  <span style={{ fontSize: '12px', fontWeight: 900, backgroundColor: '#FFFFFF', padding: '2px 8px', borderRadius: '999px' }}>{col.items.length}</span>
+                </div>
+
+                {col.items.length === 0 ? (
+                  <div style={{ padding: '26px 12px', textAlign: 'center', fontSize: '12.5px', color: '#94A3B8' }}>
+                    Chưa có lịch hẹn PXU ở bước này
+                  </div>
+                ) : (
+                  col.items.map((bk) => (
+                    <div key={bk.id} style={{ backgroundColor: '#FFFFFF', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>{bk.name}</div>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: EMERALD }}>Ngành: {bk.major}</div>
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#475569', backgroundColor: '#F8FAFC', padding: '9px 10px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div>🕒 <strong>{bk.dateTime}</strong> {bk.channel ? `· ${bk.channel}` : ''}</div>
+                        <div>📞 {bk.phone} {bk.email ? `· ${bk.email}` : ''}</div>
+                        {bk.notes && <div style={{ color: '#64748B', fontStyle: 'italic' }}>"{bk.notes}"</div>}
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        {col.id === 'pending' && (
+                          <button type="button" onClick={() => updateBookingState(bk.id, 'contacted')} style={{ width: '100%', padding: '8px', borderRadius: '9px', border: 'none', backgroundColor: EMERALD, color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>
+                            📞 Đánh dấu đã gọi tư vấn →
+                          </button>
+                        )}
+                        {col.id === 'contacted' && (
+                          <button type="button" onClick={() => updateBookingState(bk.id, 'done')} style={{ width: '100%', padding: '8px', borderRadius: '9px', border: 'none', backgroundColor: EMERALD_DARK, color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>
+                            ✓ Hoàn thành phiên tư vấn
+                          </button>
+                        )}
+                        {col.id === 'done' && (
+                          <button type="button" onClick={() => updateBookingState(bk.id, 'pending')} style={{ width: '100%', padding: '7px', borderRadius: '9px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', color: '#64748B', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer' }}>
+                            Đặt lại chờ liên hệ
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            ))}
+        </div>
+      </div>
+    );
+  };
+
+  // =========================================================================
+  // SECTION 4: PXU MAJORS, CUTOFF SYNC & OJT SCHOLARSHIPS
+  // =========================================================================
+  const renderPrograms = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
       {pxuUni && (
-        <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-            <UniversityAvatar code="PXU" size={52} />
-            <div style={{ flex: 1, minWidth: '210px' }}>
-              <div style={{ fontSize: '16px', fontWeight: 900, color: '#0F172A', marginBottom: '4px' }}>{pxuUni.name}</div>
-              <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>{pxuUni.desc}</div>
-              <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginTop: '10px', fontSize: '12.5px', color: '#334155' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                  <MapPin size={14} color={EMERALD} /> {pxuUni.loc}
-                </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                  <Star size={14} color="#D97706" /> {pxuUni.rating} / 5
-                </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                  <Briefcase size={14} color={EMERALD} /> Việc làm {pxuUni.employmentRate}%
-                </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                  <School size={14} color={EMERALD} /> Điểm chuẩn tham chiếu: <strong>{pxuUni.score2024}</strong> · Học phí {pxuUni.tuitionMin}–{pxuUni.tuitionMax} triệu/năm
-                </span>
+        <div style={{ ...surfaceCard, border: '1.5px solid #A7F3D0', backgroundColor: '#F8FEFB' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <UniversityAvatar code="PXU" size={50} />
+              <div>
+                <h2 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: 900, color: '#0F172A' }}>
+                  Cấu hình Điểm chuẩn & Học phí Tuyển sinh ĐH Phú Xuân
+                </h2>
+                <div style={{ fontSize: '13px', color: '#475569' }}>
+                  Điểm chuẩn tham chiếu hiện tại: <strong style={{ color: EMERALD }}>{pxuUni.score2024}đ</strong> · Học phí sàn:{' '}
+                  <strong>{pxuUni.tuitionMin} triệu/năm</strong> · Việc làm sau tốt nghiệp: <strong>{pxuUni.employmentRate}%</strong>
+                </div>
               </div>
             </div>
+
             {!isEditingPxu && (
               <button
+                type="button"
                 onClick={() => {
                   setPxuScoreInput(pxuUni.score2024);
                   setPxuTuitionInput(pxuUni.tuitionMin);
                   setIsEditingPxu(true);
                 }}
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '9px 14px',
+                  padding: '10px 16px',
                   borderRadius: '11px',
-                  border: `1.5px solid ${EMERALD}`,
-                  backgroundColor: '#ECFDF5',
-                  color: EMERALD_DARK,
+                  border: 'none',
+                  backgroundColor: EMERALD,
+                  color: '#FFFFFF',
                   fontSize: '12.5px',
                   fontWeight: 800,
                   cursor: 'pointer',
-                  flexShrink: 0,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
                 }}
               >
-                <Edit2 size={14} /> Cập nhật điểm chuẩn & học phí PXU
+                <Edit2 size={14} /> Điều chỉnh Điểm chuẩn & Học phí PXU
               </button>
             )}
           </div>
 
           {isEditingPxu && (
-            <div style={{ backgroundColor: '#F0FDF4', border: '1px solid #A7F3D0', borderRadius: '14px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ fontSize: '13px', fontWeight: 800, color: EMERALD_DARK }}>
-                Điều chỉnh chỉ số tuyển sinh riêng của Trường Đại học Phú Xuân (tự động đồng bộ sang thuật toán AI Matching):
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr auto' : '1fr', gap: '10px', alignItems: 'end' }}>
-                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
-                  Điểm chuẩn tham chiếu (thang 30)
-                  <input
-                    type="number"
-                    step="0.25"
-                    min={12}
-                    max={30}
-                    value={pxuScoreInput}
-                    onChange={(e) => setPxuScoreInput(Number(e.target.value))}
-                    style={{ display: 'block', width: '100%', marginTop: '4px', padding: '9px 11px', borderRadius: '10px', border: '1px solid #86EFAC', fontSize: '13.5px', backgroundColor: '#FFFFFF', boxSizing: 'border-box' }}
-                  />
-                </label>
-                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
-                  Học phí tối thiểu (triệu VNĐ/năm)
-                  <input
-                    type="number"
-                    step="1"
-                    min={0}
-                    max={100}
-                    value={pxuTuitionInput}
-                    onChange={(e) => setPxuTuitionInput(Number(e.target.value))}
-                    style={{ display: 'block', width: '100%', marginTop: '4px', padding: '9px 11px', borderRadius: '10px', border: '1px solid #86EFAC', fontSize: '13.5px', backgroundColor: '#FFFFFF', boxSizing: 'border-box' }}
-                  />
-                </label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => {
-                      updateUniversityMetrics(pxuUni.id, pxuScoreInput, pxuTuitionInput);
-                      setIsEditingPxu(false);
-                    }}
-                    style={{ padding: '10px 16px', borderRadius: '10px', border: 'none', backgroundColor: EMERALD, color: '#FFFFFF', fontSize: '13px', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <Check size={15} /> Lưu cập nhật
-                  </button>
-                  <button
-                    onClick={() => setIsEditingPxu(false)}
-                    style={{ padding: '10px 14px', borderRadius: '10px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#475569', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
-                  >
-                    Hủy
-                  </button>
-                </div>
+            <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #D1FAE5', display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr auto' : '1fr', gap: '12px', alignItems: 'end' }}>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                Điểm chuẩn tham chiếu PXU (tự động dịch chuyển điểm các ngành sang AI Matching)
+                <input
+                  type="number"
+                  step="0.25"
+                  min={12}
+                  max={30}
+                  value={pxuScoreInput}
+                  onChange={(e) => setPxuScoreInput(Number(e.target.value))}
+                  style={{ display: 'block', width: '100%', marginTop: '5px', padding: '9px 12px', borderRadius: '10px', border: `1.5px solid ${EMERALD}`, fontSize: '14px', fontWeight: 800, backgroundColor: '#FFFFFF', boxSizing: 'border-box' }}
+                />
+              </label>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                Học phí tối thiểu (triệu VNĐ/năm)
+                <input
+                  type="number"
+                  step="1"
+                  min={0}
+                  max={100}
+                  value={pxuTuitionInput}
+                  onChange={(e) => setPxuTuitionInput(Number(e.target.value))}
+                  style={{ display: 'block', width: '100%', marginTop: '5px', padding: '9px 12px', borderRadius: '10px', border: `1.5px solid ${EMERALD}`, fontSize: '14px', fontWeight: 800, backgroundColor: '#FFFFFF', boxSizing: 'border-box' }}
+                />
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateUniversityMetrics(pxuUni.id, pxuScoreInput, pxuTuitionInput);
+                    setIsEditingPxu(false);
+                  }}
+                  style={{ padding: '10px 16px', borderRadius: '10px', border: 'none', backgroundColor: EMERALD, color: '#FFFFFF', fontSize: '13px', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Check size={15} /> Lưu & Đồng bộ AI
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingPxu(false)}
+                  style={{ padding: '10px 14px', borderRadius: '10px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#475569', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Hủy
+                </button>
               </div>
             </div>
           )}
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' }}>
+      {/* Interactive Major Quota Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: '14px' }}>
         {pxuUni &&
           Object.entries(pxuUni.cutoffScores).map(([major, cutoff]) => {
-            const appsOfMajor = majorApps(major);
+            const appsOfMajor = pxuApps.filter((a) => a.major === major);
             const pending = appsOfMajor.filter((a) => a.status === 'Đang xét duyệt').length;
-            const approved = appsOfMajor.filter((a) => a.status === 'Đã trúng tuyển').length;
+            const admitted = appsOfMajor.filter((a) => a.status === 'Đã trúng tuyển').length;
             return (
-              <div key={major} style={{ ...cardStyle, padding: '18px' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
-                  <GraduationCap size={20} color={EMERALD} />
+              <div key={major} className="up-card-interactive" style={{ ...surfaceCard, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '11px', backgroundColor: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <GraduationCap size={20} color={EMERALD} />
+                  </div>
+                  <span style={{ padding: '4px 10px', borderRadius: '999px', backgroundColor: '#ECFDF5', color: EMERALD_DARK, fontSize: '12px', fontWeight: 800 }}>
+                    Chuẩn: {cutoff}đ
+                  </span>
                 </div>
-                <div style={{ fontSize: '14.5px', fontWeight: 800, color: '#0F172A', marginBottom: '8px' }}>{major}</div>
-                <div style={{ fontSize: '12.5px', color: '#475569', lineHeight: 1.8 }}>
-                  Điểm chuẩn 2024: <strong style={{ color: EMERALD, fontSize: '14px' }}>{cutoff}</strong>
-                  <br />
-                  Hồ sơ đã nộp: <strong style={{ color: '#0F172A' }}>{appsOfMajor.length}</strong> · Chờ duyệt: <strong style={{ color: '#D97706' }}>{pending}</strong>
-                  <br />
-                  Đã trúng tuyển: <strong style={{ color: EMERALD }}>{approved}</strong>
+
+                <div>
+                  <h3 style={{ margin: '0 0 4px', fontSize: '15.5px', fontWeight: 800, color: '#0F172A' }}>{major}</h3>
+                  <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Briefcase size={12} color={EMERALD} /> Cam kết thực tập doanh nghiệp OJT
+                  </div>
                 </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', backgroundColor: '#F8FAFC', padding: '10px', borderRadius: '12px', textAlign: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: '16px', fontWeight: 900, color: '#0F172A' }}>{appsOfMajor.length}</div>
+                    <div style={{ fontSize: '10.5px', color: '#64748B' }}>Tổng nộp</div>
+                  </div>
+                  <div style={{ borderLeft: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 900, color: '#D97706' }}>{pending}</div>
+                    <div style={{ fontSize: '10.5px', color: '#64748B' }}>Chờ duyệt</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '16px', fontWeight: 900, color: EMERALD }}>{admitted}</div>
+                    <div style={{ fontSize: '10.5px', color: '#64748B' }}>Trúng tuyển</div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => jumpToMajorApps(major)}
+                  style={{
+                    marginTop: 'auto',
+                    width: '100%',
+                    padding: '9px',
+                    borderRadius: '10px',
+                    border: '1px solid #A7F3D0',
+                    backgroundColor: '#FFFFFF',
+                    color: EMERALD_DARK,
+                    fontSize: '12.5px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Xem thí sinh ngành này →
+                </button>
               </div>
             );
           })}
       </div>
 
-      <div style={{ borderRadius: '20px', padding: '20px', background: 'linear-gradient(135deg, #064E3B 0%, #059669 100%)', color: '#FFFFFF', display: 'flex', gap: '14px', alignItems: 'flex-start', boxSizing: 'border-box', minWidth: 0 }}>
-        <div style={{ width: '42px', height: '42px', borderRadius: '13px', backgroundColor: 'rgba(255,255,255,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Award size={22} color="#FFFFFF" />
+      {/* OJT Scholarship Highlight */}
+      <div style={{ borderRadius: '18px', padding: '20px', background: `linear-gradient(135deg, ${EMERALD_DARK} 0%, ${EMERALD} 100%)`, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+        <div style={{ width: '46px', height: '46px', borderRadius: '13px', backgroundColor: 'rgba(255,255,255,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Award size={24} color="#FFFFFF" />
         </div>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: '15.5px', fontWeight: 900, marginBottom: '4px' }}>Học bổng OJT & cam kết việc làm</div>
-          <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.65, color: '#D1FAE5' }}>
-            PXU áp dụng mô hình đào tạo thực chiến OJT gắn liền doanh nghiệp: thí sinh khối ngành Công nghệ & Thiết kế được xét học bổng tài trợ 50–100% học phí, sinh viên thực tập tại doanh nghiệp đối tác ngay trong quá trình học và {pxuUni?.employmentRate ?? 92}% có việc làm sau tốt nghiệp.
-          </p>
+        <div style={{ flex: 1, minWidth: '220px' }}>
+          <div style={{ fontSize: '15.5px', fontWeight: 900, marginBottom: '3px' }}>
+            Chính sách Học bổng OJT & Doanh nghiệp Đồng hành tại ĐH Phú Xuân
+          </div>
+          <div style={{ fontSize: '13px', color: '#D1FAE5', lineHeight: 1.55 }}>
+            Thí sinh nộp hồ sơ xét tuyển sớm có điểm vượt chuẩn từ +4.0đ được Hội đồng tự động gợi ý xét Học bổng Tài năng 50%–100% học phí và ưu tiên bố trí lộ trình OJT tại doanh nghiệp đối tác ngay từ năm nhất.
+          </div>
         </div>
       </div>
     </div>
   );
 
+  // =========================================================================
+  // SECTION 5: PXU INSTITUTIONAL RBAC & SECURITY SCOPE
+  // =========================================================================
   const renderAccount = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '680px' }}>
-      <h1 style={{ margin: 0, fontSize: isDesktop ? '26px' : '22px', fontWeight: 900, color: '#0F172A' }}>Tài khoản tuyển sinh PXU</h1>
-
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px', flexWrap: 'wrap' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '18px', alignItems: 'start' }}>
+      <div style={surfaceCard}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
           <UniversityAvatar code="PXU" size={56} />
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: '17px', fontWeight: 900, color: '#0F172A' }}>{user.name}</div>
-            <div style={{ fontSize: '12.5px', color: '#64748B' }}>{user.title}</div>
-            <div style={{ fontSize: '12.5px', color: '#64748B' }}>
-              {user.email} · {user.organization}
-            </div>
-          </div>
-        </div>
-        <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>
-          Vai trò hiện tại: <strong style={{ color: EMERALD }}>Ban Tuyển sinh ĐH Phú Xuân (university_pxu)</strong> — không gian quản trị phân lập dữ liệu: chỉ tiếp nhận và thẩm định hồ sơ nộp vào ĐH Phú Xuân ({pxuApps.length} hồ sơ), điều phối lịch tư vấn 1-1 đặt với PXU ({pxuBookings.length} lịch) và cập nhật chỉ số tuyển sinh của riêng PXU; tuyệt đối không truy cập dữ liệu của {universitiesList.length - 1} trường đại học còn lại.
-        </div>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '14px' }}>
-          <button
-            onClick={openNotifications}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '9px 14px', borderRadius: '11px', border: '1px solid #DCE8E1', backgroundColor: '#FFFFFF', color: '#334155', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}
-          >
-            <Bell size={14} /> Thông báo {unreadNotificationCount > 0 ? `(${unreadNotificationCount})` : ''}
-          </button>
-          <button
-            onClick={openSettings}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '9px 14px', borderRadius: '11px', border: '1px solid #DCE8E1', backgroundColor: '#FFFFFF', color: '#334155', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}
-          >
-            <Settings size={14} /> Cài đặt
-          </button>
-        </div>
-      </div>
-
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-          <ShieldCheck size={17} color={EMERALD} />
-          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 900, color: '#0F172A' }}>Phân quyền RBAC của ĐH Phú Xuân (PXU)</h2>
-        </div>
-        <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.7 }}>
-          Quyền hạn được kiểm soát chặt chẽ ngay tại tầng lõi dữ liệu (<code>AppContext</code>):
-          <ul style={{ margin: '8px 0', paddingLeft: '18px' }}>
-            <li><strong>PXU được phép:</strong> xem & thẩm định hồ sơ nộp vào PXU (xác nhận hợp lệ, duyệt trúng tuyển, yêu cầu bổ sung, từ chối kèm ghi chú), xử lý lịch tư vấn 1-1 với PXU, cập nhật điểm chuẩn & học phí riêng của PXU, xuất CSV thí sinh PXU.</li>
-            <li><strong>PXU bị giới hạn:</strong> không xem/xử lý hồ sơ hoặc lịch tư vấn của 29 trường khác; không chỉnh sửa điểm chuẩn của trường khác; không tự ý rút/hủy hồ sơ thay thí sinh.</li>
-            <li><strong>Admin Hệ thống:</strong> điều hành toàn cục cả {universitiesList.length} trường, duyệt hàng loạt, quản lý tài khoản người dùng và nhật ký toàn sàn.</li>
-            <li><strong>Thí sinh:</strong> nộp hồ sơ, bổ sung minh chứng, đặt lịch tư vấn 1-1 và theo dõi kết quả cá nhân riêng biệt.</li>
-          </ul>
-          Để chuyển sang vai trò khác, hãy bấm <strong>Đăng xuất tài khoản</strong> bên dưới rồi đăng nhập bằng tài khoản tương ứng.
-        </div>
-      </div>
-
-      <div style={cardStyle}>
-        {!showLogoutConfirm ? (
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '11px 18px', borderRadius: '12px', border: '1.5px solid #FECACA', backgroundColor: '#FEF2F2', color: '#DC2626', fontSize: '13.5px', fontWeight: 800, cursor: 'pointer' }}
-          >
-            <LogOut size={16} /> Đăng xuất tài khoản
-          </button>
-        ) : (
           <div>
-            <p style={{ margin: '0 0 10px', fontSize: '13.5px', color: '#334155', fontWeight: 600 }}>Bạn chắc chắn muốn đăng xuất khỏi Cổng tuyển sinh PXU?</p>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={logout} style={{ padding: '10px 18px', borderRadius: '11px', border: 'none', backgroundColor: '#DC2626', color: '#FFFFFF', fontSize: '13px', fontWeight: 800, cursor: 'pointer' }}>
-                Đăng xuất
-              </button>
-              <button onClick={() => setShowLogoutConfirm(false)} style={{ padding: '10px 18px', borderRadius: '11px', border: '1px solid #DCE8E1', backgroundColor: '#FFFFFF', color: '#475569', fontSize: '13px', fontWeight: 800, cursor: 'pointer' }}>
-                Hủy
-              </button>
-            </div>
+            <div style={{ fontSize: '17px', fontWeight: 900, color: '#0F172A' }}>{user.name}</div>
+            <div style={{ fontSize: '13px', color: EMERALD, fontWeight: 700 }}>{user.organization}</div>
+            <div style={{ fontSize: '12px', color: '#64748B' }}>{user.email}</div>
           </div>
-        )}
+        </div>
+        <div style={{ padding: '14px', borderRadius: '14px', backgroundColor: '#ECFDF5', border: '1px solid #A7F3D0', fontSize: '13px', color: EMERALD_DARK, lineHeight: 1.6 }}>
+          <strong>🔒 Chế độ Cô lập Dữ liệu Cấp Trường (`uniCode === 'PXU'`):</strong> Cổng quản trị này được phép tiếp nhận, thẩm định hồ sơ, điều phối tư vấn 1-1 và cập nhật điểm chuẩn của riêng <strong>Trường Đại học Phú Xuân</strong>. Toàn bộ dữ liệu của 29 trường đại học còn lại được ẩn và khóa bảo vệ hoàn toàn.
+        </div>
+      </div>
+
+      <div style={surfaceCard}>
+        <h3 style={{ margin: '0 0 12px', fontSize: '15.5px', fontWeight: 800, color: '#0F172A' }}>
+          Phạm vi Quyền hạn của Ban Tuyển sinh PXU
+        </h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
+          {[
+            { ok: true, text: 'Xem & duyệt hồ sơ thí sinh đăng ký vào ĐH Phú Xuân (4 trạng thái + ghi chú)' },
+            { ok: true, text: 'Điều phối lịch hẹn tư vấn 1-1 đặt riêng với giảng viên / ban tư vấn PXU' },
+            { ok: true, text: 'Cập nhật điểm chuẩn tham chiếu & học phí sàn của PXU (đồng bộ AI Matching)' },
+            { ok: false, text: 'Không xem hoặc can thiệp hồ sơ xét tuyển của 29 trường đại học khác' },
+            { ok: false, text: 'Không chỉnh sửa điểm chuẩn của các trường đại học khác trên hệ thống' },
+          ].map((item) => (
+            <div key={item.text} style={{ display: 'flex', alignItems: 'flex-start', gap: '9px', color: item.ok ? '#0F172A' : '#64748B' }}>
+              <span style={{ color: item.ok ? EMERALD : '#DC2626', fontWeight: 900 }}>{item.ok ? '✓' : '✕'}</span>
+              <span>{item.text}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 
-  // ---------------------------------------------------------------------
-  // Shell: header emerald + tab bar (desktop) / bottom nav (mobile)
-  // ---------------------------------------------------------------------
-
-  const utilityButtons = (
+  // =========================================================================
+  // SHELL: CONSISTENT SIDEBAR (DESKTOP) & BOTTOM NAV (MOBILE)
+  // =========================================================================
+  const renderMainBody = () => (
     <>
-      <button
-        onClick={openNotifications}
-        aria-label="Thông báo"
-        style={{ position: 'relative', width: '36px', height: '36px', borderRadius: '11px', border: '1px solid rgba(255,255,255,0.3)', backgroundColor: 'rgba(255,255,255,0.12)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
-      >
-        <Bell size={16} />
-        {unreadNotificationCount > 0 && (
-          <span style={{ position: 'absolute', top: '-4px', right: '-4px', minWidth: '17px', height: '17px', padding: '0 4px', borderRadius: '999px', backgroundColor: '#EF4444', color: '#FFFFFF', fontSize: '9.5px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
-            {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
-          </span>
-        )}
-      </button>
-      <button
-        onClick={openSettings}
-        aria-label="Cài đặt"
-        style={{ width: '36px', height: '36px', borderRadius: '11px', border: '1px solid rgba(255,255,255,0.3)', backgroundColor: 'rgba(255,255,255,0.12)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
-      >
-        <Settings size={16} />
-      </button>
-    </>
-  );
-
-  const tabButton = (item: (typeof NAV_ITEMS)[number]) => {
-    const active = section === item.id;
-    const badge = item.id === 'apps' && pendingApps.length > 0 ? pendingApps.length : null;
-    if (isDesktop) {
-      return (
-        <button
-          key={item.id}
-          onClick={() => setSection(item.id)}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 16px',
-            borderRadius: '999px',
-            border: 'none',
-            backgroundColor: active ? EMERALD : 'transparent',
-            color: active ? '#FFFFFF' : '#475569',
-            fontSize: '13.5px',
-            fontWeight: active ? 800 : 600,
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {item.icon}
-          {item.label}
-          {badge !== null && (
-            <span style={{ minWidth: '20px', height: '20px', padding: '0 6px', borderRadius: '999px', backgroundColor: '#DC2626', color: '#FFFFFF', fontSize: '11px', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
-              {badge}
-            </span>
-          )}
-        </button>
-      );
-    }
-    return (
-      <button
-        key={item.id}
-        onClick={() => setSection(item.id)}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '3px',
-          padding: '6px 1px',
-          border: 'none',
-          backgroundColor: 'transparent',
-          color: active ? EMERALD : '#64748B',
-          fontSize: '10px',
-          fontWeight: active ? 800 : 600,
-          cursor: 'pointer',
-          flex: 1,
-          minWidth: 0,
-        }}
-      >
-        <span style={{ position: 'relative', display: 'flex' }}>
-          {item.icon}
-          {badge !== null && (
-            <span style={{ position: 'absolute', top: '-6px', right: '-9px', minWidth: '16px', height: '16px', padding: '0 4px', borderRadius: '999px', backgroundColor: '#DC2626', color: '#FFFFFF', fontSize: '9.5px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
-              {badge}
-            </span>
-          )}
-        </span>
-        <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>
-        {active && <span style={{ width: '18px', height: '3px', borderRadius: '999px', backgroundColor: EMERALD }} />}
-      </button>
-    );
-  };
-
-  const content = (
-    <main
-      style={{
-        flex: 1,
-        minWidth: 0,
-        width: '100%',
-        maxWidth: '1160px',
-        margin: '0 auto',
-        padding: isDesktop ? '26px 28px 40px' : '18px 16px 96px',
-        boxSizing: 'border-box',
-      }}
-    >
       {section === 'dashboard' && renderDashboard()}
       {section === 'apps' && renderApps()}
       {section === 'bookings' && renderBookings()}
       {section === 'programs' && renderPrograms()}
       {section === 'account' && renderAccount()}
-    </main>
+    </>
   );
 
-  return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#F0F6F2', width: '100%', display: 'flex', flexDirection: 'column', overflowX: 'clip' }}>
-      <div style={{ width: '100%', maxWidth: isDesktop ? undefined : '520px', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-        <header style={{ background: `linear-gradient(135deg, ${EMERALD_DARK} 0%, ${EMERALD} 100%)`, color: '#FFFFFF', padding: isDesktop ? '16px 28px' : '15px 16px 13px' }}>
-          <div style={{ maxWidth: isDesktop ? '1160px' : undefined, margin: '0 auto', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '42px', height: '42px', borderRadius: '12px', backgroundColor: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-              <img src="/images/logo_pxu.png" alt="PXU" style={{ width: '34px', height: '34px', objectFit: 'contain' }} />
+  if (isDesktop) {
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', width: '100%' }}>
+        {/* PXU Emerald Sidebar */}
+        <aside
+          style={{
+            width: '256px',
+            flexShrink: 0,
+            background: 'linear-gradient(180deg, #042F2E 0%, #064E3B 100%)',
+            color: '#FFFFFF',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '20px 14px',
+            position: 'sticky',
+            top: 0,
+            height: '100vh',
+            boxSizing: 'border-box',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 8px 20px', borderBottom: '1px solid rgba(255,255,255,0.12)', marginBottom: '16px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '11px', backgroundColor: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+              <img src="/images/logo_pxu.png" alt="PXU" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: isDesktop ? '17px' : '15px', fontWeight: 900, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{isDesktop ? 'Cổng Tuyển Sinh ĐH Phú Xuân' : 'Cổng Tuyển Sinh PXU'}</div>
-              <div style={{ fontSize: '11.5px', color: '#A7F3D0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {user.name} · {user.email}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '14.5px', fontWeight: 900, lineHeight: 1.2 }}>ĐH Phú Xuân (PXU)</div>
+              <div style={{ fontSize: '11px', color: '#A7F3D0', fontWeight: 600 }}>Cổng Tuyển sinh & OJT</div>
+            </div>
+          </div>
+
+          <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#6EE7B7', textTransform: 'uppercase', letterSpacing: '0.6px', padding: '0 10px 8px', opacity: 0.85 }}>
+            Nghiệp vụ tuyển sinh PXU
+          </div>
+
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {NAV_ITEMS.map((item) => {
+              const active = section === item.id;
+              const badge =
+                item.id === 'apps' && pendingApps.length > 0
+                  ? pendingApps.length
+                  : item.id === 'bookings' && pendingBookings.length > 0
+                  ? pendingBookings.length
+                  : null;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setSection(item.id);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 12px',
+                    borderRadius: '11px',
+                    border: 'none',
+                    backgroundColor: active ? EMERALD : 'transparent',
+                    color: active ? '#FFFFFF' : '#D1FAE5',
+                    fontSize: '13.5px',
+                    fontWeight: active ? 800 : 600,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    width: '100%',
+                    transition: 'background-color 0.15s ease',
+                  }}
+                >
+                  {item.icon}
+                  <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
+                  {badge !== null && (
+                    <span style={{ padding: '1px 7px', borderRadius: '999px', backgroundColor: active ? '#FFFFFF' : '#F59E0B', color: active ? EMERALD_DARK : '#451A03', fontSize: '11px', fontWeight: 900 }}>
+                      {badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+
+          <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.12)' }}>
+            <div style={{ padding: '12px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.08)', fontSize: '11.5px', color: '#D1FAE5', lineHeight: 1.5 }}>
+              <div style={{ fontWeight: 800, color: '#FFFFFF', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Lock size={12} color="#6EE7B7" /> Bảo mật Phân lập PXU
               </div>
-            </div>
-            <span style={{ fontSize: '10px', fontWeight: 800, backgroundColor: '#F59E0B', color: '#451A03', padding: '4px 8px', borderRadius: '999px', whiteSpace: 'nowrap', flexShrink: 0 }}>{isDesktop ? `${pendingApps.length} chờ duyệt` : `${pendingApps.length} chờ`}</span>
-            {utilityButtons}
-          </div>
-        </header>
-
-        {isDesktop && (
-          <div style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #DCE8E1', position: 'sticky', top: 0, zIndex: 40 }}>
-            <div style={{ maxWidth: '1160px', margin: '0 auto', padding: '8px 28px', display: 'flex', gap: '6px', overflowX: 'auto', boxSizing: 'border-box' }}>
-              {NAV_ITEMS.map(tabButton)}
+              Chỉ hiển thị thí sinh đăng ký nguyện vọng vào <strong>Trường ĐH Phú Xuân</strong>.
             </div>
           </div>
-        )}
+        </aside>
 
-        {content}
-
-        {!isDesktop && (
-          <nav
+        {/* Right Workspace */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <header
             style={{
-              position: 'fixed',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              maxWidth: '520px',
-              margin: '0 auto',
+              height: '64px',
               backgroundColor: '#FFFFFF',
-              borderTop: '1px solid #DCE8E1',
-              boxShadow: '0 -4px 24px rgba(6,78,59,0.08)',
+              borderBottom: '1px solid #E2E8F0',
+              padding: '0 28px',
               display: 'flex',
-              paddingTop: '6px',
-              paddingBottom: 'max(10px, env(safe-area-inset-bottom, 12px))',
-              boxSizing: 'border-box',
-              zIndex: 80,
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '16px',
+              position: 'sticky',
+              top: 0,
+              zIndex: 60,
             }}
           >
-            {NAV_ITEMS.map(tabButton)}
-          </nav>
-        )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+              <span style={{ fontSize: '12.5px', color: EMERALD, fontWeight: 700 }}>Cổng Tuyển sinh PXU</span>
+              <ChevronRight size={14} color="#94A3B8" />
+              <h1 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {currentNavMeta.label}
+              </h1>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={openNotifications}
+                aria-label="Thông báo"
+                style={{ position: 'relative', width: '38px', height: '38px', borderRadius: '11px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', color: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              >
+                <Bell size={17} />
+                {unreadNotificationCount > 0 && (
+                  <span style={{ position: 'absolute', top: '-4px', right: '-4px', minWidth: '17px', height: '17px', padding: '0 4px', borderRadius: '999px', backgroundColor: '#EF4444', color: '#FFFFFF', fontSize: '10px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                  </span>
+                )}
+              </button>
+
+              <AccountRoleMenu variant="light" />
+            </div>
+          </header>
+
+          <main style={{ flex: 1, maxWidth: '1240px', width: '100%', margin: '0 auto', padding: '24px 28px 48px', boxSizing: 'border-box' }}>
+            {renderMainBody()}
+          </main>
+        </div>
       </div>
+    );
+  }
+
+  // Mobile Shell
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', width: '100%', maxWidth: '520px', margin: '0 auto', display: 'flex', flexDirection: 'column', overflowX: 'clip' }}>
+      <header
+        style={{
+          background: `linear-gradient(135deg, #042F2E 0%, ${EMERALD_DARK} 100%)`,
+          color: '#FFFFFF',
+          padding: '12px 14px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '8px',
+          position: 'sticky',
+          top: 0,
+          zIndex: 60,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
+          <div style={{ width: '34px', height: '34px', borderRadius: '9px', backgroundColor: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <img src="/images/logo_pxu.png" alt="PXU" style={{ width: '26px', height: '26px', objectFit: 'contain' }} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: '14px', fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Tuyển sinh PXU</div>
+            <div style={{ fontSize: '11px', color: '#A7F3D0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentNavMeta.shortLabel}</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={openNotifications}
+            aria-label="Thông báo"
+            style={{ position: 'relative', width: '34px', height: '34px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.1)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          >
+            <Bell size={16} />
+            {unreadNotificationCount > 0 && (
+              <span style={{ position: 'absolute', top: '-4px', right: '-4px', minWidth: '16px', height: '16px', borderRadius: '999px', backgroundColor: '#EF4444', color: '#FFFFFF', fontSize: '9.5px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {unreadNotificationCount}
+              </span>
+            )}
+          </button>
+          <AccountRoleMenu variant="dark" compact />
+        </div>
+      </header>
+
+      <main style={{ flex: 1, padding: '16px 14px 96px', boxSizing: 'border-box' }}>
+        {renderMainBody()}
+      </main>
+
+      <nav
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          maxWidth: '520px',
+          margin: '0 auto',
+          backgroundColor: '#FFFFFF',
+          borderTop: '1px solid #E2E8F0',
+          boxShadow: '0 -4px 20px rgba(15,23,42,0.06)',
+          display: 'flex',
+          paddingTop: '6px',
+          paddingBottom: 'max(10px, env(safe-area-inset-bottom, 12px))',
+          zIndex: 80,
+        }}
+      >
+        {NAV_ITEMS.map((item) => {
+          const active = section === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setSection(item.id)}
+              style={{
+                flex: 1,
+                border: 'none',
+                backgroundColor: 'transparent',
+                color: active ? EMERALD : '#64748B',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '3px',
+                fontSize: '10px',
+                fontWeight: active ? 800 : 600,
+                cursor: 'pointer',
+                padding: '4px 2px',
+              }}
+            >
+              {item.icon}
+              <span>{item.shortLabel}</span>
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 };

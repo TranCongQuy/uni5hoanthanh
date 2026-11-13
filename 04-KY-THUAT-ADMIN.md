@@ -60,25 +60,22 @@ Trong `src/App.tsx`, hệ thống kiểm tra trực tiếp phiên xác thực (`
 ## 3. ĐẶC TẢ KỸ THUẬT 2 CỔNG QUẢN TRỊ CHUYÊN BIỆT
 
 ### 3.1. Cổng Tuyển sinh Trường Đại học Phú Xuân (`src/components/university/UniversityApp.tsx`)
-Được thiết kế riêng cho **Ban Tư vấn Tuyển sinh ĐH Phú Xuân (`tuyensinh@pxu.edu.vn` / `pxu123`)** gồm 5 phân hệ:
-1. **Tổng quan PXU (`overview`):** Thống kê thời gian thực tổng hồ sơ nộp vào PXU, tỷ lệ trúng tuyển sớm, phân bổ hồ sơ theo từng ngành đào tạo mũi nhọn (Công nghệ thông tin, Quản trị kinh doanh, Marketing, Thiết kế đồ họa, Ngôn ngữ Anh/Trung...) và nhật ký xét duyệt gần nhất tại PXU.
+Được thiết kế theo chuẩn **Executive Emerald CRM (`#064E3B` + `#F8FAFC`)** dành riêng cho **Ban Tư vấn Tuyển sinh ĐH Phú Xuân (`tuyensinh@pxu.edu.vn` / `pxu123`)**:
+1. **Tổng quan PXU (`overview`):** Banner nhận diện ĐH Phú Xuân (OJT 3 năm, 96% việc làm), 4 thẻ KPI tương tác (bấm nhảy thẳng sang bộ lọc tương ứng), biểu đồ phân bổ thí sinh theo ngành đào tạo mũi nhọn và danh sách hồ sơ ưu tiên chờ duyệt.
 2. **Hồ sơ nộp PXU (`applications`):**
-   - Thực thi bộ lọc cô lập cứng `applications.filter(a => a.uniCode === 'PXU')`.
-   - Hỗ trợ tìm kiếm theo tên/mã hồ sơ, lọc theo ngành và trạng thái, nhập **Ghi chú Hội đồng Tuyển sinh PXU** trước khi bấm các nút nghiệp vụ: *Hồ sơ hợp lệ*, *Duyệt trúng tuyển*, *Báo thiếu hồ sơ*, *Từ chối*.
-3. **Ngành học & Cấu hình Tuyển sinh PXU (`programs`):**
-   - Quản lý danh mục ngành đào tạo gắn liền mô hình **OJT doanh nghiệp** và chính sách học bổng PXU.
-   - Tích hợp bảng **Cập nhật Điểm chuẩn tham chiếu & Học phí tối thiểu độc quyền của PXU**: Khi cán bộ PXU lưu điểm chuẩn mới, hệ thống tự động tịnh tiến điểm chuẩn các ngành của PXU và cập nhật ngay sang thuật toán AI Matching cho thí sinh, trong khi khóa chặt quyền can thiệp vào 29 trường đại học khác.
-4. **Lịch tư vấn 1-1 PXU (`bookings`):** Tiếp nhận lịch hẹn thí sinh đăng ký riêng với PXU (hiển thị đầy đủ SĐT, Email, ngành quan tâm, khung giờ và kênh tư vấn `Google Meet` / `Zalo` / `Trực tiếp`), cập nhật tiến độ `Chờ liên hệ` → `Đã liên hệ` → `Hoàn thành`.
-5. **Tài khoản đơn vị (`account`):** Minh bạch hóa thông tin định danh đơn vị, phạm vi quyền hạn được cấp và các ranh giới bảo mật đang áp dụng.
+   - Thực thi bộ lọc cô lập cứng `applications.filter(a => a.uniCode === 'PXU')` trên bảng dữ liệu SaaS kết hợp **Smart Inspector Panel**.
+   - **Tự động đối soát Điểm chuẩn PXU & Đề xuất Học bổng OJT:** Hệ thống tự động so sánh điểm hồ sơ với điểm chuẩn ngành tại PXU (`≥ +4.0đ` gợi ý trao Học bổng Tài năng OJT 50–100%, `≥ 0đ` đủ điều kiện trúng tuyển sớm, `< 0đ` gợi ý xét học bạ THPT).
+   - Trang bị **Chip ghi chú mẫu 1-Click** của Hội đồng Tuyển sinh PXU và hệ thống nút phê duyệt phân cấp thị giác rõ ràng (*Duyệt Trúng tuyển sớm*, *Xác nhận Hợp lệ*, *Yêu cầu Bổ sung*, *Từ chối*).
+3. **Lịch tư vấn 1-1 PXU (`bookings`):** Bảng **Kanban 3 cột trực quan** (`Chờ liên hệ` → `Đã liên hệ` → `Hoàn thành`) trên Desktop và bộ chuyển 3 tab gọn gàng trên Mobile, hỗ trợ gọi điện/gửi email 1 chạm và chuyển trạng thái tức thì.
+4. **Ngành & Điểm chuẩn PXU (`programs`):** Thẻ chỉ tiêu các ngành đào tạo OJT (bấm xem ngay hồ sơ nộp vào ngành đó) và bảng cập nhật **Điểm chuẩn tham chiếu & Học phí tối thiểu của riêng PXU** (đồng bộ tức thì sang AI Matching, khóa 100% quyền can thiệp vào 29 trường khác).
 
 ### 3.2. Cổng Quản trị Hệ thống Toàn quốc (`src/components/admin/AdminApp.tsx`)
-Dành riêng cho **Quản trị viên Cấp cao (`admin@unipath.vn` / `admin123`)** gồm 6 phân hệ:
-1. **Tổng quan Toàn quốc (`dashboard`):** Thống kê tổng hồ sơ toàn hệ thống, biểu đồ phân bổ theo 3 miền Bắc – Trung – Nam, top trường nhận nhiều nguyện vọng nhất và nhật ký kiểm toán (`processingLog`) toàn hệ thống.
-2. **Quản lý Hồ sơ (`applications`):** Tra cứu, lọc kết hợp theo trường/trạng thái, nhập ghi chú xét duyệt chung, hỗ trợ cả **Duyệt từng hồ sơ** lẫn **Thao tác hàng loạt (`batchUpdateApplicationStatus`)** khi tích chọn nhiều hồ sơ cùng lúc.
-3. **30 Trường Đại học (`universities`):** Chỉnh sửa trực tiếp điểm chuẩn tham chiếu (`score2024`) và học phí tối thiểu (`tuitionMin`) cho bất kỳ trường nào trong 30 trường đại học trên toàn quốc.
-4. **Lịch hẹn 1-1 (`bookings`):** Giám sát và điều phối toàn bộ lịch hẹn tư vấn tuyển sinh trên hệ thống.
-5. **Người dùng (`users`):** Quản lý danh sách 3 tài khoản mặc định cùng toàn bộ tài khoản thí sinh đăng ký mới theo thời gian thực (`registeredUsers`).
-6. **Hệ thống (`account`):** Thông tin quản trị viên, trạng thái kho dữ liệu và công cụ **Khôi phục dữ liệu gốc Demo** phục vụ kiểm thử nhiều kịch bản liên tiếp.
+Được thiết kế theo chuẩn **SaaS Control Center (`#0F172A` + `#4F46E5`)** dành cho **Quản trị viên Cấp cao (`admin@unipath.vn` / `admin123`)**:
+1. **Tổng quan Toàn quốc (`dashboard`):** 4 thẻ KPI điều hướng nhanh, **Phễu tiến trình xét tuyển 4 giai đoạn** (*Chờ xét duyệt* → *Hợp lệ / Bổ sung* → *Đã trúng tuyển* → *Từ chối / Hủy*), hàng đợi hồ sơ mới nhất cần xử lý, thống kê 3 miền Bắc – Trung – Nam và Nhật ký kiểm toán (`processingLog`).
+2. **Hồ sơ Xét tuyển (`applications`):** Thanh công cụ lọc gọn 1 hàng (Tìm kiếm + Dropdown Trường + Xuất CSV + Segmented Status Tabs), duyệt hàng loạt (`batchUpdateApplicationStatus`) và **Smart Inspector** bên phải (Stepper 3 bước, thanh đối chiếu điểm chuẩn tự động, chip ghi chú nhanh 1-Click).
+3. **Lịch tư vấn 1-1 (`bookings`):** Bảng **Kanban 3 cột toàn quốc** điều phối toàn bộ lịch hẹn tư vấn giữa thí sinh và 30 trường đại học.
+4. **30 Trường Đại học (`universities`):** Bảng dữ liệu 30 trường hỗ trợ lọc miền, tìm kiếm nhanh và **chỉnh sửa trực tiếp trên dòng (Inline Edit)** điểm chuẩn tham chiếu `score2024` & học phí `tuitionMin`.
+5. **Tài khoản & Hệ thống (`users`):** Quản lý danh sách tài khoản phân quyền RBAC cùng toàn bộ tài khoản thí sinh đăng ký mới (`registeredUsers`) và công cụ **Khôi phục dữ liệu gốc Demo**.
 
 ---
 
