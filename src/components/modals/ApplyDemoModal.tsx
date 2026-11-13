@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, FileText, ArrowRight } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../common/UI';
@@ -8,6 +8,7 @@ export const ApplyDemoModal: React.FC = () => {
     isApplyDemoOpen,
     closeApplyDemo,
     applyDemoTargetUni,
+    user,
     profile,
     addApplication,
     setActiveTab,
@@ -18,7 +19,15 @@ export const ApplyDemoModal: React.FC = () => {
   const isDesktop = viewMode === 'desktop';
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedMajor, setSelectedMajor] = useState<string>('');
-  const [admissionMethod, setAdmissionMethod] = useState<string>('Xét điểm thi tốt nghiệp THPT');
+  const [admissionMethod, setAdmissionMethod] = useState<string>('Xét điểm thi tốt nghiệp THPT năm 2026');
+
+  useEffect(() => {
+    if (isApplyDemoOpen) {
+      setStep(1);
+      setSelectedMajor('');
+      setAdmissionMethod('Xét điểm thi tốt nghiệp THPT năm 2026');
+    }
+  }, [isApplyDemoOpen, applyDemoTargetUni?.id]);
 
   if (!isApplyDemoOpen || !applyDemoTargetUni) return null;
 
@@ -34,11 +43,11 @@ export const ApplyDemoModal: React.FC = () => {
         uniName: applyDemoTargetUni.name,
         uniCode: applyDemoTargetUni.code,
         major: currentMajor,
-        candidateName: profile.name || 'Trần Công Quý',
+        candidateName: profile.name || user.name || 'Thí sinh UniPath',
         phone: profile.phone || '0912 345 678',
-        email: profile.email || 'quy@unipath.vn',
+        email: user.email || profile.email,
         score: profile.expectedScore || 24.5,
-        notes: `Phương thức: ${admissionMethod}. Đăng ký xét tuyển trực tuyến qua Unipath.`,
+        notes: `Phương thức: ${admissionMethod}. Đăng ký xét tuyển trực tuyến qua UniPath.`,
       });
       setStep(3);
     } else {

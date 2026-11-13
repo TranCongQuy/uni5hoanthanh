@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Compass, Award } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { getCareerPath } from '../../data/CareerPathData';
@@ -17,6 +17,12 @@ export const CareerPathModal: React.FC = () => {
 
   const isDesktop = viewMode === 'desktop';
   const [activeCode, setActiveCode] = useState<HollandCode>(selectedCareerCode || 'E');
+
+  useEffect(() => {
+    if (isCareerPathOpen && selectedCareerCode) {
+      setActiveCode(selectedCareerCode);
+    }
+  }, [isCareerPathOpen, selectedCareerCode]);
 
   if (!isCareerPathOpen) return null;
 

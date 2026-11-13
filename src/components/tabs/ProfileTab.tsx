@@ -11,14 +11,18 @@ import {
   Trash2,
   Compass,
   FileText,
+  Calendar,
+  LogIn,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { getHollandName } from '../../data/MockData';
+import { getStatusMeta } from '../../types';
 import { Button, UniversityAvatar, AppFooter } from '../common/UI';
 import { LineChart } from '../charts/LineChart';
 
 export const ProfileTab: React.FC = () => {
   const {
+    isLoggedIn,
     isGuest,
     user,
     profile,
@@ -32,7 +36,10 @@ export const ProfileTab: React.FC = () => {
     openSettings,
     openCareerPath,
     openAuthModal,
-    applications,
+    openBookConsultation,
+    myApplications,
+    myBookings,
+    bookingStates,
     openApplicationDetail,
     openAllApplications,
     setActiveTab,
@@ -99,9 +106,9 @@ export const ProfileTab: React.FC = () => {
                   textOverflow: 'ellipsis',
                 }}
               >
-                {user.name || 'Học sinh Unipath'}
+                {isLoggedIn && !isGuest ? (user.name || 'Học sinh UniPath') : 'Khách trải nghiệm'}
               </h3>
-              {profile.isPremium && (
+              {profile.isPremium && isLoggedIn && !isGuest && (
                 <span
                   style={{
                     backgroundColor: '#FEF3C7',
@@ -121,7 +128,7 @@ export const ProfileTab: React.FC = () => {
             </div>
 
             <div style={{ fontSize: '13px', color: '#64748B', marginTop: '2px' }}>
-              {isGuest ? 'Tài khoản khách trải nghiệm' : `${profile.grade} • ${profile.school}`}
+              {!isLoggedIn || isGuest ? 'Tài khoản khách trải nghiệm' : `${profile.grade} • ${profile.school}`}
             </div>
             <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '2px' }}>
               {profile.province}
@@ -166,7 +173,7 @@ export const ProfileTab: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          {isGuest ? (
+          {!isLoggedIn || isGuest ? (
             <Button
               variant="primary"
               size="M"
@@ -517,30 +524,32 @@ export const ProfileTab: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <FileText size={20} color="#2563EB" />
             <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-              Hồ sơ xét tuyển của bạn ({applications.length})
+              Hồ sơ xét tuyển của bạn ({myApplications.length})
             </h4>
           </div>
-          <button
-            onClick={openAllApplications}
-            style={{
-              border: 'none',
-              backgroundColor: '#EFF6FF',
-              color: '#2563EB',
-              fontSize: '12px',
-              fontWeight: 800,
-              padding: '4px 10px',
-              borderRadius: '10px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '2px',
-            }}
-          >
-            Xem tất cả →
-          </button>
+          {myApplications.length > 0 && (
+            <button
+              onClick={openAllApplications}
+              style={{
+                border: 'none',
+                backgroundColor: '#EFF6FF',
+                color: '#2563EB',
+                fontSize: '12px',
+                fontWeight: 800,
+                padding: '4px 10px',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '2px',
+              }}
+            >
+              Xem tất cả →
+            </button>
+          )}
         </div>
 
-        {applications.length === 0 ? (
+        {myApplications.length === 0 ? (
           <div
             style={{
               padding: '24px',
@@ -552,85 +561,187 @@ export const ProfileTab: React.FC = () => {
           >
             <FileText size={28} color="#CBD5E1" style={{ margin: '0 auto 8px' }} />
             <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#64748B' }}>
-              Bạn chưa nộp hồ sơ xét tuyển nào. Hãy chọn trường và nộp hồ sơ trực tuyến ngay!
+              {!isLoggedIn || isGuest
+                ? 'Đăng nhập tài khoản thí sinh để nộp và theo dõi hồ sơ xét tuyển đại học trực tuyến.'
+                : 'Bạn chưa nộp hồ sơ xét tuyển nào. Hãy chọn trường và nộp hồ sơ trực tuyến ngay!'}
             </p>
-            <Button variant="tonal" size="M" onClick={() => setActiveTab(0)}>
-              Khám phá trường ngay
+            <Button
+              variant="tonal"
+              size="M"
+              onClick={() => (!isLoggedIn || isGuest ? openAuthModal() : setActiveTab(0))}
+            >
+              {!isLoggedIn || isGuest ? 'Đăng nhập ngay' : 'Khám phá trường ngay'}
             </Button>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {applications.slice(0, 2).map((app) => (
-              <div
-                key={app.id}
-                onClick={() => openApplicationDetail(app)}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '20px',
-                  border: '1.5px solid #E2E8F0',
-                  padding: '16px',
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 800, color: '#2563EB', backgroundColor: '#EFF6FF', padding: '3px 8px', borderRadius: '8px' }}>
-                    {app.code}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: '11px',
-                      fontWeight: 800,
-                      color: app.statusColor,
-                      backgroundColor:
-                        app.status === 'Hồ sơ hợp lệ' ? '#ECFDF5'
-                        : app.status === 'Đang xét duyệt' ? '#FFFBEB'
-                        : app.status === 'Thiếu hồ sơ' ? '#EFF6FF'
-                        : app.status === 'Đã bị hủy' ? '#FEF2F2'
-                        : '#F1F5F9',
-                      border: `1px solid ${app.statusColor}`,
-                      padding: '3px 8px',
-                      borderRadius: '8px',
-                    }}
-                  >
-                    {app.status}
-                  </span>
-                </div>
+            {myApplications.slice(0, 2).map((app) => {
+              const meta = getStatusMeta(app.status);
+              return (
+                <div
+                  key={app.id}
+                  onClick={() => openApplicationDetail(app)}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '20px',
+                    border: '1.5px solid #E2E8F0',
+                    padding: '16px',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', gap: '8px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 800, color: '#2563EB', backgroundColor: '#EFF6FF', padding: '3px 8px', borderRadius: '8px' }}>
+                      {app.code}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        color: meta.color,
+                        backgroundColor: meta.bg,
+                        border: `1px solid ${meta.border}`,
+                        padding: '3px 8px',
+                        borderRadius: '8px',
+                      }}
+                    >
+                      {meta.label}
+                    </span>
+                  </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-                  <UniversityAvatar code={app.uniCode} size={38} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {app.uniName}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#64748B' }}>
-                      {app.major}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+                    <UniversityAvatar code={app.uniCode} size={38} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {app.uniName}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#64748B' }}>
+                        {app.major}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #F1F5F9', paddingTop: '10px', fontSize: '12px' }}>
-                  <span style={{ color: '#94A3B8' }}>
-                    Thời gian: {app.submittedAt}
-                  </span>
-                  <span style={{ color: '#2563EB', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    Xem chi tiết hồ sơ <ChevronRight size={14} />
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #F1F5F9', paddingTop: '10px', fontSize: '12px' }}>
+                    <span style={{ color: '#94A3B8' }}>
+                      Thời gian: {app.submittedAt}
+                    </span>
+                    <span style={{ color: '#2563EB', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Xem chi tiết hồ sơ <ChevronRight size={14} />
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
-            {applications.length > 2 && (
+            {myApplications.length > 2 && (
               <Button
                 variant="tonal"
                 size="M"
                 fullWidth
                 onClick={openAllApplications}
               >
-                Xem tất cả {applications.length} hồ sơ (chia theo trạng thái) →
+                Xem tất cả {myApplications.length} hồ sơ (chia theo trạng thái) →
               </Button>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* 5B. 1-1 Consultation Bookings Section */}
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Calendar size={20} color="#0D9488" />
+            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
+              Lịch hẹn tư vấn 1-1 ({myBookings.length})
+            </h4>
+          </div>
+          <button
+            onClick={() => openBookConsultation()}
+            style={{
+              border: 'none',
+              backgroundColor: '#F0FDFA',
+              color: '#0D9488',
+              fontSize: '12px',
+              fontWeight: 800,
+              padding: '4px 10px',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            + Đặt lịch mới
+          </button>
+        </div>
+
+        {myBookings.length === 0 ? (
+          <div
+            style={{
+              padding: '20px',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '20px',
+              textAlign: 'center',
+              border: '1px dashed #CBD5E1',
+            }}
+          >
+            <Calendar size={26} color="#CBD5E1" style={{ margin: '0 auto 8px' }} />
+            <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#64748B' }}>
+              Đặt lịch gặp gỡ trực tiếp 1-1 cùng giảng viên và ban tuyển sinh các trường đại học.
+            </p>
+            <Button variant="tonal" size="M" onClick={() => openBookConsultation()}>
+              Đặt lịch tư vấn 1-1 ngay
+            </Button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {myBookings.map((bk) => {
+              const st = bookingStates[bk.id] || 'pending';
+              const badge =
+                st === 'done'
+                  ? { label: 'Hoàn thành', color: '#059669', bg: '#ECFDF5', border: '#A7F3D0' }
+                  : st === 'contacted'
+                  ? { label: 'Đã liên hệ', color: '#2563EB', bg: '#EFF6FF', border: '#BFDBFE' }
+                  : { label: 'Chờ liên hệ', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' };
+
+              return (
+                <div
+                  key={bk.id}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '18px',
+                    border: '1px solid #E2E8F0',
+                    padding: '14px 16px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', gap: '8px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>
+                      {bk.uniName || `Trường ${bk.uniCode}`} ({bk.uniCode})
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        color: badge.color,
+                        backgroundColor: badge.bg,
+                        border: `1px solid ${badge.border}`,
+                        padding: '2px 8px',
+                        borderRadius: '8px',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {badge.label}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '12.5px', color: '#2563EB', fontWeight: 700, marginBottom: '4px' }}>
+                    Ngành tư vấn: {bk.major}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748B' }}>
+                    🕒 {bk.dateTime} {bk.channel ? `• ${bk.channel}` : ''}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -791,17 +902,29 @@ export const ProfileTab: React.FC = () => {
         ))}
       </div>
 
-      {/* Logout button */}
-      <Button
-        variant="outline"
-        size="L"
-        fullWidth
-        style={{ borderColor: '#EF4444', color: '#EF4444' }}
-        icon={<LogOut size={18} />}
-        onClick={() => setShowLogoutConfirm(true)}
-      >
-        Đăng xuất tài khoản
-      </Button>
+      {/* Logout or Login button */}
+      {!isLoggedIn || isGuest ? (
+        <Button
+          variant="primary"
+          size="L"
+          fullWidth
+          icon={<LogIn size={18} />}
+          onClick={openAuthModal}
+        >
+          Đăng nhập / Tạo tài khoản thí sinh
+        </Button>
+      ) : (
+        <Button
+          variant="outline"
+          size="L"
+          fullWidth
+          style={{ borderColor: '#EF4444', color: '#EF4444' }}
+          icon={<LogOut size={18} />}
+          onClick={() => setShowLogoutConfirm(true)}
+        >
+          Đăng xuất tài khoản
+        </Button>
+      )}
 
       {/* Upgrade Modal */}
       {showUpgradeModal && (

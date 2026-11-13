@@ -8,6 +8,7 @@ import {
   Send,
   Star,
   CheckCircle2,
+  Calendar,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { pickReferenceCutoff, admissionPercent } from '../../services/MatchingService';
@@ -25,6 +26,7 @@ export const UniversityDetailModal: React.FC = () => {
     toggleCompare,
     openChatBot,
     openApplyDemo,
+    openBookConsultation,
     profile,
     viewMode,
     universitiesList,
@@ -571,34 +573,62 @@ export const UniversityDetailModal: React.FC = () => {
             bottom: 0,
             left: 0,
             right: 0,
-            padding: '12px 20px',
+            padding: '12px 16px',
             paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))',
             backgroundColor: '#FFFFFF',
             borderTop: '1px solid #F1F5F9',
             display: 'flex',
-            gap: '10px',
+            gap: '8px',
             boxShadow: '0 -4px 16px rgba(0,0,0,0.08)',
             zIndex: 60,
+            boxSizing: 'border-box',
           }}
         >
-          <Button
-            variant="tonal"
-            size="L"
-            style={{ flex: 1 }}
-            icon={<Bot size={18} />}
+          <button
+            type="button"
+            title="Hỏi Trợ lý AI về trường này"
             onClick={() => {
               closeUniDetail();
               openChatBot();
             }}
+            style={{
+              height: '46px',
+              padding: '0 12px',
+              borderRadius: '14px',
+              backgroundColor: '#F1F5F9',
+              border: '1px solid #E2E8F0',
+              color: '#334155',
+              fontSize: '12.5px',
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
           >
-            Hỏi AI về trường
+            <Bot size={17} color="#2563EB" />
+            <span>Hỏi AI</span>
+          </button>
+
+          <Button
+            variant="tonal"
+            size="M"
+            style={{ flex: 1, minWidth: 0, height: '46px' }}
+            icon={<Calendar size={16} />}
+            onClick={() => {
+              openBookConsultation(uni);
+            }}
+          >
+            Tư vấn 1-1
           </Button>
 
           <Button
             variant="primary"
-            size="L"
-            style={{ flex: 1 }}
-            icon={<Send size={18} />}
+            size="M"
+            style={{ flex: 1.15, minWidth: 0, height: '46px' }}
+            icon={<Send size={16} />}
             onClick={() => {
               openApplyDemo(uni);
             }}

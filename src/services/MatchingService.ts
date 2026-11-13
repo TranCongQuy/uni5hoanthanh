@@ -4,19 +4,19 @@ import { getHollandMajors, getAverageCutoffScore } from '../data/MockData';
 export const GROUP_META: Record<GroupType, { title: string; description: string; color: string; bgColor: string }> = {
   SAFE: {
     title: 'An toàn',
-    description: 'Khả năng trúng tuyển cao (>80%)',
+    description: 'Khả năng trúng tuyển cao (≥ 80%)',
     color: '#10B981',
     bgColor: '#ECFDF5',
   },
   MODERATE: {
     title: 'Vừa sức',
-    description: 'Cơ hội cạnh tranh tốt (45% - 80%)',
+    description: 'Cơ hội cạnh tranh tốt (45% – 79%)',
     color: '#F59E0B',
     bgColor: '#FFFBEB',
   },
   CHALLENGING: {
     title: 'Thách thức',
-    description: 'Thử thách cần bứt phá (<45%)',
+    description: 'Thử thách cần bứt phá (< 45%)',
     color: '#EF4444',
     bgColor: '#FEF2F2',
   },

@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
-import { MobileView } from './components/mobile/MobileView';
-import { DesktopView } from './components/desktop/DesktopView';
 import { UniversityDetailModal } from './components/modals/UniversityDetailModal';
 import { CompareModal } from './components/modals/CompareModal';
 import { ChatBotModal } from './components/modals/ChatBotModal';
@@ -9,16 +7,28 @@ import { CareerPathModal } from './components/modals/CareerPathModal';
 import { EditProfileModal } from './components/modals/EditProfileModal';
 import { SettingsModal } from './components/modals/SettingsModal';
 import { ApplyDemoModal } from './components/modals/ApplyDemoModal';
+import { BookConsultationModal } from './components/modals/BookConsultationModal';
 import { ViewApplicationModal } from './components/modals/ViewApplicationModal';
 import { AllApplicationsModal } from './components/modals/AllApplicationsModal';
 import { NotificationsModal } from './components/modals/NotificationsModal';
 import { AuthModal } from './components/modals/AuthModal';
 import { OnboardingModal } from './components/modals/OnboardingModal';
 import { AuthScreen } from './components/auth/AuthScreen';
-import { AdminApp } from './components/admin/AdminApp';
-import { UniversityApp } from './components/university/UniversityApp';
 import { Toast } from './components/common/UI';
 import './App.css';
+
+const MobileView = lazy(() =>
+  import('./components/mobile/MobileView').then((m) => ({ default: m.MobileView }))
+);
+const DesktopView = lazy(() =>
+  import('./components/desktop/DesktopView').then((m) => ({ default: m.DesktopView }))
+);
+const AdminApp = lazy(() =>
+  import('./components/admin/AdminApp').then((m) => ({ default: m.AdminApp }))
+);
+const UniversityApp = lazy(() =>
+  import('./components/university/UniversityApp').then((m) => ({ default: m.UniversityApp }))
+);
 
 const MainApp: React.FC = () => {
   const {
@@ -33,22 +43,21 @@ const MainApp: React.FC = () => {
     isSettingsOpen,
     isAuthModalOpen,
     isApplyDemoOpen,
+    isBookConsultationOpen,
     selectedAppForDetail,
     isAllApplicationsOpen,
     isLoggedIn,
     user,
   } = useApp();
 
-  // Onboarding state: defaults to true every time user re-enters the app (no device persistence as requested)
-  const [showOnboarding, setShowOnboarding] = useState<boolean>(true);
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => !isLoggedIn);
 
   const handleFinishOnboarding = () => {
     setShowOnboarding(false);
   };
 
-  // Mobile Body Scroll Lock: Prevents background scrolling when any modal/drawer is open
   const isAnyModalOpen =
-    (viewMode === 'mobile' && showOnboarding) ||
+    (viewMode === 'mobile' && !isLoggedIn && showOnboarding) ||
     isChatBotOpen ||
     isNotificationsOpen ||
     selectedUniIdForDetail !== null ||
@@ -58,6 +67,7 @@ const MainApp: React.FC = () => {
     isSettingsOpen ||
     isAuthModalOpen ||
     isApplyDemoOpen ||
+    isBookConsultationOpen ||
     selectedAppForDetail !== null ||
     isAllApplicationsOpen;
 
@@ -84,8 +94,7 @@ const MainApp: React.FC = () => {
     };
   }, [isAnyModalOpen]);
 
-  // 0. DEDICATED SHELLS THEO VAI TRÒ (Admin & ĐH Phú Xuân có giao diện riêng,
-  //    không dùng chung khung của thí sinh. Thí sinh giữ nguyên 100% ở các nhánh dưới.)
+  // 0. DEDICATED ROLE PORTALS (Admin & ĐH Phú Xuân)
   if (isLoggedIn && user.role === 'admin') {
     return (
       <>
@@ -110,14 +119,11 @@ const MainApp: React.FC = () => {
     );
   }
 
-  // 1. DESKTOP / LAPTOP INTERFACE (When user clicks switch to desktop mode)
+  // 1. AUTOMATIC DESKTOP INTERFACE (Viewport >= 1024px)
   if (viewMode === 'desktop') {
     return (
       <>
-        {/* Dedicated Desktop View with requested 'Hello' test screen */}
         <DesktopView />
-
-        {/* Global Modals & Dialogs */}
         <UniversityDetailModal />
         <CompareModal />
         <ChatBotModal />
@@ -125,49 +131,31 @@ const MainApp: React.FC = () => {
         <EditProfileModal />
         <SettingsModal />
         <ApplyDemoModal />
+        <BookConsultationModal />
         <ViewApplicationModal />
         <AllApplicationsModal />
         <NotificationsModal />
         <AuthModal />
-
-        {/* System Toast Notification */}
         <Toast message={toastMessage} />
       </>
     );
   }
 
-  // 2. MOBILE INTERFACE: GATEWAY (Mandatory auth on mobile before entering full tabs)
+  // 2. AUTOMATIC MOBILE INTERFACE (< 1024px): Auth Gateway when not logged in
   if (!isLoggedIn) {
     return (
       <>
-        {/* Onboarding Flow */}
-        <OnboardingModal
-          isOpen={showOnboarding}
-          onFinish={handleFinishOnboarding}
-        />
-
-        {/* Full Authentication Screen */}
+        <OnboardingModal isOpen={showOnboarding} onFinish={handleFinishOnboarding} />
         <AuthScreen />
-
-        {/* System Toast Notification */}
         <Toast message={toastMessage} />
       </>
     );
   }
 
-  // 3. MOBILE INTERFACE: MAIN APP (When logged in on mobile)
+  // 3. AUTOMATIC MOBILE INTERFACE (< 1024px): Main Student App
   return (
     <>
-      {/* Onboarding if opened in session */}
-      <OnboardingModal
-        isOpen={showOnboarding}
-        onFinish={handleFinishOnboarding}
-      />
-
-      {/* Main Tab Screen View */}
       <MobileView />
-
-      {/* Global Modals & Dialogs */}
       <UniversityDetailModal />
       <CompareModal />
       <ChatBotModal />
@@ -175,12 +163,11 @@ const MainApp: React.FC = () => {
       <EditProfileModal />
       <SettingsModal />
       <ApplyDemoModal />
+      <BookConsultationModal />
       <ViewApplicationModal />
       <AllApplicationsModal />
       <NotificationsModal />
       <AuthModal />
-
-      {/* System Toast Notification */}
       <Toast message={toastMessage} />
     </>
   );
@@ -189,7 +176,9 @@ const MainApp: React.FC = () => {
 export default function App() {
   return (
     <AppProvider>
-      <MainApp />
+      <Suspense fallback={null}>
+        <MainApp />
+      </Suspense>
     </AppProvider>
   );
 }

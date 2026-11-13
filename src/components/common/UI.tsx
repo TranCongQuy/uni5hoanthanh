@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 // ==========================================
@@ -19,6 +19,11 @@ export const ImageSafe: React.FC<ImageSafeProps> = ({
 }) => {
   const [imgSrc, setImgSrc] = useState(src);
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setImgSrc(src);
+    setFailed(false);
+  }, [src]);
 
   return (
     <img

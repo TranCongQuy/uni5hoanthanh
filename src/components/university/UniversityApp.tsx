@@ -22,6 +22,8 @@ import {
   Download,
   Phone,
   ShieldCheck,
+  Edit2,
+  Check,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import type { BookingState } from '../../context/AppContext';
@@ -117,16 +119,17 @@ const exportAppsCsv = (rows: ApplicationRecord[], filename: string) => {
 export const UniversityApp: React.FC = () => {
   const {
     user,
-    profile,
     applications,
     bookings,
     universitiesList,
+    updateUniversityMetrics,
     updateApplicationStatus,
     processingLog,
     bookingStates,
     updateBookingState,
     openApplicationDetail,
     openNotifications,
+    unreadNotificationCount,
     openSettings,
     logout,
     viewMode,
@@ -135,10 +138,16 @@ export const UniversityApp: React.FC = () => {
   const isDesktop = viewMode === 'desktop';
   const [section, setSection] = useState<UniSection>('dashboard');
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
+  const [reviewerNote, setReviewerNote] = useState('');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [appSearch, setAppSearch] = useState('');
   const [appStatus, setAppStatus] = useState<string>('Tất cả');
   const [appSort, setAppSort] = useState<AppSort>('list');
+
+  // --- Quản lý điểm chuẩn & học phí riêng của PXU ---
+  const [isEditingPxu, setIsEditingPxu] = useState(false);
+  const [pxuScoreInput, setPxuScoreInput] = useState<number>(25.2);
+  const [pxuTuitionInput, setPxuTuitionInput] = useState<number>(18);
 
   // --- Dữ liệu riêng của PXU (phân lập theo uniCode) ---
   const pxuUni = universitiesList.find((u) => u.code === 'PXU');
@@ -563,8 +572,45 @@ export const UniversityApp: React.FC = () => {
               {selectedApp.notes && <div style={{ fontSize: '12.5px', color: '#64748B', backgroundColor: '#F7FAF8', borderRadius: '10px', padding: '10px', lineHeight: 1.5 }}>{selectedApp.notes}</div>}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <input
+                type="text"
+                value={reviewerNote}
+                onChange={(e) => setReviewerNote(e.target.value)}
+                placeholder="Nhập phản hồi gửi thí sinh PXU (tùy chọn)..."
+                style={{
+                  width: '100%',
+                  padding: '9px 11px',
+                  borderRadius: '10px',
+                  border: '1px solid #DCE8E1',
+                  fontSize: '12.5px',
+                  boxSizing: 'border-box',
+                }}
+              />
               <button
-                onClick={() => updateApplicationStatus(selectedApp.id, 'Đã trúng tuyển')}
+                onClick={() => {
+                  updateApplicationStatus(selectedApp.id, 'Hồ sơ hợp lệ', reviewerNote || undefined);
+                  setReviewerNote('');
+                }}
+                disabled={selectedApp.status === 'Hồ sơ hợp lệ'}
+                style={{
+                  padding: '11px',
+                  borderRadius: '12px',
+                  border: '1.5px solid #0284C7',
+                  backgroundColor: '#E0F2FE',
+                  color: '#0369A1',
+                  fontSize: '13.5px',
+                  fontWeight: 800,
+                  cursor: selectedApp.status === 'Hồ sơ hợp lệ' ? 'default' : 'pointer',
+                  opacity: selectedApp.status === 'Hồ sơ hợp lệ' ? 0.5 : 1,
+                }}
+              >
+                ✓ Xác nhận hồ sơ hợp lệ
+              </button>
+              <button
+                onClick={() => {
+                  updateApplicationStatus(selectedApp.id, 'Đã trúng tuyển', reviewerNote || undefined);
+                  setReviewerNote('');
+                }}
                 disabled={selectedApp.status === 'Đã trúng tuyển'}
                 style={{
                   padding: '12px',
@@ -584,7 +630,10 @@ export const UniversityApp: React.FC = () => {
                 <CheckCircle2 size={17} /> Duyệt trúng tuyển PXU
               </button>
               <button
-                onClick={() => updateApplicationStatus(selectedApp.id, 'Thiếu hồ sơ')}
+                onClick={() => {
+                  updateApplicationStatus(selectedApp.id, 'Thiếu hồ sơ', reviewerNote || undefined);
+                  setReviewerNote('');
+                }}
                 disabled={selectedApp.status === 'Thiếu hồ sơ'}
                 style={{
                   padding: '11px',
@@ -601,7 +650,10 @@ export const UniversityApp: React.FC = () => {
                 Yêu cầu bổ sung hồ sơ
               </button>
               <button
-                onClick={() => updateApplicationStatus(selectedApp.id, 'Đã bị hủy')}
+                onClick={() => {
+                  updateApplicationStatus(selectedApp.id, 'Đã bị hủy', reviewerNote || undefined);
+                  setReviewerNote('');
+                }}
                 disabled={selectedApp.status === 'Đã bị hủy'}
                 style={{
                   padding: '11px',
@@ -683,11 +735,16 @@ export const UniversityApp: React.FC = () => {
                     <span style={{ padding: '4px 9px', borderRadius: '999px', backgroundColor: meta.bg, color: meta.color, fontSize: '11px', fontWeight: 800, whiteSpace: 'nowrap' }}>{meta.label}</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', color: '#334155' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                       <Calendar size={13} color="#7C3AED" /> <strong>{bk.dateTime}</strong>
+                      {bk.channel && (
+                        <span style={{ fontSize: '11px', fontWeight: 700, backgroundColor: '#ECFDF5', color: EMERALD_DARK, padding: '2px 7px', borderRadius: '6px' }}>
+                          {bk.channel}
+                        </span>
+                      )}
                     </span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                      <Phone size={13} color="#64748B" /> {bk.phone}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <Phone size={13} color="#64748B" /> {bk.phone} {bk.email ? `· ${bk.email}` : ''}
                     </span>
                     {bk.notes && <span style={{ color: '#64748B', lineHeight: 1.5 }}>{bk.notes}</span>}
                   </div>
@@ -732,26 +789,104 @@ export const UniversityApp: React.FC = () => {
       </div>
 
       {pxuUni && (
-        <div style={{ ...cardStyle, display: 'flex', gap: '14px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <UniversityAvatar code="PXU" size={52} />
-          <div style={{ flex: 1, minWidth: '210px' }}>
-            <div style={{ fontSize: '16px', fontWeight: 900, color: '#0F172A', marginBottom: '4px' }}>{pxuUni.name}</div>
-            <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>{pxuUni.desc}</div>
-            <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginTop: '10px', fontSize: '12.5px', color: '#334155' }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                <MapPin size={14} color={EMERALD} /> {pxuUni.loc}
-              </span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                <Star size={14} color="#D97706" /> {pxuUni.rating} / 5
-              </span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                <Briefcase size={14} color={EMERALD} /> Việc làm {pxuUni.employmentRate}%
-              </span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                <School size={14} color={EMERALD} /> Học phí {pxuUni.tuitionMin}–{pxuUni.tuitionMax} triệu/năm
-              </span>
+        <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <UniversityAvatar code="PXU" size={52} />
+            <div style={{ flex: 1, minWidth: '210px' }}>
+              <div style={{ fontSize: '16px', fontWeight: 900, color: '#0F172A', marginBottom: '4px' }}>{pxuUni.name}</div>
+              <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>{pxuUni.desc}</div>
+              <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginTop: '10px', fontSize: '12.5px', color: '#334155' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                  <MapPin size={14} color={EMERALD} /> {pxuUni.loc}
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                  <Star size={14} color="#D97706" /> {pxuUni.rating} / 5
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                  <Briefcase size={14} color={EMERALD} /> Việc làm {pxuUni.employmentRate}%
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                  <School size={14} color={EMERALD} /> Điểm chuẩn tham chiếu: <strong>{pxuUni.score2024}</strong> · Học phí {pxuUni.tuitionMin}–{pxuUni.tuitionMax} triệu/năm
+                </span>
+              </div>
             </div>
+            {!isEditingPxu && (
+              <button
+                onClick={() => {
+                  setPxuScoreInput(pxuUni.score2024);
+                  setPxuTuitionInput(pxuUni.tuitionMin);
+                  setIsEditingPxu(true);
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '9px 14px',
+                  borderRadius: '11px',
+                  border: `1.5px solid ${EMERALD}`,
+                  backgroundColor: '#ECFDF5',
+                  color: EMERALD_DARK,
+                  fontSize: '12.5px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              >
+                <Edit2 size={14} /> Cập nhật điểm chuẩn & học phí PXU
+              </button>
+            )}
           </div>
+
+          {isEditingPxu && (
+            <div style={{ backgroundColor: '#F0FDF4', border: '1px solid #A7F3D0', borderRadius: '14px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: EMERALD_DARK }}>
+                Điều chỉnh chỉ số tuyển sinh riêng của Trường Đại học Phú Xuân (tự động đồng bộ sang thuật toán AI Matching):
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr auto' : '1fr', gap: '10px', alignItems: 'end' }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                  Điểm chuẩn tham chiếu (thang 30)
+                  <input
+                    type="number"
+                    step="0.25"
+                    min={12}
+                    max={30}
+                    value={pxuScoreInput}
+                    onChange={(e) => setPxuScoreInput(Number(e.target.value))}
+                    style={{ display: 'block', width: '100%', marginTop: '4px', padding: '9px 11px', borderRadius: '10px', border: '1px solid #86EFAC', fontSize: '13.5px', backgroundColor: '#FFFFFF', boxSizing: 'border-box' }}
+                  />
+                </label>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                  Học phí tối thiểu (triệu VNĐ/năm)
+                  <input
+                    type="number"
+                    step="1"
+                    min={0}
+                    max={100}
+                    value={pxuTuitionInput}
+                    onChange={(e) => setPxuTuitionInput(Number(e.target.value))}
+                    style={{ display: 'block', width: '100%', marginTop: '4px', padding: '9px 11px', borderRadius: '10px', border: '1px solid #86EFAC', fontSize: '13.5px', backgroundColor: '#FFFFFF', boxSizing: 'border-box' }}
+                  />
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => {
+                      updateUniversityMetrics(pxuUni.id, pxuScoreInput, pxuTuitionInput);
+                      setIsEditingPxu(false);
+                    }}
+                    style={{ padding: '10px 16px', borderRadius: '10px', border: 'none', backgroundColor: EMERALD, color: '#FFFFFF', fontSize: '13px', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Check size={15} /> Lưu cập nhật
+                  </button>
+                  <button
+                    onClick={() => setIsEditingPxu(false)}
+                    style={{ padding: '10px 14px', borderRadius: '10px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#475569', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -809,14 +944,14 @@ export const UniversityApp: React.FC = () => {
           </div>
         </div>
         <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>
-          Vai trò hiện tại: <strong style={{ color: EMERALD }}>Ban Tuyển sinh ĐH Phú Xuân (university_pxu)</strong> — cổng phân lập dữ liệu: chỉ xem và duyệt hồ sơ nộp vào PXU ({pxuApps.length} hồ sơ) và lịch tư vấn với PXU ({pxuBookings.length} lịch), không thấy dữ liệu của {universitiesList.length - 1} trường còn lại. Hồ sơ cá nhân liên kết: {profile.name}.
+          Vai trò hiện tại: <strong style={{ color: EMERALD }}>Ban Tuyển sinh ĐH Phú Xuân (university_pxu)</strong> — không gian quản trị phân lập dữ liệu: chỉ tiếp nhận và thẩm định hồ sơ nộp vào ĐH Phú Xuân ({pxuApps.length} hồ sơ), điều phối lịch tư vấn 1-1 đặt với PXU ({pxuBookings.length} lịch) và cập nhật chỉ số tuyển sinh của riêng PXU; tuyệt đối không truy cập dữ liệu của {universitiesList.length - 1} trường đại học còn lại.
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '14px' }}>
           <button
             onClick={openNotifications}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '9px 14px', borderRadius: '11px', border: '1px solid #DCE8E1', backgroundColor: '#FFFFFF', color: '#334155', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}
           >
-            <Bell size={14} /> Thông báo
+            <Bell size={14} /> Thông báo {unreadNotificationCount > 0 ? `(${unreadNotificationCount})` : ''}
           </button>
           <button
             onClick={openSettings}
@@ -830,17 +965,17 @@ export const UniversityApp: React.FC = () => {
       <div style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
           <ShieldCheck size={17} color={EMERALD} />
-          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 900, color: '#0F172A' }}>Quyền của PXU so với các user khác</h2>
+          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 900, color: '#0F172A' }}>Phân quyền RBAC của ĐH Phú Xuân (PXU)</h2>
         </div>
         <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.7 }}>
-          Vai trò được xác định bằng <strong>tài khoản đăng nhập</strong>, không tự đổi giữa chừng:
+          Quyền hạn được kiểm soát chặt chẽ ngay tại tầng lõi dữ liệu (<code>AppContext</code>):
           <ul style={{ margin: '8px 0', paddingLeft: '18px' }}>
-            <li><strong>PXU được:</strong> xem & xử lý hồ sơ nộp vào PXU, xem lịch tư vấn với PXU, xem nhật ký xử lý của PXU, xuất CSV hồ sơ PXU</li>
-            <li><strong>PXU không được:</strong> xem/xử lý hồ sơ của trường khác (hệ thống tự chặn ở tầng xử lý), sửa CSDL điểm chuẩn & học phí (quyền Admin), hủy hồ sơ thay thí sinh</li>
-            <li><strong>Admin được:</strong> toàn quyền hồ sơ {universitiesList.length} trường + sửa CSDL + xem người dùng toàn hệ thống</li>
-            <li><strong>Thí sinh được:</strong> nộp hồ sơ, đặt lịch tư vấn và tự hủy hồ sơ của chính mình</li>
+            <li><strong>PXU được phép:</strong> xem & thẩm định hồ sơ nộp vào PXU (xác nhận hợp lệ, duyệt trúng tuyển, yêu cầu bổ sung, từ chối kèm ghi chú), xử lý lịch tư vấn 1-1 với PXU, cập nhật điểm chuẩn & học phí riêng của PXU, xuất CSV thí sinh PXU.</li>
+            <li><strong>PXU bị giới hạn:</strong> không xem/xử lý hồ sơ hoặc lịch tư vấn của 29 trường khác; không chỉnh sửa điểm chuẩn của trường khác; không tự ý rút/hủy hồ sơ thay thí sinh.</li>
+            <li><strong>Admin Hệ thống:</strong> điều hành toàn cục cả {universitiesList.length} trường, duyệt hàng loạt, quản lý tài khoản người dùng và nhật ký toàn sàn.</li>
+            <li><strong>Thí sinh:</strong> nộp hồ sơ, bổ sung minh chứng, đặt lịch tư vấn 1-1 và theo dõi kết quả cá nhân riêng biệt.</li>
           </ul>
-          Muốn dùng vai trò khác: đăng xuất ở dưới rồi đăng nhập bằng tài khoản của vai trò đó (mật khẩu xem trong README dự án).
+          Để chuyển sang vai trò khác, hãy bấm <strong>Đăng xuất tài khoản</strong> bên dưới rồi đăng nhập bằng tài khoản tương ứng.
         </div>
       </div>
 
@@ -878,16 +1013,21 @@ export const UniversityApp: React.FC = () => {
       <button
         onClick={openNotifications}
         aria-label="Thông báo"
-        style={{ width: '38px', height: '38px', borderRadius: '11px', border: '1px solid rgba(255,255,255,0.3)', backgroundColor: 'rgba(255,255,255,0.12)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+        style={{ position: 'relative', width: '36px', height: '36px', borderRadius: '11px', border: '1px solid rgba(255,255,255,0.3)', backgroundColor: 'rgba(255,255,255,0.12)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
       >
-        <Bell size={17} />
+        <Bell size={16} />
+        {unreadNotificationCount > 0 && (
+          <span style={{ position: 'absolute', top: '-4px', right: '-4px', minWidth: '17px', height: '17px', padding: '0 4px', borderRadius: '999px', backgroundColor: '#EF4444', color: '#FFFFFF', fontSize: '9.5px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
+            {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+          </span>
+        )}
       </button>
       <button
         onClick={openSettings}
         aria-label="Cài đặt"
-        style={{ width: '38px', height: '38px', borderRadius: '11px', border: '1px solid rgba(255,255,255,0.3)', backgroundColor: 'rgba(255,255,255,0.12)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+        style={{ width: '36px', height: '36px', borderRadius: '11px', border: '1px solid rgba(255,255,255,0.3)', backgroundColor: 'rgba(255,255,255,0.12)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
       >
-        <Settings size={17} />
+        <Settings size={16} />
       </button>
     </>
   );
@@ -994,7 +1134,7 @@ export const UniversityApp: React.FC = () => {
                 {user.name} · {user.email}
               </div>
             </div>
-            <span style={{ fontSize: '10.5px', fontWeight: 800, backgroundColor: '#F59E0B', color: '#451A03', padding: '4px 9px', borderRadius: '999px', whiteSpace: 'nowrap', flexShrink: 0 }}>{pendingApps.length} chờ duyệt</span>
+            <span style={{ fontSize: '10px', fontWeight: 800, backgroundColor: '#F59E0B', color: '#451A03', padding: '4px 8px', borderRadius: '999px', whiteSpace: 'nowrap', flexShrink: 0 }}>{isDesktop ? `${pendingApps.length} chờ duyệt` : `${pendingApps.length} chờ`}</span>
             {utilityButtons}
           </div>
         </header>

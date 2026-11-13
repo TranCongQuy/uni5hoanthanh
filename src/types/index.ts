@@ -55,11 +55,27 @@ export interface UserProfile {
 export interface ConsultationBooking {
   id: string;
   name: string;
+  email?: string;
   phone: string;
   dateTime: string;
+  channel?: string;
+  uniId?: number;
+  uniName?: string;
   uniCode: string;
   major: string;
   notes: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  body: string;
+  time: string;
+  read: boolean;
+  type: 'promo' | 'deadline' | 'quiz' | 'application' | 'booking' | 'system';
+  targetRole?: UserRole | 'all';
+  targetEmail?: string;
+  targetTab?: number;
 }
 
 export type GroupType = 'SAFE' | 'MODERATE' | 'CHALLENGING';
@@ -163,5 +179,74 @@ export const ACCOUNT_PXU: CurrentUser = {
 };
 
 export type ViewMode = 'mobile' | 'desktop';
+
+export interface StatusVisualMeta {
+  label: string;
+  color: string;
+  bg: string;
+  border: string;
+  dot: string;
+  shortLabel: string;
+}
+
+export function getStatusMeta(status: ApplicationStatus): StatusVisualMeta {
+  switch (status) {
+    case 'Đã trúng tuyển':
+      return {
+        label: status,
+        color: '#047857',
+        bg: '#D1FAE5',
+        border: '#6EE7B7',
+        dot: '#10B981',
+        shortLabel: 'Đã trúng tuyển',
+      };
+    case 'Hồ sơ hợp lệ':
+      return {
+        label: status,
+        color: '#0369A1',
+        bg: '#E0F2FE',
+        border: '#7DD3FC',
+        dot: '#0EA5E9',
+        shortLabel: 'Hồ sơ hợp lệ',
+      };
+    case 'Đang xét duyệt':
+      return {
+        label: status,
+        color: '#B45309',
+        bg: '#FEF3C7',
+        border: '#FCD34D',
+        dot: '#F59E0B',
+        shortLabel: 'Đang xét duyệt',
+      };
+    case 'Thiếu hồ sơ':
+      return {
+        label: status,
+        color: '#1D4ED8',
+        bg: '#DBEAFE',
+        border: '#93C5FD',
+        dot: '#2563EB',
+        shortLabel: 'Thiếu hồ sơ',
+      };
+    case 'Đã bị hủy':
+      return {
+        label: status,
+        color: '#B91C1C',
+        bg: '#FEE2E2',
+        border: '#FCA5A5',
+        dot: '#EF4444',
+        shortLabel: 'Từ chối hồ sơ',
+      };
+    case 'Đã hủy':
+    default:
+      return {
+        label: status,
+        color: '#475569',
+        bg: '#F1F5F9',
+        border: '#CBD5E1',
+        dot: '#64748B',
+        shortLabel: 'Đã tự hủy',
+      };
+  }
+}
 
 

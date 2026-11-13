@@ -4,6 +4,7 @@ import {
   Users,
   Send,
   Share2,
+  Calendar,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useApp } from '../../context/AppContext';
@@ -20,7 +21,7 @@ interface LiveChatMessage {
 }
 
 export const LiveTab: React.FC = () => {
-  const { openUniDetail, showToast, universitiesList } = useApp();
+  const { openUniDetail, openBookConsultation, showToast, universitiesList } = useApp();
 
   // Countdown timer state
   const [timeLeft, setTimeLeft] = useState({
@@ -458,8 +459,8 @@ export const LiveTab: React.FC = () => {
                 {uni.name}
               </div>
 
-              {/* Status pill */}
-              <div style={{ marginTop: 'auto', width: '100%' }}>
+              {/* Status pill & 1-1 Consultation CTA */}
+              <div style={{ marginTop: 'auto', width: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {isLive ? (
                   <div
                     style={{
@@ -500,6 +501,30 @@ export const LiveTab: React.FC = () => {
                     Sắp diễn ra
                   </div>
                 )}
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openBookConsultation(uni);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '6px 8px',
+                    borderRadius: '12px',
+                    backgroundColor: '#EFF6FF',
+                    color: '#2563EB',
+                    border: '1px solid #DBEAFE',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <Calendar size={12} /> Đặt lịch 1-1
+                </button>
               </div>
             </div>
           ))}

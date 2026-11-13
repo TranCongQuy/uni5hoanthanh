@@ -35,7 +35,7 @@
 html, body {
   width: 100%;
   min-height: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   background-color: #EEF2F6;
 }
 
@@ -55,7 +55,7 @@ body.mode-mobile #root {
   margin: 0 auto;
   background-color: var(--bg-app);
   box-shadow: 0 0 35px rgba(0, 0, 0, 0.08);
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Desktop View Container (Full width laptop / PC) */
@@ -65,7 +65,7 @@ body.mode-desktop #root {
   margin: 0;
   background-color: #F8FAFC;
   box-shadow: none;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Default fallback before JS initializes */

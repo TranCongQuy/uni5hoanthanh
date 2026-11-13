@@ -29,6 +29,8 @@ const badgePercent = (uni: University, score: number, hollandCode?: string): num
 
 export const HomeTab: React.FC = () => {
   const {
+    isLoggedIn,
+    isGuest,
     user,
     profile,
     favoriteIds,
@@ -41,6 +43,7 @@ export const HomeTab: React.FC = () => {
     openChatBot,
     openCareerPath,
     openNotifications,
+    unreadNotificationCount,
     searchKeyword,
     setSearchKeyword,
     universitiesList,
@@ -110,7 +113,7 @@ export const HomeTab: React.FC = () => {
     universitiesList.find((u) => u.id === 2)!, // FTU - Ngoại Thương
     universitiesList.find((u) => u.id === 3)!, // NEU - Kinh Tế Quốc Dân
     universitiesList.find((u) => u.id === 11)!, // PXU - Phú Xuân
-    universitiesList.find((u) => u.id === 13)!, // DUT - Bách Khoa ĐN
+    universitiesList.find((u) => u.id === 12)!, // DUT - Bách Khoa ĐN
     universitiesList.find((u) => u.id === 21)!, // HCMUT - Bách Khoa HCM
     universitiesList.find((u) => u.id === 23)!, // UEH - Kinh Tế HCM
     universitiesList.find((u) => u.id === 24)!, // UIT - CNTT HCM
@@ -227,7 +230,7 @@ export const HomeTab: React.FC = () => {
                 textOverflow: 'ellipsis',
               }}
             >
-              {user.name || 'Học sinh Unipath'}
+              {isLoggedIn && !isGuest ? (user.name || 'Học sinh UniPath') : 'Khách trải nghiệm'}
             </div>
           </div>
         </div>
@@ -253,18 +256,29 @@ export const HomeTab: React.FC = () => {
             }}
           >
             <Bell size={20} />
-            <span
-              style={{
-                position: 'absolute',
-                top: '9px',
-                right: '10px',
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: '#EF4444',
-                border: '1.5px solid #FFFFFF',
-              }}
-            />
+            {unreadNotificationCount > 0 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '5px',
+                  right: '5px',
+                  minWidth: '17px',
+                  height: '17px',
+                  padding: '0 4px',
+                  borderRadius: '999px',
+                  backgroundColor: '#EF4444',
+                  color: '#FFFFFF',
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1.5px solid #FFFFFF',
+                }}
+              >
+                {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+              </span>
+            )}
           </button>
 
           {/* Chatbot button */}

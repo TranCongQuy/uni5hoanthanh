@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Save } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../common/UI';
@@ -17,6 +17,21 @@ export const EditProfileModal: React.FC = () => {
   const [targetMajor, setTargetMajor] = useState(profile.targetMajor);
   const [dreamUni, setDreamUni] = useState(profile.dreamUni);
   const [expectedScore, setExpectedScore] = useState(profile.expectedScore);
+
+  useEffect(() => {
+    if (isEditProfileOpen) {
+      setName(profile.name);
+      setPhone(profile.phone);
+      setDob(profile.dob);
+      setGender(profile.gender);
+      setGrade(profile.grade);
+      setSchool(profile.school);
+      setProvince(profile.province);
+      setTargetMajor(profile.targetMajor);
+      setDreamUni(profile.dreamUni);
+      setExpectedScore(profile.expectedScore);
+    }
+  }, [isEditProfileOpen, profile]);
 
   if (!isEditProfileOpen) return null;
 

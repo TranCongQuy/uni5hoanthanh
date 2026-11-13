@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import type {
   AIMatchState,
   ApplicationRecord,
@@ -6,25 +6,26 @@ import type {
   ConsultationBooking,
   CurrentUser,
   HollandCode,
+  NotificationItem,
   University,
   UserProfile,
   UserRole,
   ViewMode,
 } from '../types';
-import { ACCOUNT_STUDENT, ACCOUNT_ADMIN, ACCOUNT_PXU } from '../types';
+import { ACCOUNT_STUDENT, ACCOUNT_ADMIN, ACCOUNT_PXU, getStatusMeta } from '../types';
 import { UNIVERSITIES } from '../data/MockData';
 
-interface HollandResult {
+export interface HollandResult {
   primaryCode: HollandCode;
   topCodes: HollandCode[];
   scores: Record<HollandCode, number>;
   completedAt: string;
 }
 
-// Trạng thái xử lý một lịch tư vấn: chờ liên hệ -> đã liên hệ -> hoàn thành
+// Trạng thái xử lý lịch tư vấn 1-1: chờ liên hệ -> đã liên hệ -> hoàn thành
 export type BookingState = 'pending' | 'contacted' | 'done';
 
-// Nhật ký xử lý hồ sơ: ghi lại mỗi lần Admin/PXU đổi trạng thái một hồ sơ (luồng xử lý)
+// Nhật ký xử lý hồ sơ liên vai trò
 export interface ProcessingLogEntry {
   id: string;
   appCode: string;
@@ -35,6 +36,31 @@ export interface ProcessingLogEntry {
   actorName: string;
   actorRole: UserRole;
   time: string;
+  note?: string;
+}
+
+export interface RegisteredUserSummary {
+  name: string;
+  email: string;
+  createdAt?: string;
+}
+
+interface StoredRegisteredUser extends RegisteredUserSummary {
+  pass: string;
+}
+
+interface PerUserPersonalStore {
+  profile: UserProfile;
+  favoriteIds: number[];
+  compareIds: number[];
+  hollandResult: HollandResult | null;
+  aiMatchState: AIMatchState;
+}
+
+interface StoredSession {
+  isLoggedIn: boolean;
+  isGuest: boolean;
+  user: CurrentUser;
 }
 
 interface AppContextType {
@@ -42,15 +68,17 @@ interface AppContextType {
   isLoggedIn: boolean;
   isGuest: boolean;
   user: CurrentUser;
+  registeredUsers: RegisteredUserSummary[];
   login: (email: string, pass: string) => boolean;
   loginAsGuest: () => void;
   register: (fullName: string, email: string, pass: string) => boolean;
   logout: () => void;
 
-  // Profile
+  // Profile & Consultation Bookings
   profile: UserProfile;
   updateProfile: (updated: Partial<UserProfile>) => void;
   bookings: ConsultationBooking[];
+  myBookings: ConsultationBooking[];
   addBooking: (booking: Omit<ConsultationBooking, 'id'>) => void;
   bookingStates: Record<string, BookingState>;
   updateBookingState: (bookingId: string, state: BookingState) => void;
@@ -73,12 +101,16 @@ interface AppContextType {
   saveHollandResult: (scores: Record<HollandCode, number>) => HollandResult;
   clearHollandResult: () => void;
 
-  // Settings
+  // Settings & Dynamic Notifications
   reduceMotion: boolean;
   notifications: boolean;
   toggleReduceMotion: () => void;
   toggleNotifications: () => void;
   resetAllData: () => void;
+  visibleNotifications: NotificationItem[];
+  unreadNotificationCount: number;
+  markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: () => void;
 
   // Navigation & Modals
   activeTab: number;
@@ -119,9 +151,12 @@ interface AppContextType {
 
   // Applications
   applications: ApplicationRecord[];
+  myApplications: ApplicationRecord[];
   addApplication: (app: Omit<ApplicationRecord, 'id' | 'submittedAt' | 'status' | 'statusColor' | 'code'>) => void;
   cancelApplication: (appId: string) => void;
+  resubmitApplicationSupplement: (appId: string, supplementNote: string) => void;
   updateApplicationStatus: (id: string, status: ApplicationStatus, notes?: string) => void;
+  batchUpdateApplicationStatus: (ids: string[], status: ApplicationStatus, notes?: string) => void;
   processingLog: ProcessingLogEntry[];
   selectedAppForDetail: ApplicationRecord | null;
   openApplicationDetail: (app: ApplicationRecord) => void;
@@ -134,22 +169,18 @@ interface AppContextType {
   universitiesList: University[];
   updateUniversityMetrics: (id: number, score2024: number, tuitionMin: number) => void;
 
-  // Toast
+  // Toast & Search
   toastMessage: string | null;
   showToast: (msg: string) => void;
-
-  // Search keyword sync
   searchKeyword: string;
   setSearchKeyword: (kw: string) => void;
 
-  // AI Match persistence (remembers latest analysis across tabs)
+  // AI Match persistence
   aiMatchState: AIMatchState;
   saveAIMatchState: (state: Partial<AIMatchState>) => void;
 
-  // View mode (Mobile vs Desktop / Laptop)
+  // Automatic View mode (Mobile < 1024px vs Desktop >= 1024px)
   viewMode: ViewMode;
-  setViewMode: (mode: ViewMode) => void;
-  toggleViewMode: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -157,6 +188,82 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const DEMO_EMAIL = 'quy@unipath.vn';
 const DEMO_PASS = '123456';
 const DEMO_NAME = 'Trần Công Quý';
+const SYSTEM_RESERVED_EMAILS = [
+  DEMO_EMAIL,
+  ACCOUNT_ADMIN.email.toLowerCase(),
+  ACCOUNT_PXU.email.toLowerCase(),
+  'khach@unipath.vn',
+];
+
+const STORAGE_KEYS = {
+  SESSION: 'unipath_v2_auth_session',
+  REGISTERED_USERS: 'unipath_registered_users',
+  SHARED_APPS: 'unipath_v2_shared_applications',
+  SHARED_BOOKINGS: 'unipath_v2_shared_bookings',
+  SHARED_BOOKING_STATES: 'unipath_v2_shared_booking_states',
+  SHARED_UNIS: 'unipath_v2_shared_universities',
+  SHARED_LOGS: 'unipath_v2_shared_processing_log',
+  SHARED_NOTIFICATIONS: 'unipath_v2_shared_notifications',
+  REDUCE_MOTION: 'unipath_reduce_motion',
+  NOTIFICATIONS_ENABLED: 'unipath_notifications',
+  USER_PREFIX: 'unipath_v2_user_',
+};
+
+const GUEST_USER: CurrentUser = {
+  email: 'khach@unipath.vn',
+  name: 'Khách trải nghiệm',
+  role: 'student',
+  title: 'Khách vãng lai',
+  organization: 'Trải nghiệm tự do',
+  avatar: '/images/avatar_user.png',
+};
+
+const DEFAULT_AI_MATCH: AIMatchState = {
+  hasEvaluated: false,
+  score: 24.0,
+  budget: 25,
+  region: 'Tất cả',
+  sortBy: 'score',
+};
+
+const DEMO_STUDENT_PROFILE: UserProfile = {
+  name: DEMO_NAME,
+  email: DEMO_EMAIL,
+  phone: '0912 345 678',
+  dob: '15/08/2008',
+  gender: 'Nam',
+  grade: 'Lớp 12',
+  school: 'THPT Chuyên Quốc Học Huế',
+  province: 'Thừa Thiên Huế',
+  targetMajor: 'Công nghệ Thông tin',
+  dreamUni: 'PXU - Đại học Phú Xuân',
+  expectedScore: 24.5,
+  isPremium: false,
+  premiumPlan: 'Gói Tiêu Chuẩn',
+  avatarPath: '/images/avatar_user.png',
+};
+
+const createCleanStudentProfile = (name: string, email: string): UserProfile => ({
+  name,
+  email,
+  phone: '',
+  dob: '01/01/2008',
+  gender: 'Nam',
+  grade: 'Lớp 12',
+  school: 'Trường THPT',
+  province: 'Thừa Thiên Huế',
+  targetMajor: 'Công nghệ Thông tin',
+  dreamUni: 'PXU - Đại học Phú Xuân',
+  expectedScore: 24.0,
+  isPremium: false,
+  premiumPlan: 'Gói Tiêu Chuẩn',
+  avatarPath: '/images/avatar_user.png',
+});
+
+const GUEST_PROFILE: UserProfile = {
+  ...createCleanStudentProfile('Khách trải nghiệm', 'khach@unipath.vn'),
+  school: 'Khách khám phá hệ thống',
+};
 
 const INITIAL_APPLICATIONS: ApplicationRecord[] = [
   {
@@ -165,15 +272,15 @@ const INITIAL_APPLICATIONS: ApplicationRecord[] = [
     uniId: 11,
     uniName: 'Đại học Phú Xuân',
     uniCode: 'PXU',
-    major: 'Công nghệ thông tin (AI & Cloud)',
+    major: 'Công nghệ Thông tin',
     candidateName: 'Trần Công Quý',
     phone: '0912 345 678',
     email: 'quy@unipath.vn',
     score: 24.5,
     submittedAt: '24/10/2026 09:30',
     status: 'Đang xét duyệt',
-    statusColor: '#F59E0B',
-    notes: 'Đăng ký xét tuyển sớm đợt 1 bằng kết quả học bạ THPT và chứng chỉ tin học quốc tế.',
+    statusColor: getStatusMeta('Đang xét duyệt').dot,
+    notes: 'Đăng ký xét tuyển sớm đợt 1 bằng kết quả học bạ THPT và chứng chỉ tin học quốc tế. Đăng ký xét học bổng OJT doanh nghiệp.',
   },
   {
     id: 'app-2',
@@ -181,21 +288,21 @@ const INITIAL_APPLICATIONS: ApplicationRecord[] = [
     uniId: 1,
     uniName: 'Đại học Bách Khoa Hà Nội',
     uniCode: 'BKA',
-    major: 'Khoa học Máy tính (IT1)',
+    major: 'Khoa học Máy tính',
     candidateName: 'Trần Công Quý',
     phone: '0912 345 678',
     email: 'quy@unipath.vn',
     score: 28.5,
     submittedAt: '22/10/2026 15:45',
     status: 'Hồ sơ hợp lệ',
-    statusColor: '#10B981',
-    notes: 'Đã hoàn tất tải lên CCCD, Học bạ và Phiếu điểm kỳ thi đánh giá tư duy.',
+    statusColor: getStatusMeta('Hồ sơ hợp lệ').dot,
+    notes: 'Đã hoàn tất đối chiếu CCCD, Học bạ 5 học kỳ và Phiếu điểm kỳ thi Đánh giá tư duy.',
   },
   {
     id: 'app-3',
     code: 'HS-2026-FTU03',
     uniId: 2,
-    uniName: 'Đại học Ngoại Thương',
+    uniName: 'Đại học Ngoại Thương (Cơ sở Hà Nội)',
     uniCode: 'FTU',
     major: 'Kinh tế Quốc tế',
     candidateName: 'Trần Công Quý',
@@ -204,30 +311,30 @@ const INITIAL_APPLICATIONS: ApplicationRecord[] = [
     score: 28.2,
     submittedAt: '20/10/2026 11:15',
     status: 'Thiếu hồ sơ',
-    statusColor: '#2563EB',
-    notes: 'Cần bổ sung bản scan học bạ kỳ 2 lớp 12 và chứng chỉ tiếng Anh IELTS trước ngày 15/11.',
+    statusColor: getStatusMeta('Thiếu hồ sơ').dot,
+    notes: 'Cần bổ sung bản scan học bạ học kỳ 1 lớp 12 có dấu mộc đỏ và chứng chỉ ngoại ngữ quốc tế trước ngày 25/11.',
   },
   {
     id: 'app-4',
     code: 'HS-2026-NEU04',
     uniId: 3,
-    uniName: 'Đại học Kinh tế Quốc dân',
+    uniName: 'Đại học Kinh Tế Quốc Dân',
     uniCode: 'NEU',
-    major: 'Marketing Số & Thương mại',
+    major: 'Marketing',
     candidateName: 'Trần Công Quý',
     phone: '0912 345 678',
     email: 'quy@unipath.vn',
     score: 27.5,
     submittedAt: '18/10/2026 14:20',
     status: 'Đã hủy',
-    statusColor: '#64748B',
-    notes: 'Thí sinh chủ động hủy hồ sơ xét tuyển để đăng ký đổi sang nguyện vọng khác.',
+    statusColor: getStatusMeta('Đã hủy').dot,
+    notes: 'Thí sinh chủ động hủy hồ sơ xét tuyển để điều chỉnh thứ tự nguyện vọng ưu tiên.',
     cancelReason: 'Thí sinh tự hủy hồ sơ',
   },
   {
     id: 'app-5',
     code: 'HS-2026-HMU05',
-    uniId: 4,
+    uniId: 5,
     uniName: 'Đại học Y Hà Nội',
     uniCode: 'HMU',
     major: 'Kỹ thuật Xét nghiệm Y học',
@@ -237,9 +344,9 @@ const INITIAL_APPLICATIONS: ApplicationRecord[] = [
     score: 22.0,
     submittedAt: '15/10/2026 10:00',
     status: 'Đã bị hủy',
-    statusColor: '#EF4444',
-    notes: 'Hồ sơ đã bị hội đồng tuyển sinh từ chối/hủy do không đạt điểm sàn nhận hồ sơ tối thiểu.',
-    cancelReason: 'Nhà trường từ chối do không đủ điều kiện ngưỡng điểm sàn',
+    statusColor: getStatusMeta('Đã bị hủy').dot,
+    notes: 'Hội đồng tuyển sinh từ chối hồ sơ do tổng điểm tổ hợp chưa đạt ngưỡng đảm bảo chất lượng đầu vào khối sức khỏe.',
+    cancelReason: 'Không đạt ngưỡng điểm sàn nhận hồ sơ khối ngành Sức khỏe',
   },
   {
     id: 'app-6',
@@ -247,15 +354,15 @@ const INITIAL_APPLICATIONS: ApplicationRecord[] = [
     uniId: 11,
     uniName: 'Đại học Phú Xuân',
     uniCode: 'PXU',
-    major: 'Quản trị Kinh doanh & Marketing Số',
+    major: 'Quản trị Kinh doanh',
     candidateName: 'Nguyễn Văn An',
     phone: '0988 776 655',
     email: 'an.nguyen@thpt.edu.vn',
-    score: 22.5,
+    score: 23.5,
     submittedAt: '02/11/2026 14:10',
     status: 'Đang xét duyệt',
-    statusColor: '#F59E0B',
-    notes: 'Đăng ký xét tuyển học bạ THPT 3 học kỳ, điểm trung bình 8.2. Đăng ký học bổng OJT.',
+    statusColor: getStatusMeta('Đang xét duyệt').dot,
+    notes: 'Đăng ký xét tuyển học bạ THPT 3 học kỳ (ĐTB 8.2) kèm nguyện vọng học bổng OJT doanh nghiệp.',
   },
   {
     id: 'app-7',
@@ -263,107 +370,258 @@ const INITIAL_APPLICATIONS: ApplicationRecord[] = [
     uniId: 11,
     uniName: 'Đại học Phú Xuân',
     uniCode: 'PXU',
-    major: 'Thiết kế Đồ họa & Kỹ thuật số',
+    major: 'Thiết kế Đồ họa',
     candidateName: 'Lê Thị Thảo Vy',
     phone: '0935 123 789',
     email: 'thaovy.le@gmail.com',
     score: 25.0,
     submittedAt: '04/11/2026 16:30',
     status: 'Thiếu hồ sơ',
-    statusColor: '#2563EB',
-    notes: 'Cần nộp bổ sung bản sao công chứng CCCD và phiếu điểm học bạ trước ngày 20/11.',
+    statusColor: getStatusMeta('Thiếu hồ sơ').dot,
+    notes: 'Cần nộp bổ sung bản sao công chứng CCCD và Portfolio sản phẩm sáng tạo cá nhân trước ngày 25/11.',
+  },
+  {
+    id: 'app-8',
+    code: 'HS-2026-PXU08',
+    uniId: 11,
+    uniName: 'Đại học Phú Xuân',
+    uniCode: 'PXU',
+    major: 'Ngôn ngữ Anh',
+    candidateName: 'Trần Minh Khôi',
+    phone: '0905 678 234',
+    email: 'minhkhoi.tran@thpt.edu.vn',
+    score: 25.8,
+    submittedAt: '01/11/2026 08:45',
+    status: 'Đã trúng tuyển',
+    statusColor: getStatusMeta('Đã trúng tuyển').dot,
+    notes: 'Đủ điều kiện trúng tuyển sớm đợt 1 và đạt học bổng Tài năng Trẻ PXU 30% học phí toàn khóa.',
   },
 ];
 
-const DEFAULT_PROFILE: UserProfile = {
-  name: DEMO_NAME,
-  email: DEMO_EMAIL,
-  phone: '0912 345 678',
-  dob: '15/08/2007',
-  gender: 'Nam',
-  grade: 'Lớp 12',
-  school: 'THPT Chuyên Quốc Học Huế',
-  province: 'Thừa Thiên Huế',
-  targetMajor: 'Công nghệ thông tin (AI & Data)',
-  dreamUni: 'PXU - Đại học Phú Xuân',
-  expectedScore: 24.5,
-  isPremium: false,
-  premiumPlan: 'Gói Tiêu Chuẩn',
-  avatarPath: '/images/avatar_user.png',
-};
+const INITIAL_BOOKINGS: ConsultationBooking[] = [
+  {
+    id: 'bk-1',
+    name: DEMO_NAME,
+    email: DEMO_EMAIL,
+    phone: '0912 345 678',
+    dateTime: '14:30 - 15/11/2026',
+    channel: 'Google Meet 1-1',
+    uniId: 11,
+    uniName: 'Đại học Phú Xuân',
+    uniCode: 'PXU',
+    major: 'Công nghệ Thông tin',
+    notes: 'Muốn tìm hiểu kỹ hơn về lộ trình thực tập OJT từ năm nhất và học bổng doanh nghiệp tại Huế.',
+  },
+  {
+    id: 'bk-2',
+    name: 'Nguyễn Văn An',
+    email: 'an.nguyen@thpt.edu.vn',
+    phone: '0988 776 655',
+    dateTime: '09:00 - 16/11/2026',
+    channel: 'Gọi điện / Zalo',
+    uniId: 11,
+    uniName: 'Đại học Phú Xuân',
+    uniCode: 'PXU',
+    major: 'Quản trị Kinh doanh',
+    notes: 'Cần tư vấn phương thức xét tuyển học bạ 3 học kỳ và thông tin ký túc xá sinh viên.',
+  },
+  {
+    id: 'bk-3',
+    name: 'Lê Hoàng Nam',
+    email: 'hoangnam@thpt.edu.vn',
+    phone: '0905 246 810',
+    dateTime: '16:00 - 17/11/2026',
+    channel: 'Google Meet 1-1',
+    uniId: 12,
+    uniName: 'Đại học Bách Khoa - ĐH Đà Nẵng',
+    uniCode: 'DUT',
+    major: 'Kỹ thuật Ô tô',
+    notes: 'Hỏi về chỉ tiêu xét điểm thi ĐGNL và chương trình kỹ sư chất lượng cao.',
+  },
+];
 
-// Helper to purge all stale demo session data from localStorage
-const clearDemoStorage = () => {
+const INITIAL_NOTIFICATIONS: NotificationItem[] = [
+  {
+    id: 'notif-init-1',
+    title: 'Khai mạc Virtual EduFair 2026',
+    body: 'Ngày hội tuyển sinh số quy tụ 30 trường Đại học Bắc – Trung – Nam chính thức mở cổng tư vấn trực tuyến.',
+    time: '15 phút trước',
+    read: false,
+    type: 'promo',
+    targetRole: 'all',
+    targetTab: 3,
+  },
+  {
+    id: 'notif-init-2',
+    title: 'Học bổng OJT Đại học Phú Xuân (PXU)',
+    body: 'Công bố quỹ học bổng doanh nghiệp 30% – 100% học phí cho thí sinh xét tuyển sớm khối Công nghệ, Kinh doanh & Thiết kế.',
+    time: '1 giờ trước',
+    read: false,
+    type: 'deadline',
+    targetRole: 'student',
+  },
+  {
+    id: 'notif-init-3',
+    title: 'Nhắc bổ sung minh chứng hồ sơ HS-2026-FTU03',
+    body: 'Hồ sơ Kinh tế Quốc tế (FTU) của bạn đang chờ bổ sung bản scan học bạ HK1 lớp 12 trước ngày 25/11.',
+    time: '3 giờ trước',
+    read: false,
+    type: 'application',
+    targetRole: 'student',
+    targetEmail: DEMO_EMAIL,
+    targetTab: 4,
+  },
+  {
+    id: 'notif-init-pxu',
+    title: 'Có 2 hồ sơ xét tuyển sớm mới gửi về ĐH Phú Xuân',
+    body: 'Thí sinh Trần Công Quý (CNTT) và Nguyễn Văn An (QTKD) đang chờ Ban Tuyển sinh PXU thẩm định.',
+    time: 'Hôm nay',
+    read: false,
+    type: 'application',
+    targetRole: 'university_pxu',
+  },
+  {
+    id: 'notif-init-admin',
+    title: 'Hệ thống UniPath 2.0 vận hành ổn định',
+    body: 'Đồng bộ thành công dữ liệu 30 trường đại học và phễu xét tuyển sớm đợt 1 năm 2026.',
+    time: 'Hôm nay',
+    read: false,
+    type: 'system',
+    targetRole: 'admin',
+  },
+];
+
+function readJsonStorage<T>(key: string, fallback: T): T {
   try {
-    localStorage.removeItem('unipath_logged_in');
-    localStorage.removeItem('unipath_is_guest');
-    localStorage.removeItem('unipath_current_email');
-    localStorage.removeItem('unipath_current_name');
-    localStorage.removeItem('unipath_user_profile');
-    localStorage.removeItem('unipath_bookings');
-    localStorage.removeItem('unipath_wishlist');
-    localStorage.removeItem('unipath_compare');
-    localStorage.removeItem('unipath_applications');
-    localStorage.removeItem('unipath_holland_result');
-    localStorage.removeItem('unipath_latest_ai_match');
-    localStorage.removeItem('unipath_chat_history');
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
   } catch {
-    // ignore
+    return fallback;
   }
-};
+}
+
+function writeJsonStorage<T>(key: string, value: T): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore storage quota errors
+  }
+}
+
+function formatNowVi(): string {
+  const now = new Date();
+  const d = now.getDate().toString().padStart(2, '0');
+  const m = (now.getMonth() + 1).toString().padStart(2, '0');
+  const y = now.getFullYear();
+  const hh = now.getHours().toString().padStart(2, '0');
+  const mm = now.getMinutes().toString().padStart(2, '0');
+  return `${d}/${m}/${y} ${hh}:${mm}`;
+}
+
+function getDefaultPersonalStore(email: string, name: string): PerUserPersonalStore {
+  const clean = email.trim().toLowerCase();
+  if (clean === DEMO_EMAIL) {
+    return {
+      profile: { ...DEMO_STUDENT_PROFILE },
+      favoriteIds: [11, 1, 21],
+      compareIds: [11, 12],
+      hollandResult: null,
+      aiMatchState: { ...DEFAULT_AI_MATCH, score: 24.5 },
+    };
+  }
+  return {
+    profile: createCleanStudentProfile(name, clean),
+    favoriteIds: [11],
+    compareIds: [],
+    hollandResult: null,
+    aiMatchState: { ...DEFAULT_AI_MATCH },
+  };
+}
+
+function loadPersonalStore(email: string, name: string): PerUserPersonalStore {
+  const clean = email.trim().toLowerCase();
+  const fallback = getDefaultPersonalStore(clean, name);
+  return readJsonStorage<PerUserPersonalStore>(`${STORAGE_KEYS.USER_PREFIX}${clean}`, fallback);
+}
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // --- Auth State & RBAC ---
-  // Mandatory gateway: always starts at false so every user starts at Onboarding & AuthScreen
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const [isGuest, setIsGuest] = useState<boolean>(false);
-  const [user, setUser] = useState<CurrentUser>(ACCOUNT_STUDENT);
+  // --- Initial Session Recovery ---
+  const initialSession = useMemo<StoredSession>(() => {
+    const saved = readJsonStorage<StoredSession | null>(STORAGE_KEYS.SESSION, null);
+    if (saved && saved.isLoggedIn && saved.user) {
+      return saved;
+    }
+    return {
+      isLoggedIn: false,
+      isGuest: false,
+      user: GUEST_USER,
+    };
+  }, []);
 
-  // --- Profile State (Clean, pristine default) ---
-  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const initialPersonal = useMemo<PerUserPersonalStore>(() => {
+    if (
+      initialSession.isLoggedIn &&
+      !initialSession.isGuest &&
+      initialSession.user.role === 'student'
+    ) {
+      return loadPersonalStore(initialSession.user.email, initialSession.user.name);
+    }
+    return {
+      profile: { ...GUEST_PROFILE },
+      favoriteIds: [11, 1, 21],
+      compareIds: [11, 12],
+      hollandResult: null,
+      aiMatchState: { ...DEFAULT_AI_MATCH },
+    };
+  }, [initialSession]);
 
-  const [bookings, setBookings] = useState<ConsultationBooking[]>([
-    {
-      id: 'bk-1',
-      name: DEMO_NAME,
-      phone: '0912 345 678',
-      dateTime: '14:30 15/11/2026',
-      uniCode: 'PXU',
-      major: 'Công nghệ Thông tin',
-      notes: 'Muốn tìm hiểu kỹ hơn về học bổng OJT và cam kết việc làm',
-    },
-  ]);
+  // --- Auth & RBAC State ---
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(initialSession.isLoggedIn);
+  const [isGuest, setIsGuest] = useState<boolean>(initialSession.isGuest);
+  const [user, setUser] = useState<CurrentUser>(initialSession.user);
 
-  // --- Applications State (Pristine sample list) ---
-  const [applications, setApplications] = useState<ApplicationRecord[]>(INITIAL_APPLICATIONS);
+  const [registeredUsers, setRegisteredUsers] = useState<RegisteredUserSummary[]>(() => {
+    const list = readJsonStorage<StoredRegisteredUser[]>(STORAGE_KEYS.REGISTERED_USERS, []);
+    return list.map(({ name, email, createdAt }) => ({ name, email, createdAt }));
+  });
 
-  const [processingLog, setProcessingLog] = useState<ProcessingLogEntry[]>([]);
+  // --- Per-User Personal State ---
+  const [profile, setProfile] = useState<UserProfile>(initialPersonal.profile);
+  const [favoriteIds, setFavoriteIds] = useState<number[]>(initialPersonal.favoriteIds);
+  const [compareIds, setCompareIds] = useState<number[]>(initialPersonal.compareIds);
+  const [hollandResult, setHollandResult] = useState<HollandResult | null>(
+    initialPersonal.hollandResult
+  );
+  const [aiMatchState, setAIMatchState] = useState<AIMatchState>(initialPersonal.aiMatchState);
 
-  const [selectedAppForDetail, setSelectedAppForDetail] = useState<ApplicationRecord | null>(null);
-  const [isAllApplicationsOpen, setIsAllApplicationsOpen] = useState<boolean>(false);
-
-  // --- Wishlist State (Default: PXU, BKA, HCMUT) ---
-  const [favoriteIds, setFavoriteIds] = useState<number[]>([11, 1, 21]);
-
-  // --- Compare State (Default: PXU, DUT) ---
-  const [compareIds, setCompareIds] = useState<number[]>([11, 12]);
-
-  // --- Holland Quiz Result (Clean unattempted state) ---
-  const [hollandResult, setHollandResult] = useState<HollandResult | null>(null);
+  // --- Shared Institutional State (Persisted across role switches!) ---
+  const [universitiesList, setUniversitiesList] = useState<University[]>(() =>
+    readJsonStorage<University[]>(STORAGE_KEYS.SHARED_UNIS, UNIVERSITIES)
+  );
+  const [applications, setApplications] = useState<ApplicationRecord[]>(() =>
+    readJsonStorage<ApplicationRecord[]>(STORAGE_KEYS.SHARED_APPS, INITIAL_APPLICATIONS)
+  );
+  const [bookings, setBookings] = useState<ConsultationBooking[]>(() =>
+    readJsonStorage<ConsultationBooking[]>(STORAGE_KEYS.SHARED_BOOKINGS, INITIAL_BOOKINGS)
+  );
+  const [bookingStates, setBookingStates] = useState<Record<string, BookingState>>(() =>
+    readJsonStorage<Record<string, BookingState>>(STORAGE_KEYS.SHARED_BOOKING_STATES, {})
+  );
+  const [processingLog, setProcessingLog] = useState<ProcessingLogEntry[]>(() =>
+    readJsonStorage<ProcessingLogEntry[]>(STORAGE_KEYS.SHARED_LOGS, [])
+  );
+  const [allNotifications, setAllNotifications] = useState<NotificationItem[]>(() =>
+    readJsonStorage<NotificationItem[]>(STORAGE_KEYS.SHARED_NOTIFICATIONS, INITIAL_NOTIFICATIONS)
+  );
 
   // --- Settings ---
   const [reduceMotion, setReduceMotion] = useState<boolean>(() => {
-    return localStorage.getItem('unipath_reduce_motion') === 'true';
+    return localStorage.getItem(STORAGE_KEYS.REDUCE_MOTION) === 'true';
   });
-
   const [notifications, setNotifications] = useState<boolean>(() => {
-    return localStorage.getItem('unipath_notifications') !== 'false';
+    return localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS_ENABLED) !== 'false';
   });
-
-  // Clear any leftover stale demo storage on initial app load
-  useEffect(() => {
-    clearDemoStorage();
-  }, []);
 
   // --- Modals & Navigation ---
   const [activeTab, setActiveTab] = useState<number>(0);
@@ -377,29 +635,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isBookConsultationOpen, setIsBookConsultationOpen] = useState(false);
-  const [consultationTargetUni] = useState<University | null>(null);
+  const [consultationTargetUni, setConsultationTargetUni] = useState<University | null>(null);
   const [isApplyDemoOpen, setIsApplyDemoOpen] = useState(false);
   const [applyDemoTargetUni, setApplyDemoTargetUni] = useState<University | null>(null);
+  const [selectedAppForDetail, setSelectedAppForDetail] = useState<ApplicationRecord | null>(null);
+  const [isAllApplicationsOpen, setIsAllApplicationsOpen] = useState<boolean>(false);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState<string>('');
 
-  // --- Universities Database State ---
-  const [universitiesList, setUniversitiesList] = useState<University[]>(UNIVERSITIES);
-
-  const updateUniversityMetrics = (id: number, score2024: number, tuitionMin: number) => {
-    // Phân quyền CSDL trường: chỉ Admin Hệ Thống mới được sửa điểm chuẩn / học phí
-    if (user.role !== 'admin') {
-      showToast('⛔ Chỉ Admin Hệ Thống mới có quyền sửa CSDL trường đại học.');
-      return;
-    }
-    setUniversitiesList((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, score2024, tuitionMin } : u))
-    );
-    showToast('Đã cập nhật số liệu trường đại học thành công!');
-  };
-
-  // --- Automatic View Mode Detection (Responsive without any toasts) ---
+  // --- Automatic View Mode Detection (100% Responsive, zero manual toggles, zero toasts) ---
   const [viewMode, setViewModeState] = useState<ViewMode>(() => {
     if (typeof window !== 'undefined') {
       return window.innerWidth >= 1024 ? 'desktop' : 'mobile';
@@ -409,29 +654,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     const handleResize = () => {
-      const isDesktop = window.innerWidth >= 1024;
-      setViewModeState(isDesktop ? 'desktop' : 'mobile');
+      setViewModeState(window.innerWidth >= 1024 ? 'desktop' : 'mobile');
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  // --- Toast Helper ---
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage((prev) => (prev === msg ? null : prev));
-    }, 2800);
-  };
-
-  // Silent view mode setters (no notifications)
-  const setViewMode = (mode: ViewMode) => {
-    setViewModeState(mode);
-  };
-
-  const toggleViewMode = () => {
-    setViewModeState((prev) => (prev === 'desktop' ? 'mobile' : 'desktop'));
-  };
 
   useEffect(() => {
     const root = document.getElementById('root');
@@ -448,97 +675,184 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [viewMode]);
 
-  // --- Sync Effects to LocalStorage (Only for registered non-demo accounts) ---
-  const isDemoOrGuest = user.email === DEMO_EMAIL || isGuest || !isLoggedIn;
+  // --- Toast Helper ---
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((prev) => (prev === msg ? null : prev));
+    }, 3000);
+  };
 
+  // --- Persist Session ---
   useEffect(() => {
-    if (isDemoOrGuest) return;
-    localStorage.setItem('unipath_logged_in', isLoggedIn.toString());
-    localStorage.setItem('unipath_is_guest', isGuest.toString());
-    localStorage.setItem('unipath_current_email', user.email);
-    localStorage.setItem('unipath_current_name', user.name);
-  }, [isLoggedIn, isGuest, user, isDemoOrGuest]);
-
-  useEffect(() => {
-    if (isDemoOrGuest) return;
-    localStorage.setItem('unipath_user_profile', JSON.stringify(profile));
-  }, [profile, isDemoOrGuest]);
-
-  useEffect(() => {
-    if (isDemoOrGuest) return;
-    localStorage.setItem('unipath_bookings', JSON.stringify(bookings));
-  }, [bookings, isDemoOrGuest]);
-
-  useEffect(() => {
-    if (isDemoOrGuest) return;
-    localStorage.setItem('unipath_wishlist', JSON.stringify(favoriteIds));
-  }, [favoriteIds, isDemoOrGuest]);
-
-  useEffect(() => {
-    if (isDemoOrGuest) return;
-    localStorage.setItem('unipath_compare', JSON.stringify(compareIds));
-  }, [compareIds, isDemoOrGuest]);
-
-  useEffect(() => {
-    if (isDemoOrGuest) return;
-    localStorage.setItem('unipath_applications', JSON.stringify(applications));
-  }, [applications, isDemoOrGuest]);
-
-  useEffect(() => {
-    if (isDemoOrGuest) return;
-    if (hollandResult) {
-      localStorage.setItem('unipath_holland_result', JSON.stringify(hollandResult));
+    if (isLoggedIn) {
+      writeJsonStorage<StoredSession>(STORAGE_KEYS.SESSION, {
+        isLoggedIn,
+        isGuest,
+        user,
+      });
     } else {
-      localStorage.removeItem('unipath_holland_result');
+      try {
+        localStorage.removeItem(STORAGE_KEYS.SESSION);
+      } catch {
+        // ignore
+      }
     }
-  }, [hollandResult, isDemoOrGuest]);
+  }, [isLoggedIn, isGuest, user]);
+
+  // --- Persist Shared Institutional Data ---
+  useEffect(() => {
+    writeJsonStorage(STORAGE_KEYS.SHARED_UNIS, universitiesList);
+  }, [universitiesList]);
 
   useEffect(() => {
-    localStorage.setItem('unipath_reduce_motion', reduceMotion.toString());
+    writeJsonStorage(STORAGE_KEYS.SHARED_APPS, applications);
+  }, [applications]);
+
+  useEffect(() => {
+    writeJsonStorage(STORAGE_KEYS.SHARED_BOOKINGS, bookings);
+  }, [bookings]);
+
+  useEffect(() => {
+    writeJsonStorage(STORAGE_KEYS.SHARED_BOOKING_STATES, bookingStates);
+  }, [bookingStates]);
+
+  useEffect(() => {
+    writeJsonStorage(STORAGE_KEYS.SHARED_LOGS, processingLog);
+  }, [processingLog]);
+
+  useEffect(() => {
+    writeJsonStorage(STORAGE_KEYS.SHARED_NOTIFICATIONS, allNotifications);
+  }, [allNotifications]);
+
+  // --- Persist Per-User Personal Store (for authenticated non-guest students) ---
+  useEffect(() => {
+    if (!isLoggedIn || isGuest || user.role !== 'student') return;
+    const clean = user.email.trim().toLowerCase();
+    writeJsonStorage<PerUserPersonalStore>(`${STORAGE_KEYS.USER_PREFIX}${clean}`, {
+      profile,
+      favoriteIds,
+      compareIds,
+      hollandResult,
+      aiMatchState,
+    });
+  }, [isLoggedIn, isGuest, user, profile, favoriteIds, compareIds, hollandResult, aiMatchState]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.REDUCE_MOTION, reduceMotion.toString());
   }, [reduceMotion]);
 
   useEffect(() => {
-    localStorage.setItem('unipath_notifications', notifications.toString());
+    localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS_ENABLED, notifications.toString());
   }, [notifications]);
 
+  // --- Helper: Push Dynamic Notification ---
+  const pushNotification = (item: Omit<NotificationItem, 'id' | 'time' | 'read'>) => {
+    const newNotif: NotificationItem = {
+      ...item,
+      id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      time: formatNowVi(),
+      read: false,
+    };
+    setAllNotifications((prev) => [newNotif, ...prev].slice(0, 60));
+  };
+
+  // --- Scoped Selectors for Privacy & RBAC ---
+  const myApplications = useMemo<ApplicationRecord[]>(() => {
+    if (!isLoggedIn || isGuest || user.role !== 'student') return [];
+    const targetEmail = user.email.trim().toLowerCase();
+    return applications.filter((a) => a.email.trim().toLowerCase() === targetEmail);
+  }, [applications, isLoggedIn, isGuest, user]);
+
+  const myBookings = useMemo<ConsultationBooking[]>(() => {
+    if (!isLoggedIn || isGuest || user.role !== 'student') return [];
+    const targetEmail = user.email.trim().toLowerCase();
+    return bookings.filter(
+      (b) =>
+        (b.email && b.email.trim().toLowerCase() === targetEmail) ||
+        (!b.email && b.name.trim().toLowerCase() === user.name.trim().toLowerCase())
+    );
+  }, [bookings, isLoggedIn, isGuest, user]);
+
+  const visibleNotifications = useMemo<NotificationItem[]>(() => {
+    const currentEmail = user.email.trim().toLowerCase();
+    return allNotifications.filter((n) => {
+      if (n.targetEmail) {
+        if (!isLoggedIn || isGuest) return false;
+        return n.targetEmail.trim().toLowerCase() === currentEmail;
+      }
+      if (!n.targetRole || n.targetRole === 'all') return true;
+      return n.targetRole === user.role;
+    });
+  }, [allNotifications, isLoggedIn, isGuest, user]);
+
+  const unreadNotificationCount = useMemo<number>(() => {
+    if (!notifications) return 0;
+    return visibleNotifications.filter((n) => !n.read).length;
+  }, [visibleNotifications, notifications]);
+
+  const markNotificationRead = (id: string) => {
+    setAllNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
+  };
+
+  const markAllNotificationsRead = () => {
+    const visibleIds = new Set(visibleNotifications.map((n) => n.id));
+    setAllNotifications((prev) =>
+      prev.map((n) => (visibleIds.has(n.id) ? { ...n, read: true } : n))
+    );
+  };
+
+  // --- RBAC Auth Guard for Student-Only Write Actions ---
+  const requireStudentAuth = (actionLabel: string): boolean => {
+    if (!isLoggedIn || isGuest) {
+      setIsAuthModalOpen(true);
+      showToast(`🔒 Vui lòng đăng nhập tài khoản Thí sinh để ${actionLabel}!`);
+      return false;
+    }
+    if (user.role !== 'student') {
+      showToast(`⛔ Chức năng ${actionLabel} chỉ dành cho tài khoản Thí sinh.`);
+      return false;
+    }
+    return true;
+  };
+
   // --- Auth & RBAC Handlers ---
+  const applyStudentSession = (studentUser: CurrentUser) => {
+    const personal = loadPersonalStore(studentUser.email, studentUser.name);
+    setIsLoggedIn(true);
+    setIsGuest(false);
+    setUser(studentUser);
+    setProfile(personal.profile);
+    setFavoriteIds(personal.favoriteIds);
+    setCompareIds(personal.compareIds);
+    setHollandResult(personal.hollandResult);
+    setAIMatchState(personal.aiMatchState);
+    setActiveTab(0);
+    setIsAuthModalOpen(false);
+  };
+
   const loginAdmin = () => {
-    clearDemoStorage();
     setIsLoggedIn(true);
     setIsGuest(false);
     setUser(ACCOUNT_ADMIN);
-    setProfile({
-      ...DEFAULT_PROFILE,
-      name: ACCOUNT_ADMIN.name,
-      email: ACCOUNT_ADMIN.email,
-      school: ACCOUNT_ADMIN.organization || 'Hệ Thống Tuyển Sinh Quốc Gia',
-    });
-    setActiveTab(4);
+    setSelectedAppForDetail(null);
     setIsAuthModalOpen(false);
-    showToast('Đăng nhập Quản trị viên Hệ Thống UniPath 2.0 👑');
+    showToast('Đăng nhập Quản trị viên Hệ Thống UniPath 2.0');
   };
 
   const loginPXU = () => {
-    clearDemoStorage();
     setIsLoggedIn(true);
     setIsGuest(false);
     setUser(ACCOUNT_PXU);
-    setProfile({
-      ...DEFAULT_PROFILE,
-      name: ACCOUNT_PXU.name,
-      email: ACCOUNT_PXU.email,
-      school: 'Trường Đại học Phú Xuân (PXU)',
-      dreamUni: 'PXU - Đại học Phú Xuân',
-    });
-    setActiveTab(4);
+    setSelectedAppForDetail(null);
     setIsAuthModalOpen(false);
-    showToast('Đăng nhập Cổng tuyển sinh ĐH Phú Xuân (PXU) 🏛️');
+    showToast('Đăng nhập Cổng Tuyển sinh ĐH Phú Xuân (PXU)');
   };
-
 
   const login = (email: string, pass: string): boolean => {
     const cleanEmail = email.trim().toLowerCase();
-    // Phân quyền đăng nhập: mỗi vai trò có mật khẩu riêng, sai mật khẩu không vào được
     if (cleanEmail === 'admin@unipath.vn') {
       if (pass === 'admin123') {
         loginAdmin();
@@ -553,215 +867,261 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return false;
     }
-    if (cleanEmail === DEMO_EMAIL && pass === DEMO_PASS) {
-      loginDemo();
-      return true;
+    if (cleanEmail === DEMO_EMAIL) {
+      if (pass === DEMO_PASS) {
+        applyStudentSession(ACCOUNT_STUDENT);
+        showToast(`Xin chào ${ACCOUNT_STUDENT.name}! Đã tải dữ liệu hồ sơ của bạn.`);
+        return true;
+      }
+      return false;
     }
 
-    const storedUsersRaw = localStorage.getItem('unipath_registered_users');
-    if (storedUsersRaw) {
-      try {
-        const users = JSON.parse(storedUsersRaw);
-        const match = users.find((u: { email: string; pass: string; name: string }) => u.email === cleanEmail && u.pass === pass);
-        if (match) {
-          setIsLoggedIn(true);
-          setIsGuest(false);
-          setUser({
-            email: match.email,
-            name: match.name,
-            role: 'student',
-            title: 'Học sinh THPT 2026',
-            organization: 'Thí sinh tự do',
-            avatar: '/images/avatar_user.png',
-          });
-          setProfile((prev) => ({ ...prev, name: match.name, email: match.email }));
-          showToast(`Đăng nhập thành công! Xin chào ${match.name}`);
-          setIsAuthModalOpen(false);
-          return true;
-        }
-      } catch {
-        // ignore
-      }
+    const storedUsers = readJsonStorage<StoredRegisteredUser[]>(STORAGE_KEYS.REGISTERED_USERS, []);
+    const match = storedUsers.find((u) => u.email === cleanEmail && u.pass === pass);
+    if (match) {
+      applyStudentSession({
+        email: match.email,
+        name: match.name,
+        role: 'student',
+        title: 'Thí sinh THPT 2026',
+        organization: 'Thí sinh đăng ký trực tuyến',
+        avatar: '/images/avatar_user.png',
+      });
+      showToast(`Đăng nhập thành công! Xin chào ${match.name}`);
+      return true;
     }
     return false;
   };
 
-  const loginDemo = () => {
-    // 1. Purge all cached demo state from storage
-    clearDemoStorage();
-
-    // 2. Reset in-memory state to 100% pristine defaults (zero saved progress)
-    setIsLoggedIn(true);
-    setIsGuest(false);
-    setUser(ACCOUNT_STUDENT);
-    setProfile({ ...DEFAULT_PROFILE });
-    setHollandResult(null);
-    setAIMatchState({
-      hasEvaluated: false,
-      score: 15.0,
-      budget: 10,
-      region: 'Tất cả',
-      sortBy: 'score',
-    });
-    setApplications([...INITIAL_APPLICATIONS]);
-    setFavoriteIds([11, 1, 21]);
-    setCompareIds([11, 12]);
-    setBookings([
-      {
-        id: 'bk-1',
-        name: DEMO_NAME,
-        phone: '0912 345 678',
-        dateTime: '14:30 15/11/2026',
-        uniCode: 'PXU',
-        major: 'Công nghệ Thông tin',
-        notes: 'Muốn tìm hiểu kỹ hơn về học bổng OJT và cam kết việc làm',
-      },
-    ]);
-    setActiveTab(0);
-    setIsAuthModalOpen(false);
-    showToast('Đã đăng nhập bằng tài khoản Demo (Bản mới hoàn toàn)!');
-  };
-
   const loginAsGuest = () => {
-    clearDemoStorage();
     setIsLoggedIn(true);
     setIsGuest(true);
-    setUser({
-      email: 'khach@unipath.vn',
-      name: 'Khách trải nghiệm',
-      role: 'student',
-      title: 'Khách vãng lai',
-      organization: 'Trải nghiệm tự do',
-      avatar: '/images/avatar_user.png',
-    });
-    setProfile({
-      ...DEFAULT_PROFILE,
-      name: 'Khách trải nghiệm',
-      email: 'khach@unipath.vn',
-      school: 'Học sinh THPT',
-    });
-    setHollandResult(null);
-    setAIMatchState({
-      hasEvaluated: false,
-      score: 15.0,
-      budget: 10,
-      region: 'Tất cả',
-      sortBy: 'score',
-    });
-    setApplications([...INITIAL_APPLICATIONS]);
+    setUser(GUEST_USER);
+    setProfile({ ...GUEST_PROFILE });
     setFavoriteIds([11, 1, 21]);
     setCompareIds([11, 12]);
+    setHollandResult(null);
+    setAIMatchState({ ...DEFAULT_AI_MATCH });
     setActiveTab(0);
     setIsAuthModalOpen(false);
-    showToast('Tiếp tục với chế độ Khách trải nghiệm');
+    showToast('Đang khám phá với chế độ Khách trải nghiệm');
   };
 
   const register = (fullName: string, email: string, pass: string): boolean => {
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || pass.length < 6) return false;
-
-    let users: Array<{ name: string; email: string; pass: string }> = [];
-    const storedUsersRaw = localStorage.getItem('unipath_registered_users');
-    if (storedUsersRaw) {
-      try {
-        users = JSON.parse(storedUsersRaw);
-      } catch {
-        users = [];
-      }
+    if (SYSTEM_RESERVED_EMAILS.includes(cleanEmail)) {
+      return false;
     }
 
-    if (users.some((u) => u.email === cleanEmail) || cleanEmail === DEMO_EMAIL) {
-      return false; // Email already exists
+    const users = readJsonStorage<StoredRegisteredUser[]>(STORAGE_KEYS.REGISTERED_USERS, []);
+    if (users.some((u) => u.email === cleanEmail)) {
+      return false;
     }
 
-    const newUser = {
-      name: fullName.trim() || 'Học sinh Unipath',
+    const cleanName = fullName.trim() || 'Thí sinh UniPath';
+    const createdAt = formatNowVi();
+    const newUser: StoredRegisteredUser = {
+      name: cleanName,
       email: cleanEmail,
       pass,
+      createdAt,
     };
-    users.push(newUser);
-    localStorage.setItem('unipath_registered_users', JSON.stringify(users));
+    const nextUsers = [...users, newUser];
+    writeJsonStorage(STORAGE_KEYS.REGISTERED_USERS, nextUsers);
+    setRegisteredUsers(nextUsers.map(({ name, email: em, createdAt: ca }) => ({ name, email: em, createdAt: ca })));
 
-    setIsLoggedIn(true);
-    setIsGuest(false);
-    setUser({
+    const freshPersonal = getDefaultPersonalStore(cleanEmail, cleanName);
+    writeJsonStorage(`${STORAGE_KEYS.USER_PREFIX}${cleanEmail}`, freshPersonal);
+
+    applyStudentSession({
       email: newUser.email,
       name: newUser.name,
       role: 'student',
-      title: 'Học sinh THPT',
-      organization: 'Thí sinh tự do',
+      title: 'Thí sinh THPT 2026',
+      organization: 'Thí sinh đăng ký trực tuyến',
       avatar: '/images/avatar_user.png',
     });
-    setProfile((prev) => ({ ...prev, name: newUser.name, email: newUser.email }));
-    showToast('Tạo tài khoản thành công!');
-    setIsAuthModalOpen(false);
+
+    pushNotification({
+      title: `Chào mừng ${cleanName} đến với UniPath 2.0!`,
+      body: 'Hãy bắt đầu với bài Trắc nghiệm Holland 12 câu hoặc AI Gợi ý Trường để tìm lộ trình đại học phù hợp nhất.',
+      type: 'system',
+      targetRole: 'student',
+      targetEmail: cleanEmail,
+      targetTab: 1,
+    });
+
+    showToast(`Tạo tài khoản thành công! Xin chào ${cleanName}`);
     return true;
   };
 
   const logout = () => {
-    clearDemoStorage();
     setIsLoggedIn(false);
     setIsGuest(false);
-    setUser(ACCOUNT_STUDENT);
+    setUser(GUEST_USER);
+    setProfile({ ...GUEST_PROFILE });
+    setFavoriteIds([11, 1, 21]);
+    setCompareIds([11, 12]);
     setHollandResult(null);
-    setAIMatchState({
-      hasEvaluated: false,
-      score: 15.0,
-      budget: 10,
-      region: 'Tất cả',
-      sortBy: 'score',
-    });
-    setApplications([...INITIAL_APPLICATIONS]);
-    setProfile({ ...DEFAULT_PROFILE });
-    showToast('Đã đăng xuất tài khoản');
+    setAIMatchState({ ...DEFAULT_AI_MATCH });
+    setSelectedAppForDetail(null);
+    setIsAllApplicationsOpen(false);
+    setIsEditProfileOpen(false);
+    setIsApplyDemoOpen(false);
+    setIsBookConsultationOpen(false);
+    setActiveTab(0);
+    showToast('Đã đăng xuất tài khoản an toàn');
   };
 
-  // --- Profile Handlers ---
+  // --- Universities Database Management (Admin all 30 unis; PXU only uniId === 11) ---
+  const updateUniversityMetrics = (id: number, score2024: number, tuitionMin: number) => {
+    const targetUni = universitiesList.find((u) => u.id === id);
+    if (!targetUni) return;
+
+    if (user.role === 'university_pxu') {
+      if (targetUni.code !== 'PXU') {
+        showToast('⛔ Tài khoản ĐH Phú Xuân chỉ được cập nhật chỉ số của trường ĐH Phú Xuân (PXU).');
+        return;
+      }
+    } else if (user.role !== 'admin') {
+      showToast('⛔ Chỉ Quản trị viên hoặc Ban Tuyển sinh trường sở tại mới có quyền cập nhật.');
+      return;
+    }
+
+    const clampedScore = Math.min(30, Math.max(12, Number(score2024.toFixed(2))));
+    const clampedTuitionMin = Math.max(0, Math.round(tuitionMin));
+    const delta = Number((clampedScore - targetUni.score2024).toFixed(2));
+
+    setUniversitiesList((prev) =>
+      prev.map((u) => {
+        if (u.id !== id) return u;
+        const updatedCutoffs: Record<string, number> = {};
+        for (const [majorName, oldCutoff] of Object.entries(u.cutoffScores)) {
+          updatedCutoffs[majorName] = Math.min(
+            30,
+            Math.max(12, Number((oldCutoff + delta).toFixed(2)))
+          );
+        }
+        return {
+          ...u,
+          score2024: clampedScore,
+          tuitionMin: clampedTuitionMin,
+          tuitionMax: Math.max(u.tuitionMax, clampedTuitionMin),
+          cutoffScores: updatedCutoffs,
+        };
+      })
+    );
+
+    pushNotification({
+      title: `Cập nhật điểm chuẩn & học phí ${targetUni.code}`,
+      body: `${targetUni.name} vừa cập nhật điểm chuẩn tham chiếu ${clampedScore} điểm, học phí từ ${clampedTuitionMin} triệu/năm.`,
+      type: 'deadline',
+      targetRole: 'student',
+    });
+
+    showToast(`Đã đồng bộ điểm chuẩn & học phí ${targetUni.code} sang hệ thống AI Matching!`);
+  };
+
+  // --- Profile & Booking Handlers ---
   const updateProfile = (updated: Partial<UserProfile>) => {
+    if (!requireStudentAuth('cập nhật hồ sơ cá nhân')) return;
     setProfile((prev) => {
-      const next = { ...prev, ...updated };
-      if (updated.name) {
-        setUser((u) => ({ ...u, name: updated.name! }));
+      const next = { ...prev, ...updated, email: user.email };
+      if (updated.name && updated.name.trim()) {
+        setUser((u) => ({ ...u, name: updated.name!.trim() }));
       }
       return next;
     });
-    showToast('Đã lưu thông tin hồ sơ!');
-  };
-
-  const [bookingStates, setBookingStates] = useState<Record<string, BookingState>>({});
-
-  const updateBookingState = (bookingId: string, state: BookingState) => {
-    // Phân quyền xử lý lịch tư vấn: thí sinh không xử lý lịch; PXU chỉ xử lý lịch của PXU
-    const target = bookings.find((b) => b.id === bookingId);
-    if (!target) return;
-    if (user.role === 'student') {
-      showToast('⛔ Chỉ Admin hoặc trường đại học mới xử lý lịch tư vấn.');
-      return;
-    }
-    if (user.role === 'university_pxu' && target.uniCode !== 'PXU') {
-      showToast('⛔ Cổng PXU chỉ xử lý lịch tư vấn đặt với ĐH Phú Xuân.');
-      return;
-    }
-    setBookingStates((prev) => ({ ...prev, [bookingId]: state }));
-    const label = state === 'contacted' ? 'Đã liên hệ' : state === 'done' ? 'Hoàn thành' : 'Chờ liên hệ';
-    showToast(`Đã cập nhật lịch tư vấn của ${target.name}: ${label}`);
+    showToast('Đã lưu thông tin hồ sơ cá nhân!');
   };
 
   const addBooking = (bookingData: Omit<ConsultationBooking, 'id'>) => {
+    if (!requireStudentAuth('đặt lịch tư vấn 1-1')) return;
     const newBooking: ConsultationBooking = {
       ...bookingData,
-      id: `bk-${Date.now()}`,
+      email: bookingData.email || user.email,
+      id: `bk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     };
     setBookings((prev) => [newBooking, ...prev]);
-    showToast('Đã kết nối với Trợ lý AI Tuyển sinh thành công!');
+
+    pushNotification({
+      title: `Đã ghi nhận lịch tư vấn 1-1 cùng ${newBooking.uniCode}`,
+      body: `Khung giờ: ${newBooking.dateTime} (${newBooking.channel || 'Trực tuyến'}) — Ngành ${newBooking.major}.`,
+      type: 'booking',
+      targetRole: 'student',
+      targetEmail: user.email,
+      targetTab: 4,
+    });
+
+    if (newBooking.uniCode === 'PXU') {
+      pushNotification({
+        title: `Lịch hẹn tư vấn 1-1 mới: ${newBooking.name}`,
+        body: `Thí sinh đăng ký tư vấn ngành ${newBooking.major} vào khung giờ ${newBooking.dateTime}.`,
+        type: 'booking',
+        targetRole: 'university_pxu',
+      });
+    }
+
+    pushNotification({
+      title: `[${newBooking.uniCode}] Lịch tư vấn mới từ ${newBooking.name}`,
+      body: `Ngành ${newBooking.major} · ${newBooking.dateTime} · SĐT ${newBooking.phone}.`,
+      type: 'booking',
+      targetRole: 'admin',
+    });
+
+    showToast(`Đặt lịch tư vấn 1-1 với ${newBooking.uniName || newBooking.uniCode} thành công!`);
+  };
+
+  const updateBookingState = (bookingId: string, state: BookingState) => {
+    const target = bookings.find((b) => b.id === bookingId);
+    if (!target) return;
+    if (user.role === 'student') {
+      showToast('⛔ Chỉ Admin hoặc Ban Tuyển sinh trường mới cập nhật trạng thái xử lý lịch tư vấn.');
+      return;
+    }
+    if (user.role === 'university_pxu' && target.uniCode !== 'PXU') {
+      showToast('⛔ Cổng ĐH Phú Xuân chỉ xử lý lịch tư vấn đặt với PXU.');
+      return;
+    }
+    setBookingStates((prev) => ({ ...prev, [bookingId]: state }));
+    const label =
+      state === 'contacted' ? 'Đã liên hệ' : state === 'done' ? 'Hoàn thành tư vấn' : 'Chờ liên hệ';
+
+    if (target.email) {
+      pushNotification({
+        title: `Cập nhật lịch tư vấn 1-1 (${target.uniCode}): ${label}`,
+        body:
+          state === 'contacted'
+            ? `Ban Tuyển sinh ${target.uniName || target.uniCode} đã xác nhận lịch hẹn ngành ${target.major} (${target.dateTime}).`
+            : state === 'done'
+            ? `Buổi tư vấn 1-1 ngành ${target.major} cùng ${target.uniName || target.uniCode} đã hoàn thành.`
+            : `Lịch tư vấn ngành ${target.major} đang ở trạng thái chờ liên hệ.`,
+        type: 'booking',
+        targetRole: 'student',
+        targetEmail: target.email,
+        targetTab: 4,
+      });
+    }
+
+    showToast(`Đã cập nhật lịch tư vấn của ${target.name}: ${label}`);
   };
 
   const upgradePremium = (planName: string) => {
+    if (!requireStudentAuth('nâng cấp gói hội viên VIP')) return;
     setProfile((prev) => ({
       ...prev,
       isPremium: true,
       premiumPlan: planName,
     }));
+    pushNotification({
+      title: `Kích hoạt thành công ${planName}`,
+      body: 'Bạn đã mở khóa đặc quyền tư vấn chuyên sâu 1-1 ưu tiên và kho tài liệu ĐGNL nâng cao.',
+      type: 'promo',
+      targetRole: 'student',
+      targetEmail: user.email,
+      targetTab: 4,
+    });
     showToast(`Chúc mừng! Bạn đã trở thành hội viên ${planName}`);
   };
 
@@ -824,6 +1184,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       completedAt: new Date().toLocaleDateString('vi-VN'),
     };
     setHollandResult(newResult);
+    if (isLoggedIn && !isGuest && user.role === 'student') {
+      pushNotification({
+        title: `Hoàn thành Trắc nghiệm Holland — Nhóm ${primaryCode}`,
+        body: `Tổ hợp nổi trội của bạn là ${topCodes.join(' - ')}. Hệ thống AI Gợi ý Trường đã tự động cộng điểm ưu tiên sở thích!`,
+        type: 'quiz',
+        targetRole: 'student',
+        targetEmail: user.email,
+        targetTab: 2,
+      });
+    }
     return newResult;
   };
 
@@ -840,29 +1210,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const toggleNotifications = () => {
     setNotifications((prev) => !prev);
-    showToast(notifications ? 'Đã tắt thông báo' : 'Đã bật thông báo');
+    showToast(notifications ? 'Đã tắt thông báo hệ thống' : 'Đã bật thông báo hệ thống');
   };
 
   const resetAllData = () => {
-    clearDemoStorage();
-    localStorage.clear();
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('unipath_')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+    } catch {
+      // ignore
+    }
+
+    setRegisteredUsers([]);
+    setUniversitiesList(UNIVERSITIES);
+    setApplications([...INITIAL_APPLICATIONS]);
+    setBookings([...INITIAL_BOOKINGS]);
+    setBookingStates({});
+    setProcessingLog([]);
+    setAllNotifications([...INITIAL_NOTIFICATIONS]);
+
     setIsLoggedIn(false);
     setIsGuest(false);
-    setUser(ACCOUNT_STUDENT);
-    setProfile({ ...DEFAULT_PROFILE });
-    setBookings([]);
+    setUser(GUEST_USER);
+    setProfile({ ...GUEST_PROFILE });
     setFavoriteIds([11, 1, 21]);
     setCompareIds([11, 12]);
-    setApplications([...INITIAL_APPLICATIONS]);
     setHollandResult(null);
-    setAIMatchState({
-      hasEvaluated: false,
-      score: 15.0,
-      budget: 10,
-      region: 'Tất cả',
-      sortBy: 'score',
-    });
-    showToast('Đã xóa toàn bộ dữ liệu ứng dụng!');
+    setAIMatchState({ ...DEFAULT_AI_MATCH });
+    setSelectedAppForDetail(null);
+    setIsAllApplicationsOpen(false);
+    setActiveTab(0);
+    showToast('Đã khôi phục toàn bộ dữ liệu hệ thống về trạng thái gốc Demo!');
   };
 
   // --- Navigation & Modal Triggers ---
@@ -881,7 +1265,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   const closeCareerPath = () => setIsCareerPathOpen(false);
 
-  const openEditProfile = () => setIsEditProfileOpen(true);
+  const openEditProfile = () => {
+    if (!requireStudentAuth('chỉnh sửa hồ sơ học tập')) return;
+    setIsEditProfileOpen(true);
+  };
   const closeEditProfile = () => setIsEditProfileOpen(false);
 
   const openSettings = () => setIsSettingsOpen(true);
@@ -893,118 +1280,301 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const openAuthModal = () => setIsAuthModalOpen(true);
   const closeAuthModal = () => setIsAuthModalOpen(false);
 
-  const openBookConsultation = () => {
-    setIsChatBotOpen(true);
+  const openBookConsultation = (uni?: University) => {
+    if (!requireStudentAuth('đặt lịch tư vấn 1-1')) return;
+    const defaultPxu = universitiesList.find((u) => u.code === 'PXU') || universitiesList[0] || null;
+    setConsultationTargetUni(uni || defaultPxu);
+    setIsBookConsultationOpen(true);
   };
-  const closeBookConsultation = () => {
-    setIsBookConsultationOpen(false);
-  };
+  const closeBookConsultation = () => setIsBookConsultationOpen(false);
 
   const openApplyDemo = (uni: University) => {
+    if (!requireStudentAuth('nộp hồ sơ xét tuyển sớm')) return;
     setApplyDemoTargetUni(uni);
     setIsApplyDemoOpen(true);
   };
   const closeApplyDemo = () => setIsApplyDemoOpen(false);
 
-  // --- Application Handlers ---
-  const addApplication = (appData: Omit<ApplicationRecord, 'id' | 'submittedAt' | 'status' | 'statusColor' | 'code'>) => {
-    const now = new Date();
-    const dateStr = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  // --- Application Lifecycle Handlers ---
+  const addApplication = (
+    appData: Omit<ApplicationRecord, 'id' | 'submittedAt' | 'status' | 'statusColor' | 'code'>
+  ) => {
+    if (!requireStudentAuth('nộp hồ sơ xét tuyển')) return;
+    const dateStr = formatNowVi();
     const codeNum = Math.floor(1000 + Math.random() * 9000);
     const newRecord: ApplicationRecord = {
       ...appData,
-      id: `app-${Date.now()}`,
+      email: user.email,
+      id: `app-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       code: `HS-2026-${appData.uniCode || 'UNI'}${codeNum}`,
       submittedAt: dateStr,
       status: 'Đang xét duyệt',
-      statusColor: '#F59E0B',
+      statusColor: getStatusMeta('Đang xét duyệt').dot,
     };
     setApplications((prev) => [newRecord, ...prev]);
+
+    pushNotification({
+      title: `Nộp hồ sơ thành công: ${newRecord.code}`,
+      body: `Hồ sơ xét tuyển ngành ${newRecord.major} vào ${newRecord.uniName} đã được chuyển tới Hội đồng tuyển sinh.`,
+      type: 'application',
+      targetRole: 'student',
+      targetEmail: user.email,
+      targetTab: 4,
+    });
+
+    if (newRecord.uniCode === 'PXU') {
+      pushNotification({
+        title: `Hồ sơ xét tuyển mới: ${newRecord.code}`,
+        body: `Thí sinh ${newRecord.candidateName} (${newRecord.score}đ) vừa nộp hồ sơ ngành ${newRecord.major}.`,
+        type: 'application',
+        targetRole: 'university_pxu',
+      });
+    }
+
+    pushNotification({
+      title: `[${newRecord.uniCode}] Hồ sơ mới ${newRecord.code}`,
+      body: `${newRecord.candidateName} đăng ký ngành ${newRecord.major} (${newRecord.score}đ).`,
+      type: 'application',
+      targetRole: 'admin',
+    });
+
     showToast(`Nộp hồ sơ xét tuyển thành công! Mã hồ sơ: ${newRecord.code}`);
   };
 
   const cancelApplication = (appId: string) => {
-    // Phân quyền hủy hồ sơ: chỉ thí sinh (chủ hồ sơ) mới được hủy.
-    // Admin/PXU xử lý bằng quyết định duyệt / bổ sung / từ chối, không hủy thay thí sinh.
-    if (user.role !== 'student') {
-      showToast('⛔ Vai trò của bạn không hủy hồ sơ thay thí sinh được. Hãy dùng quyết định xử lý hồ sơ.');
+    if (!isLoggedIn || isGuest || user.role !== 'student') {
+      showToast('⛔ Chỉ thí sinh chủ sở hữu hồ sơ mới có quyền rút/hủy hồ sơ xét tuyển.');
       return;
     }
-    setApplications((prev) =>
-      prev.map((app) => {
-        if (app.id === appId) {
-          const updated: ApplicationRecord = {
-            ...app,
-            status: 'Đã hủy',
-            statusColor: '#64748B',
-            cancelReason: 'Thí sinh chủ động yêu cầu hủy hồ sơ',
-          };
-          if (selectedAppForDetail?.id === appId) {
-            setSelectedAppForDetail(updated);
-          }
-          return updated;
-        }
-        return app;
-      })
-    );
-    showToast('Đã hủy hồ sơ xét tuyển thành công.');
-  };
-
-  const updateApplicationStatus = (id: string, status: ApplicationStatus, notes?: string) => {
-    // --- Phân quyền xử lý hồ sơ theo vai trò ---
-    const target = applications.find((a) => a.id === id);
+    const target = applications.find((a) => a.id === appId);
     if (!target) return;
-    if (user.role === 'student') {
-      showToast('⛔ Chỉ Admin hoặc trường đại học mới được xử lý hồ sơ xét tuyển.');
+    if (target.email.trim().toLowerCase() !== user.email.trim().toLowerCase()) {
+      showToast('⛔ Bạn không có quyền thao tác trên hồ sơ của thí sinh khác!');
       return;
     }
-    if (user.role === 'university_pxu' && target.uniCode !== 'PXU') {
-      showToast('⛔ Cổng PXU chỉ được xử lý hồ sơ nộp vào ĐH Phú Xuân.');
+    if (target.status !== 'Đang xét duyệt') {
+      showToast('⛔ Chỉ có thể rút hồ sơ khi đang ở trạng thái "Đang xét duyệt".');
       return;
     }
 
-    setApplications((prev) =>
-      prev.map((app) => {
-        if (app.id === id) {
-          let statusColor = '#F59E0B';
-          if (status === 'Đã trúng tuyển') statusColor = '#10B981';
-          else if (status === 'Thiếu hồ sơ') statusColor = '#2563EB';
-          else if (status === 'Đã bị hủy' || status === 'Đã hủy') statusColor = '#EF4444';
+    const updated: ApplicationRecord = {
+      ...target,
+      status: 'Đã hủy',
+      statusColor: getStatusMeta('Đã hủy').dot,
+      cancelReason: 'Thí sinh chủ động yêu cầu rút hồ sơ xét tuyển',
+    };
 
-          const updated: ApplicationRecord = {
-            ...app,
-            status,
-            statusColor,
-            notes: notes !== undefined ? notes : app.notes,
-          };
-          if (selectedAppForDetail?.id === id) {
-            setSelectedAppForDetail(updated);
-          }
-          return updated;
-        }
-        return app;
-      })
-    );
+    setApplications((prev) => prev.map((app) => (app.id === appId ? updated : app)));
+    if (selectedAppForDetail?.id === appId) {
+      setSelectedAppForDetail(updated);
+    }
 
-    // --- Ghi nhật ký xử lý (luồng: ai đã xử lý hồ sơ nào, từ trạng thái nào sang trạng thái nào) ---
     setProcessingLog((prev) =>
       [
         {
-          id: `log-${Date.now()}`,
+          id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
           appCode: target.code,
           candidateName: target.candidateName,
           uniCode: target.uniCode,
           fromStatus: target.status,
-          toStatus: status,
+          toStatus: 'Đã hủy' as ApplicationStatus,
           actorName: user.name,
           actorRole: user.role,
-          time: new Date().toLocaleString('vi-VN'),
+          time: formatNowVi(),
+          note: 'Thí sinh tự rút hồ sơ',
         },
         ...prev,
-      ].slice(0, 30)
+      ].slice(0, 50)
     );
 
-    showToast(`Đã cập nhật hồ sơ ${target.code}: ${status}`);
+    showToast(`Đã rút hồ sơ ${target.code} thành công.`);
+  };
+
+  const resubmitApplicationSupplement = (appId: string, supplementNote: string) => {
+    if (!isLoggedIn || isGuest || user.role !== 'student') {
+      showToast('⛔ Chỉ thí sinh chủ sở hữu mới có thể gửi bổ sung hồ sơ.');
+      return;
+    }
+    const target = applications.find((a) => a.id === appId);
+    if (!target) return;
+    if (target.email.trim().toLowerCase() !== user.email.trim().toLowerCase()) {
+      showToast('⛔ Không thể chỉnh sửa hồ sơ của thí sinh khác!');
+      return;
+    }
+    if (target.status !== 'Thiếu hồ sơ') {
+      showToast('Hồ sơ này hiện không ở trạng thái chờ bổ sung.');
+      return;
+    }
+
+    const cleanSupplement = supplementNote.trim() || 'Đã cập nhật đầy đủ minh chứng học bạ & CCCD.';
+    const updatedNotes = `[Thí sinh đã bổ sung ${formatNowVi()}]: ${cleanSupplement}`;
+
+    const updated: ApplicationRecord = {
+      ...target,
+      status: 'Đang xét duyệt',
+      statusColor: getStatusMeta('Đang xét duyệt').dot,
+      notes: updatedNotes,
+    };
+
+    setApplications((prev) => prev.map((app) => (app.id === appId ? updated : app)));
+    if (selectedAppForDetail?.id === appId) {
+      setSelectedAppForDetail(updated);
+    }
+
+    const supplementLogEntry: ProcessingLogEntry = {
+      id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      appCode: target.code,
+      candidateName: target.candidateName,
+      uniCode: target.uniCode,
+      fromStatus: 'Thiếu hồ sơ',
+      toStatus: 'Đang xét duyệt',
+      actorName: user.name,
+      actorRole: 'student',
+      time: formatNowVi(),
+      note: cleanSupplement,
+    };
+
+    setProcessingLog((prev) => [supplementLogEntry, ...prev].slice(0, 50));
+
+    if (target.uniCode === 'PXU') {
+      pushNotification({
+        title: `Thí sinh đã bổ sung hồ sơ ${target.code}`,
+        body: `${target.candidateName} vừa gửi bổ sung minh chứng: "${cleanSupplement}"`,
+        type: 'application',
+        targetRole: 'university_pxu',
+      });
+    }
+
+    pushNotification({
+      title: `[${target.uniCode}] Đã bổ sung minh chứng ${target.code}`,
+      body: `${target.candidateName} đã gửi lại hồ sơ xét duyệt: "${cleanSupplement}"`,
+      type: 'application',
+      targetRole: 'admin',
+    });
+
+    showToast(`Đã gửi bổ sung minh chứng cho hồ sơ ${target.code}!`);
+  };
+
+  const applyInstitutionalStatusChange = (
+    ids: string[],
+    status: ApplicationStatus,
+    customNotes?: string
+  ) => {
+    if (user.role === 'student') {
+      showToast('⛔ Chỉ Admin hoặc Ban Tuyển sinh trường mới có quyền thẩm định hồ sơ.');
+      return;
+    }
+
+    const validTargets = applications.filter((a) => {
+      if (!ids.includes(a.id)) return false;
+      if (user.role === 'university_pxu' && a.uniCode !== 'PXU') return false;
+      return true;
+    });
+
+    if (validTargets.length === 0) {
+      if (user.role === 'university_pxu') {
+        showToast('⛔ Cổng ĐH Phú Xuân chỉ được xử lý hồ sơ nộp vào PXU.');
+      }
+      return;
+    }
+
+    const validSet = new Set(validTargets.map((t) => t.id));
+    const statusDot = getStatusMeta(status).dot;
+    const trimmedCustomNote = customNotes?.trim();
+
+    const defaultFeedbackByStatus: Record<ApplicationStatus, string> = {
+      'Đã trúng tuyển':
+        'Hội đồng tuyển sinh xác nhận thí sinh ĐỦ ĐIỀU KIỆN TRÚNG TUYỂN SỚM. Vui lòng theo dõi hướng dẫn xác nhận nhập học.',
+      'Hồ sơ hợp lệ':
+        'Đã thẩm định đầy đủ minh chứng CCCD & Học bạ hợp lệ. Hồ sơ đang được trình Hội đồng xét duyệt trúng tuyển.',
+      'Thiếu hồ sơ':
+        'Đề nghị thí sinh kiểm tra và gửi bổ sung bản chụp rõ nét Học bạ THPT / Chứng chỉ ưu tiên để tiếp tục xét duyệt.',
+      'Đã bị hủy':
+        'Hồ sơ chưa đáp ứng điều kiện ngưỡng đảm bảo chất lượng đầu vào của ngành đăng ký trong đợt xét tuyển này.',
+      'Đang xét duyệt': 'Hồ sơ đang trong quá trình thẩm định bởi Hội đồng tuyển sinh.',
+      'Đã hủy': 'Hồ sơ đã dừng xét tuyển.',
+    };
+
+    setApplications((prev) =>
+      prev.map((app) => {
+        if (!validSet.has(app.id)) return app;
+        const nextNote = trimmedCustomNote || defaultFeedbackByStatus[status] || app.notes;
+        const updated: ApplicationRecord = {
+          ...app,
+          status,
+          statusColor: statusDot,
+          notes: nextNote,
+          cancelReason:
+            status === 'Đã bị hủy'
+              ? trimmedCustomNote || 'Hội đồng tuyển sinh từ chối xét duyệt'
+              : app.cancelReason,
+        };
+        if (selectedAppForDetail?.id === app.id) {
+          setSelectedAppForDetail(updated);
+        }
+        return updated;
+      })
+    );
+
+    const timeNow = formatNowVi();
+    const newLogs: ProcessingLogEntry[] = validTargets.map((target, idx) => ({
+      id: `log-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+      appCode: target.code,
+      candidateName: target.candidateName,
+      uniCode: target.uniCode,
+      fromStatus: target.status,
+      toStatus: status,
+      actorName: user.name,
+      actorRole: user.role,
+      time: timeNow,
+      note: trimmedCustomNote,
+    }));
+
+    setProcessingLog((prev) => [...newLogs, ...prev].slice(0, 50));
+
+    // Push notifications to each affected student
+    const newStudentNotifs: NotificationItem[] = validTargets.map((target, idx) => {
+      const noteText = trimmedCustomNote || defaultFeedbackByStatus[status];
+      const titleMap: Record<ApplicationStatus, string> = {
+        'Đã trúng tuyển': `🎉 Chúc mừng! Hồ sơ ${target.code} ĐÃ TRÚNG TUYỂN SỚM`,
+        'Hồ sơ hợp lệ': `✅ Hồ sơ ${target.code} (${target.uniCode}) đã được xác nhận hợp lệ`,
+        'Thiếu hồ sơ': `📎 Yêu cầu bổ sung minh chứng hồ sơ ${target.code} (${target.uniCode})`,
+        'Đã bị hủy': `⚠️ Kết quả thẩm định hồ sơ ${target.code} (${target.uniCode})`,
+        'Đang xét duyệt': `🔄 Hồ sơ ${target.code} đang được xét duyệt`,
+        'Đã hủy': `Hồ sơ ${target.code} đã hủy`,
+      };
+      return {
+        id: `notif-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+        title: titleMap[status],
+        body: `${target.uniName} — Ngành ${target.major}: ${noteText}`,
+        time: timeNow,
+        read: false,
+        type: 'application',
+        targetRole: 'student',
+        targetEmail: target.email,
+        targetTab: 4,
+      };
+    });
+
+    setAllNotifications((prev) => [...newStudentNotifs, ...prev].slice(0, 60));
+
+    if (validTargets.length === 1) {
+      showToast(`Đã cập nhật hồ sơ ${validTargets[0].code} → "${status}"`);
+    } else {
+      showToast(`Đã cập nhật hàng loạt ${validTargets.length} hồ sơ → "${status}"`);
+    }
+  };
+
+  const updateApplicationStatus = (id: string, status: ApplicationStatus, notes?: string) => {
+    applyInstitutionalStatusChange([id], status, notes);
+  };
+
+  const batchUpdateApplicationStatus = (
+    ids: string[],
+    status: ApplicationStatus,
+    notes?: string
+  ) => {
+    applyInstitutionalStatusChange(ids, status, notes);
   };
 
   const openApplicationDetail = (app: ApplicationRecord) => {
@@ -1018,28 +1588,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const openAllApplications = () => setIsAllApplicationsOpen(true);
   const closeAllApplications = () => setIsAllApplicationsOpen(false);
 
-  // --- AI Match State ---
-  const [aiMatchState, setAIMatchState] = useState<AIMatchState>({
-    hasEvaluated: false,
-    score: 15.0,
-    budget: 10,
-    region: 'Tất cả',
-    sortBy: 'score',
-  });
-
   const saveAIMatchState = (partial: Partial<AIMatchState>) => {
-    setAIMatchState((prev) => {
-      const updated = { ...prev, ...partial };
-      // Only persist to storage if registered user (not demo or guest)
-      if (user.email !== DEMO_EMAIL && !isGuest && isLoggedIn) {
-        try {
-          localStorage.setItem('unipath_latest_ai_match', JSON.stringify(updated));
-        } catch {
-          // ignore
-        }
-      }
-      return updated;
-    });
+    setAIMatchState((prev) => ({ ...prev, ...partial }));
   };
 
   return (
@@ -1048,6 +1598,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isLoggedIn,
         isGuest,
         user,
+        registeredUsers,
         login,
         loginAsGuest,
         register,
@@ -1055,6 +1606,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         profile,
         updateProfile,
         bookings,
+        myBookings,
         addBooking,
         bookingStates,
         updateBookingState,
@@ -1075,6 +1627,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toggleReduceMotion,
         toggleNotifications,
         resetAllData,
+        visibleNotifications,
+        unreadNotificationCount,
+        markNotificationRead,
+        markAllNotificationsRead,
         activeTab,
         setActiveTab,
         selectedUniIdForDetail,
@@ -1111,9 +1667,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         openApplyDemo,
         closeApplyDemo,
         applications,
+        myApplications,
         addApplication,
         cancelApplication,
+        resubmitApplicationSupplement,
         updateApplicationStatus,
+        batchUpdateApplicationStatus,
         processingLog,
         selectedAppForDetail,
         openApplicationDetail,
@@ -1130,8 +1689,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         aiMatchState,
         saveAIMatchState,
         viewMode,
-        setViewMode,
-        toggleViewMode,
       }}
     >
       {children}

@@ -22,46 +22,49 @@ const SUGGESTIONS = [
 ];
 
 export const ChatBotModal: React.FC = () => {
-  const { isChatBotOpen, closeChatBot, profile, user, viewMode } = useApp();
+  const { isChatBotOpen, closeChatBot, profile, user, isLoggedIn, isGuest, viewMode } = useApp();
   const isDesktop = viewMode === 'desktop';
+  const chatKey =
+    isLoggedIn && !isGuest && user?.email
+      ? `unipath_chat_history_${user.email.trim().toLowerCase()}`
+      : null;
 
-  const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    if (user?.email === 'quy@unipath.vn') {
-      return INITIAL_MESSAGES;
-    }
-    const saved = localStorage.getItem('unipath_chat_history');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // If old sample messages are present, clean them up
-        if (Array.isArray(parsed) && parsed.length > 0 && !parsed.some((m: ChatMessage) => m.id === 'm-sample-user')) {
-          return parsed;
-        }
-      } catch {
-        // fallback
-      }
-    }
-    return INITIAL_MESSAGES;
-  });
+  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
 
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  // Sync to local storage only for non-demo users
   useEffect(() => {
-    if (user?.email !== 'quy@unipath.vn') {
-      localStorage.setItem('unipath_chat_history', JSON.stringify(messages));
-    }
-  }, [messages, user?.email]);
-
-  // Reset chat messages to fresh initial when demo user logs in
-  useEffect(() => {
-    if (user?.email === 'quy@unipath.vn') {
+    if (!chatKey) {
       setMessages(INITIAL_MESSAGES);
+      return;
     }
-  }, [user?.email]);
+    try {
+      const saved = localStorage.getItem(chatKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+          return;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    setMessages(INITIAL_MESSAGES);
+  }, [chatKey]);
+
+  useEffect(() => {
+    if (chatKey) {
+      try {
+        localStorage.setItem(chatKey, JSON.stringify(messages));
+      } catch {
+        // ignore
+      }
+    }
+  }, [messages, chatKey]);
 
   // Scroll to bottom cleanly within messages container ONLY (prevents scrolling window / outer modal)
   const scrollToBottom = () => {

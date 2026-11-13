@@ -1,137 +1,114 @@
 # 📋 01-NGHIEP-VU.md: TÀI LIỆU PHÂN TÍCH NGHIỆP VỤ HỆ SINH THÁI UNIPATH 2.0
-> **Hệ sinh thái Tuyển sinh & Định hướng nghề nghiệp Thông minh 2026**  
+> **Hệ sinh thái Tuyển sinh & Định hướng Nghề nghiệp Thông minh 2026**  
 > **Đơn vị chủ quản & Đào tạo:** Trường Đại học Phú Xuân (PXU)  
 > **Nhóm thực hiện:** Nhóm UP5  
-> **Trưởng nhóm:** Dương Đình Phát | **Phát triển phần mềm & Kỹ sư ứng dụng:** Trần Công Quý  
+> **Trưởng nhóm:** Dương Đình Phát | **Kỹ sư phát triển phần mềm:** Trần Công Quý  
 > **Thành viên:** Trần Thị Nhung, Nguyễn Thị Lý Trà My, Thái Thị Nga
 
 ---
 
-## 1. TỔNG QUAN SỨ MỆNH & BỐI CẢNH DỰ ÁN
+## 1. BỐI CẢNH THỰC TIỄN & MỤC TIÊU NGHIỆP VỤ
 
-Trước thềm kỳ thi tốt nghiệp THPT và kỳ tuyển sinh đại học năm 2026, học sinh lớp 12 (đặc biệt là thế hệ 2k8, 2k9) và quý phụ huynh thường xuyên đối mặt với các khó khăn cốt lõi:
-1. **Thiếu định hướng nghề nghiệp chuẩn khoa học:** Chọn ngành theo cảm tính, xu hướng đám đông hoặc áp lực gia đình mà chưa thấu hiểu năng khiếu và nét tính cách cốt lõi của bản thân.
-2. **Nhiễu loạn thông tin tuyển sinh:** Hàng trăm trường đại học với hàng nghìn phương thức xét tuyển (xét điểm thi tốt nghiệp THPT, xét học bạ 3 kỳ, đánh giá năng lực ĐHQG/ĐHBK, xét chứng chỉ quốc tế...).
-3. **Thiếu công cụ đối soát điểm & ngân sách học phí:** Khó khăn trong việc ước lượng cơ hội trúng tuyển dựa trên tổ hợp điểm thi và khả năng tài chính thực tế của gia đình.
-4. **Quy trình nộp hồ sơ xét tuyển sớm rời rạc:** Thiếu một cổng số tập trung để thí sinh trải nghiệm nộp hồ sơ thử nghiệm, theo dõi trạng thái hồ sơ trực tiếp theo thời gian thực.
+Trong bối cảnh đổi mới toàn diện kỳ thi tốt nghiệp THPT và tuyển sinh đại học năm 2026, học sinh cấp 3 (đặc biệt là khóa 2k8, 2k9) cùng phụ huynh gặp phải 4 rào cản lớn:
+1. **Định hướng ngành nghề thiếu cơ sở khoa học:** Lựa chọn ngành học theo xu hướng đám đông thay vì dựa trên trắc nghiệm năng lực và thiên hướng tính cách chuẩn hóa.
+2. **Phân mảnh dữ liệu tuyển sinh:** Thông tin điểm chuẩn nhiều năm, học phí, học bổng và tỷ lệ việc làm nằm rải rác ở hàng chục website khác nhau.
+3. **Thiếu công cụ định lượng xác suất trúng tuyển & tài chính:** Học sinh khó tự cân đối giữa *Điểm dự kiến*, *Ngân sách học phí gia đình* và *Khu vực địa lý* để phân bổ nguyện vọng an toàn – vừa sức – thử thách.
+4. **Quy trình xét tuyển sớm & tư vấn 1-1 thiếu tính liên thông:** Thiếu một nền tảng kết nối xuyên suốt từ bước nộp hồ sơ trực tuyến, đặt lịch gặp gỡ ban tuyển sinh đến bước nhận phản hồi xét duyệt và bổ sung minh chứng theo thời gian thực.
 
-**UniPath 2.0** ra đời như một giải pháp số toàn diện giải quyết triệt để 4 bài toán trên, xây dựng cầu nối số vững chắc giữa thí sinh THPT và các trường đại học trên cả nước, trong đó **Trường Đại học Phú Xuân (PXU)** giữ vai trò hạt nhân đào tạo và tiên phong công nghệ.
-
----
-
-## 2. NGHIỆP VỤ TRẮC NGHIỆM HƯỚNG NGHIỆP RIASEC (HOLLAND CODES)
-
-### 2.1. Cơ sở lý thuyết khoa học
-Mô hình định hướng nghề nghiệp của Giáo sư Tâm lý học người Mỹ **John L. Holland (1919 – 2008)** phân loại sở thích nghề nghiệp và môi trường làm việc thành 6 nhóm tính cách đặc trưng:
-
-| Mã | Nhóm Tính Cách | Tên Tiếng Anh | Đặc Điểm Cốt Lõi | Ngành Học Điển Hình |
-| :---: | :--- | :--- | :--- | :--- |
-| **R** | **Kỹ thuật (Realistic)** | Doers | Thực tế, logic, thao tác máy móc, công cụ, vận động ngoài trời | Công nghệ thông tin, Cơ điện tử, Kỹ thuật ô tô, Xây dựng |
-| **I** | **Nghiên cứu (Investigative)** | Thinkers | Tìm tòi, phân tích, tư duy phản biện, giải quyết bài toán phức tạp | Khoa học máy tính, AI & Data Science, Y đa khoa, Dược học |
-| **A** | **Nghệ thuật (Artistic)** | Creators | Sáng tạo, trực giác, giàu trí tưởng tượng, cảm xúc thẩm mỹ | Thiết kế đồ họa, Truyền thông đa phương tiện, Kiến trúc |
-| **S** | **Xã hội (Social)** | Helpers | Hướng ngoại, thấu cảm, thích chia sẻ, giảng dạy, hỗ trợ cộng đồng | Sư phạm, Tâm lý học, Công tác xã hội, Quan hệ quốc tế |
-| **E** | **Quản lý (Enterprising)** | Persuaders | Quyết đoán, tố chất lãnh đạo, tự tin thuyết phục, đam mê kinh doanh | Quản trị kinh doanh số, Marketing số, Thương mại quốc tế |
-| **C** | **Nghiệp vụ (Conventional)** | Organizers | Chu đáo, chi tiết, tôn trọng quy tắc, làm việc chuẩn xác với số liệu | Kế toán, Tài chính - Ngân hàng, Phân tích dữ liệu kinh doanh |
-
-### 2.2. Thuật toán xử lý trắc nghiệm trong UniPath 2.0
-1. **Bộ câu hỏi tiêu chuẩn 12 câu:** Phân bổ đều cho cả 6 nhóm tính cách (mỗi nhóm 2 câu hỏi tình huống thực tế đời sống THPT).
-2. **Thang đo 4 mức độ trực quan:**
-   - `Rất thích / Hoàn toàn đúng` (+3 điểm)
-   - `Khá thích / Đúng phần lớn` (+2 điểm)
-   - `Phân vân / Bình thường` (+1 điểm)
-   - `Không thích / Không đúng` (0 điểm)
-3. **Tính toán & Xếp hạng Vector Điểm:**
-   $$\vec{S} = \{S_R, S_I, S_A, S_S, S_E, S_C\}$$
-   - Nhóm có điểm cao nhất được xác định là **Mã Tính Cách Nổi Trội (Primary Code)**.
-   - 3 nhóm dẫn đầu hợp thành **Mã Holland Kết Hợp (Top-3 Holland Code)** (Ví dụ: `IER`, `AES`, `ERC`).
-4. **Trực quan hóa Đa chiều:** Biểu đồ mạng nhện SVG Radar Chart 6 trục thể hiện sự phân bổ năng lực và sự cân bằng tâm lý của thí sinh.
+**UniPath 2.0** giải quyết trọn vẹn 4 bài toán trên trong một hệ sinh thái khép kín, lấy **Trường Đại học Phú Xuân (PXU)** với mô hình đào tạo thực chiến **OJT (On-the-Job Training)** làm điểm nhấn tiêu biểu bên cạnh 29 trường đại học trọng điểm khắp 3 miền Bắc – Trung – Nam.
 
 ---
 
-## 3. NGHIỆP VỤ ĐỐI SOÁT & PHÂN TÍCH TRÚNG TUYỂN AI MATCHING 2026
+## 2. NGHIỆP VỤ TRẮC NGHIỆM HƯỚNG NGHIỆP HOLLAND RIASEC
 
-### 3.1. Ba tham số đầu vào của thí sinh
-- **Điểm thi THPT dự kiến (Score):** Dải từ 10.0đ đến 30.0đ (điểm trung bình tổ hợp 3 môn xét tuyển).
-- **Ngân sách học phí tối đa (Budget):** Dải từ 10 triệu đến 50 triệu VNĐ/năm.
-- **Khu vực ưu tiên (Region):** `Tất cả` | `Bắc` | `Trung` | `Nam`.
+### 2.1. Mô hình 6 nhóm tính cách nghề nghiệp của John L. Holland
+Hệ thống áp dụng khung phân loại chuẩn quốc tế **RIASEC** gồm 6 nhóm thiên hướng:
 
-### 3.2. Thuật toán Phân Tầng Cơ Hội (Multi-Factor Admission Engine)
-Thuật toán phân tích của UniPath 2.0 tính toán chênh lệch điểm số $\Delta = Score_{thí sinh} - Score_{điểm sàn 2024}$ kết hợp điều kiện trần học phí $Tuition_{trường} \le Budget_{thí sinh}$:
+| Mã | Nhóm Tính Cách | Đặc trưng cốt lõi | Nhóm ngành đào tạo tiêu biểu trong UniPath 2.0 |
+| :---: | :--- | :--- | :--- |
+| **R** | **Kỹ thuật (Realistic)** | Thực tế, tư duy kỹ thuật, thích thao tác công cụ, máy móc, hệ thống | Kỹ thuật Ô tô, Cơ điện tử, Điện – Điện tử, Công nghệ thông tin ứng dụng |
+| **I** | **Nghiên cứu (Investigative)** | Phân tích sâu, tư duy logic – toán học, khám phá học thuật & công nghệ lõi | Khoa học máy tính, Trí tuệ nhân tạo (AI), Khoa học dữ liệu, Y khoa, Dược học |
+| **A** | **Nghệ thuật (Artistic)** | Sáng tạo thị giác, nhạy cảm thẩm mỹ, truyền thông & biểu đạt nội dung | Thiết kế đồ họa, Truyền thông đa phương tiện, Kiến trúc, Quan hệ công chúng |
+| **S** | **Xã hội (Social)** | Thấu cảm, giao tiếp tốt, yêu thích giảng dạy, chăm sóc & kết nối cộng đồng | Sư phạm, Tâm lý học, Ngôn ngữ Anh/Trung/Nhật, Điều dưỡng, Du lịch |
+| **E** | **Quản lý (Enterprising)** | Quyết đoán, dẫn dắt đội nhóm, nhạy bén kinh doanh, thương mại & khởi nghiệp | Quản trị kinh doanh số, Marketing số, Thương mại điện tử, Kinh doanh quốc tế |
+| **C** | **Nghiệp vụ (Conventional)** | Cẩn trọng, quy củ, làm việc chính xác với quy trình, kế toán & dữ liệu số | Tài chính – Ngân hàng, Kế toán – Kiểm toán, Logistics & Quản lý chuỗi cung ứng |
 
-1. **Nhóm 1: Cơ hội trúng tuyển Cao (Safe Zone - An toàn tuyệt đối):**
-   - Điều kiện: $\Delta \ge +1.5$ điểm VÀ $Tuition_{trường} \le Budget_{thí sinh}$.
-   - Tỷ lệ đỗ dự kiến: **85% - 98%**.
-   - Khuyến nghị: Đặt làm nguyện vọng dự phòng an toàn hoặc xét tuyển sớm lấy học bổng.
-
-2. **Nhóm 2: Cơ hội trúng tuyển Vừa sức (Target Zone - Trọng tâm mục tiêu):**
-   - Điều kiện: $-1.0 \le \Delta < +1.5$ điểm VÀ $Tuition_{trường} \le Budget_{thí sinh} \times 1.15$.
-   - Tỷ lệ đỗ dự kiến: **60% - 84%**.
-   - Khuyến nghị: Đặt làm nguyện vọng 1 hoặc 2 trong kỳ xét tuyển chính thức.
-
-3. **Nhóm 3: Cơ hội Thử thách / Vượt tầm (Reach Zone - Nguyện vọng mơ ước):**
-   - Điều kiện: $\Delta < -1.0$ điểm HOẶC Học phí vượt ngân sách.
-   - Tỷ lệ đỗ dự kiến: **25% - 55%**.
-   - Khuyến nghị: Cần nỗ lực ôn luyện bứt phá hoặc tìm kiếm các gói học bổng tài năng.
-
-### 3.3. Logic Chốt Dữ Liệu Tương Tác
-- Khi thí sinh điều chỉnh thanh trượt điểm số/học phí, hệ thống chuyển sang trạng thái **"Chờ chốt thông số"** để tránh hiện tượng tự động chạy thuật toán gây giật lag.
-- Chỉ khi thí sinh nhấn nút **"⚡ Phân tích cơ hội trúng tuyển ngay"**, hệ thống mới tính toán và xuất bản **Bảng Báo Cáo Phân Tích Thực Tế** kèm dấu thời gian và dữ liệu đầu vào cụ thể.
-- Khi thí sinh thay đổi dữ liệu trên slider, bảng báo cáo cũ tự động ẩn đi và mời thí sinh phân tích lại.
+### 2.2. Cấu trúc đề thi & Công thức chấm điểm trong hệ thống
+1. **Bộ câu hỏi chuẩn hóa (`QUIZ_QUESTIONS`):** Gồm **12 câu hỏi tình huống thực tế** tại trường THPT, phân bổ đồng đều **2 câu cho mỗi nhóm** (`R, I, A, S, E, C`).
+2. **Thang đo 4 mức độ phản hồi:**
+   - *Rất thích / Hoàn toàn đúng:* `+3 điểm`
+   - *Khá thích / Đúng phần lớn:* `+2 điểm`
+   - *Phân vân / Bình thường:* `+1 điểm`
+   - *Không thích / Không đúng:* `0 điểm`
+   - Điểm tối đa của mỗi trục tính cách là **6 điểm** (`2 câu × 3 điểm`).
+3. **Xác định kết quả & Lộ trình THPT 3 năm:**
+   - Hệ thống tính vector điểm 6 chiều $\vec{S} = (S_R, S_I, S_A, S_S, S_E, S_C)$, sắp xếp giảm dần để tìm **Mã chủ đạo (`primaryCode`)** và **Tổ hợp Top 3 (`topCodes`)**.
+   - Kết quả được biểu diễn trên **Biểu đồ Mạng nhện SVG 6 trục (`RadarChart`)**, đi kèm gợi ý lộ trình chuẩn bị năng lực từ Lớp 10 → Lớp 11 → Lớp 12 trong `CareerPathModal` và tự động liên kết sang thuật toán **AI Matching 2026**.
 
 ---
 
-## 4. NGHIỆP VỤ EDUFAIR LIVESTREAM (UNIPATH LIVE)
+## 3. NGHIỆP VỤ ĐỐI SOÁT TRÚNG TUYỂN AI MATCHING 2026 (`MatchingService.ts`)
 
-Hệ sinh thái tích hợp ngày hội tuyển sinh trực tuyến EduFair 2026:
-- **Phát trực tiếp (Live Stream Session):** Phiên tư vấn định hướng trực tiếp từ Hội đồng tuyển sinh các trường đại học hàng đầu (Tiêu biểu là Trường Đại học Phú Xuân).
-- **Tương tác Đa giác quan qua Web Audio API (SoundFX Synthesizer):**
-  - **Nút Vỗ tay (Clap):** Phát hiệu ứng vỗ tay tần số bổng kèm icon 👏 bay lượn ngẫu nhiên rồi tan biến.
-  - **Nút Thả tim (Heart):** Phát nhịp tim sinh học trầm ấm kèm icon ❤️ bay lượn.
-  - **Nút Thích (Like):** Phát âm thanh thanh thoát kèm icon 👍 bay lượn.
-- **Hộp thoại Q&A Trực Tuyến:** Thí sinh gửi câu hỏi thắc mắc về điểm chuẩn, học bổng OJT, cơ hội việc làm và được Ban Cố Vấn giải đáp ngay trong phiên live.
+### 3.1. Đầu vào đối soát đa tiêu chí
+- **Điểm thi dự kiến (`score`):** Thang `10.0` – `30.0` điểm (tổ hợp 3 môn xét tuyển).
+- **Ngân sách học phí tối đa (`budget`):** Thang `10` – `60+` triệu VNĐ/năm (lọc các trường có `tuitionMin <= budget`).
+- **Vùng miền ưu tiên (`region`):** `Tất cả` | `Bắc` | `Trung` | `Nam`.
+- **Mã tính cách Holland (`hollandCode` - tùy chọn):** Tự động đồng bộ từ bài khảo sát ở Tab 1 để ưu tiên ngành học đúng đam mê.
+
+### 3.2. Thuật toán chọn ngành tham chiếu & Tính xác suất trúng tuyển
+Toàn bộ thẻ trường ở Trang chủ, trang Chi tiết trường và bảng AI Matching đều dùng **duy nhất một nguồn công thức** tại `src/services/MatchingService.ts`:
+1. **Chọn ngành tham chiếu (`pickReferenceCutoff`):**
+   - Nếu thí sinh đã có `hollandCode` và trường có đào tạo ngành thuộc nhóm Holland đó (`HOLLAND_MAJOR_KEYWORDS`), hệ thống ưu tiên chọn ngành đúng định hướng có điểm chuẩn gần sát năng lực thí sinh nhất (`isHolland = true`).
+   - Nếu chưa có mã Holland hoặc trường không có ngành trùng khớp, hệ thống chọn ngành có độ lệch $|\text{Điểm thí sinh} - \text{Điểm chuẩn ngành}|$ nhỏ nhất.
+2. **Quy đổi độ chênh lệch điểm $\Delta = \text{score} - \text{cutoff}$ sang xác suất cơ sở (`admissionPercent`):**
+   - $\Delta \ge +3.0$: **96%** | $\Delta \ge +2.0$: **91%** | $\Delta \ge +1.0$: **85%** | $\Delta \ge +0.5$: **80%**
+   - $\Delta \ge 0.0$: **73%** | $\Delta \ge -0.5$: **64%** | $\Delta \ge -1.0$: **54%** | $\Delta \ge -1.5$: **45%**
+   - $\Delta \ge -2.5$: **30%** | $\Delta \ge -3.5$: **18%** | $\Delta < -3.5$: **9%**
+3. **Điểm cộng tương thích hướng nghiệp:** Cộng thêm **`+5%`** (tối đa `100%`) nếu ngành tham chiếu khớp với nhóm tính cách Holland của thí sinh.
+4. **Phân tầng 3 nhóm chiến lược nguyện vọng:**
+   - 🟢 **Nhóm An Toàn (`matchingPercent ≥ 80%`):** Khả năng trúng tuyển rất cao, phù hợp làm nguyện vọng chắc chắn hoặc săn học bổng đầu vào.
+   - 🟡 **Nhóm Vừa Sức (`45% ≤ matchingPercent ≤ 79%`):** Vùng cạnh tranh trọng tâm, khuyến nghị đặt làm Nguyện vọng 1 – 2.
+   - 🔴 **Nhóm Thử Thách (`matchingPercent < 45%`):** Nguyện vọng bứt phá, cần cải thiện điểm thi hoặc kết hợp phương thức xét tuyển học bạ / đánh giá năng lực.
+
+### 3.3. Đồng bộ Điểm chuẩn Thời gian thực từ Cổng Quản trị
+Khi **Admin Hệ thống** (đối với cả 30 trường) hoặc **Ban Tuyển sinh ĐH Phú Xuân** (đối với riêng trường `PXU`) điều chỉnh điểm chuẩn tham chiếu (`score2024`), hệ thống tự động tịnh tiến toàn bộ bảng điểm chuẩn từng ngành (`cutoffScores`) của trường đó theo đúng độ lệch $\Delta$, giúp kết quả dự đoán của **AI Matching 2026** cập nhật tức thì theo chính sách tuyển sinh mới nhất.
 
 ---
 
-## 5. NGHIỆP VỤ NỘP & THEO DÕI HỒ SƠ XÉT TUYỂN SỚM
+## 4. NGHIỆP VỤ XÉT TUYỂN TRỰC TUYẾN & ĐẶT LỊCH TƯ VẤN 1-1 LIÊN THÔNG
 
-### 5.1. Vòng đời hồ sơ xét tuyển (Application Lifecycle)
+### 4.1. Vòng đời 6 trạng thái của Hồ sơ Xét tuyển (`ApplicationStatus`)
 ```
-[Thí sinh nộp hồ sơ] 
-        ↓
-[Trạng thái: Đang xét duyệt] (Mã tự sinh: HS-2026-UNIxxxx)
-        ↓
-┌───────┴───────────────────────┐
-↓                               ↓
-[Đủ điều kiện & đạt điểm sàn]   [Thiếu giấy tờ / Học bạ]
-        ↓                               ↓
-[Trạng thái: Đã trúng tuyển]    [Trạng thái: Thiếu hồ sơ]
-(Gửi giấy báo trúng tuyển)      (Yêu cầu bổ sung trước hạn)
-                                        ↓
-                                [Trạng thái: Đã bị hủy]
-                                (Không đạt sàn hoặc quá hạn)
+[Thí sinh nộp hồ sơ trực tuyến qua ApplyDemoModal]
+                        │
+                        ▼
+           (1) ĐANG XÉT DUYỆT (Mặc định) ──────► (5) ĐÃ HỦY (Thí sinh chủ động rút hồ sơ)
+                        │
+        ┌───────────────┼───────────────────────┬────────────────────────┐
+        ▼               ▼                       ▼                        ▼
+(2) HỒ SƠ HỢP LỆ   (3) ĐÃ TRÚNG TUYỂN    (4) THIẾU HỒ SƠ         (6) ĐÃ BỊ HỦY
+(Đủ điều kiện       (Cấp Giấy báo Đủ      (Cần bổ sung học bạ/    (Từ chối do không
+ hợp lệ vòng sơ     điều kiện trúng       CCCD kèm ghi chú cụ     đạt điều kiện xét
+ duyệt)             tuyển sớm trực tuyến)  thể từ Hội đồng)        tuyển của trường)
+                                                │
+                                                ▼
+                                  [Thí sinh gửi bổ sung minh chứng]
+                                                │
+                                                ▼
+                                  Quay lại (1) ĐANG XÉT DUYỆT
 ```
 
-### 5.2. Các trường thông tin hồ sơ
-- Mã hồ sơ (Auto-generated unique code)
-- Trường đăng ký (Tên trường, mã trường, logo)
-- Ngành đăng ký xét tuyển
-- Họ và tên thí sinh, Số điện thoại, Email
-- Điểm xét tuyển (Học bạ / Điểm thi THPT)
-- Thời gian nộp (Ngày giờ chính xác)
-- Trạng thái phê duyệt & Mã màu trực quan:
-  - `Đang xét duyệt` (Màu vàng hổ phách `#F59E0B`)
-  - `Đã trúng tuyển` (Màu xanh lá emerald `#10B981`)
-  - `Thiếu hồ sơ` (Màu xanh dương `#2563EB`)
-  - `Đã bị hủy / Từ chối` (Màu đỏ `#EF4444`)
-- Lịch sử ghi chú từ Hội đồng tuyển sinh trường
+- **Khép kín luồng bổ sung hồ sơ:** Khi Hội đồng tuyển sinh chuyển hồ sơ sang `Thiếu hồ sơ` kèm lời nhắn (ví dụ: *"Bổ sung ảnh chụp học bạ HK1 lớp 12"*), thí sinh nhận được thông báo ngay trên chuông, mở chi tiết hồ sơ để nhập nội dung xác nhận minh chứng và gửi xét duyệt lại.
+- **Giấy báo Trúng tuyển sớm điện tử:** Khi hồ sơ được duyệt `Đã trúng tuyển`, thí sinh mở `ViewApplicationModal` sẽ thấy thẻ chứng nhận chúc mừng trúng tuyển sớm trang trọng cùng hướng dẫn xác nhận nhập học.
+
+### 4.2. Quy trình Đặt lịch & Điều phối Tư vấn Tuyển sinh 1-1
+1. **Thí sinh đặt lịch (`BookConsultationModal`):** Khởi tạo từ trang Chi tiết trường, kết quả AI Matching, gian hàng ảo EduFair LIVE hoặc trang Cá nhân. Thí sinh chọn trường, ngành quan tâm, ngày & khung giờ, hình thức tư vấn (`Google Meet 1-1`, `Gọi điện / Zalo`, `Tư vấn trực tiếp tại cơ sở`) và câu hỏi gửi trước.
+2. **Nhà trường / Admin tiếp nhận & xử lý:** Lịch hẹn xuất hiện ngay tại Cổng Tuyển sinh PXU (nếu đặt lịch với ĐH Phú Xuân) và Cổng Admin Toàn quốc. Cán bộ tư vấn chuyển trạng thái tuần tự:
+   - `Chờ liên hệ` (`pending`) → `Đã liên hệ` (`contacted`) → `Hoàn thành` (`done`).
+3. **Phản hồi ngược về thí sinh:** Mọi thay đổi trạng thái lịch hẹn đều tự động gửi thông báo về tài khoản thí sinh và cập nhật trực tiếp tại mục **Lịch hẹn tư vấn 1-1** trên Tab 4.
 
 ---
 
-## 6. ĐƠN VỊ THỰC HIỆN & BẢN QUYỀN
-
-Toàn bộ tài liệu nghiệp vụ và giải pháp công nghệ thuộc bản quyền sở hữu của:
-* 🏛️ **Đơn vị chủ quản & Đào tạo:** **Trường Đại học Phú Xuân (PXU)**
-* 👥 **Nhóm nghiên cứu & phát triển UP5:**
-  * 👑 **Trưởng nhóm:** **Dương Đình Phát**
-  * 💻 **Kỹ sư phát triển phần mềm:** **Trần Công Quý**
-  * 🤝 **Thành viên:** **Trần Thị Nhung, Nguyễn Thị Lý Trà My, Thái Thị Nga**
+## 5. NGÀY HỘI TUYỂN SINH TRỰC TUYẾN EDUFAIR LIVE
+- **Gian hàng ảo các trường đại học:** Hiển thị trạng thái phát sóng trực tiếp (`LIVE`), số người đang theo dõi, cho phép xem hồ sơ trường hoặc bấm **Đặt lịch 1-1** ngay trên từng gian hàng.
+- **Phòng Livestream Tư vấn Chuyên gia:** Hỗ trợ thả cảm xúc đa giác quan (*Thích*, *Thả tim*, *Vỗ tay*) với âm thanh tổng hợp trực tiếp qua **Web Audio API**, đếm ngược sự kiện và khung hỏi đáp trực tuyến tự động phản hồi từ Ban Tư vấn Tuyển sinh.

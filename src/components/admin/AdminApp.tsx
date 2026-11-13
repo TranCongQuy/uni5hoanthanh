@@ -155,11 +155,6 @@ const Pager: React.FC<{ page: number; pageCount: number; total: number; unit: st
   );
 };
 
-interface RegisteredUser {
-  name: string;
-  email: string;
-}
-
 const SYSTEM_ACCOUNTS: { name: string; email: string; role: string; color: string }[] = [
   { name: 'Trần Công Quý', email: 'quy@unipath.vn', role: 'Thí sinh', color: '#2563EB' },
   { name: 'Admin Hệ Thống UniPath', email: 'admin@unipath.vn', role: 'Admin', color: '#7C3AED' },
@@ -167,29 +162,32 @@ const SYSTEM_ACCOUNTS: { name: string; email: string; role: string; color: strin
 ];
 
 const PERMISSION_ROWS: { label: string; admin: string; pxu: string; student: string }[] = [
-  { label: 'Xử lý hồ sơ của tất cả các trường', admin: '✓', pxu: '—', student: '—' },
-  { label: 'Xử lý hồ sơ nộp vào PXU', admin: '✓', pxu: '✓', student: '—' },
-  { label: 'Sửa CSDL điểm chuẩn & học phí', admin: '✓', pxu: '—', student: '—' },
-  { label: 'Xem lịch tư vấn tuyển sinh', admin: 'Tất cả', pxu: 'Chỉ PXU', student: 'Của mình' },
-  { label: 'Xem nhật ký xử lý hồ sơ', admin: 'Toàn hệ thống', pxu: 'Chỉ PXU', student: '—' },
-  { label: 'Nộp hồ sơ & tự hủy hồ sơ của mình', admin: '—', pxu: '—', student: '✓' },
+  { label: 'Xử lý hồ sơ của cả 30 trường', admin: '✓', pxu: '—', student: '—' },
+  { label: 'Xử lý hồ sơ nộp vào ĐH Phú Xuân', admin: '✓', pxu: '✓', student: '—' },
+  { label: 'Cập nhật điểm chuẩn & học phí', admin: '30 trường', pxu: 'Chỉ PXU', student: '—' },
+  { label: 'Quản lý lịch hẹn tư vấn 1-1', admin: 'Tất cả', pxu: 'Chỉ PXU', student: 'Của mình' },
+  { label: 'Xem nhật ký thẩm định hồ sơ', admin: 'Toàn hệ thống', pxu: 'Chỉ PXU', student: '—' },
+  { label: 'Nộp, bổ sung & tự rút hồ sơ riêng', admin: '—', pxu: '—', student: '✓' },
 ];
 
 export const AdminApp: React.FC = () => {
   const {
     user,
-    profile,
+    registeredUsers,
     applications,
     bookings,
     universitiesList,
     updateUniversityMetrics,
     updateApplicationStatus,
+    batchUpdateApplicationStatus,
     processingLog,
     bookingStates,
     updateBookingState,
     openApplicationDetail,
     openNotifications,
+    unreadNotificationCount,
     openSettings,
+    resetAllData,
     logout,
     viewMode,
   } = useApp();
@@ -200,6 +198,7 @@ export const AdminApp: React.FC = () => {
   const [appsPage, setAppsPage] = useState(1);
   const [unisPage, setUnisPage] = useState(1);
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
+  const [reviewerNote, setReviewerNote] = useState('');
   const [bkFilter, setBkFilter] = useState<'all' | BookingState>('all');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -216,20 +215,6 @@ export const AdminApp: React.FC = () => {
   const [editingUniId, setEditingUniId] = useState<number | null>(null);
   const [editScore, setEditScore] = useState<number>(20);
   const [editTuition, setEditTuition] = useState<number>(15);
-
-  // --- Registered users (chỉ đọc tên + email, không hiển thị mật khẩu) ---
-  const [registeredUsers] = useState<RegisteredUser[]>(() => {
-    try {
-      const raw = localStorage.getItem('unipath_registered_users');
-      const arr = raw ? JSON.parse(raw) : [];
-      if (!Array.isArray(arr)) return [];
-      return arr
-        .filter((u) => u && typeof u.email === 'string' && typeof u.name === 'string')
-        .map((u) => ({ name: u.name as string, email: u.email as string }));
-    } catch {
-      return [];
-    }
-  });
 
   // --- Derived data ---
   const totalApps = applications.length;
@@ -297,8 +282,9 @@ export const AdminApp: React.FC = () => {
   };
 
   const applyBatch = (status: ApplicationStatus) => {
-    checkedIds.forEach((id) => updateApplicationStatus(id, status));
+    batchUpdateApplicationStatus(checkedIds, status, reviewerNote || undefined);
     setCheckedIds([]);
+    setReviewerNote('');
   };
 
   const bookingStateOf = (id: string): BookingState => bookingStates[id] || 'pending';
@@ -646,6 +632,9 @@ export const AdminApp: React.FC = () => {
           }}
         >
           <span style={{ fontSize: '13px', fontWeight: 800, marginRight: '2px' }}>Đã chọn {checkedIds.length} hồ sơ</span>
+          <button onClick={() => applyBatch('Hồ sơ hợp lệ')} style={{ padding: '8px 13px', borderRadius: '10px', border: 'none', backgroundColor: '#0284C7', color: '#FFFFFF', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}>
+            Xác nhận hợp lệ
+          </button>
           <button onClick={() => applyBatch('Đã trúng tuyển')} style={{ padding: '8px 13px', borderRadius: '10px', border: 'none', backgroundColor: '#059669', color: '#FFFFFF', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}>
             Duyệt trúng tuyển
           </button>
@@ -751,8 +740,45 @@ export const AdminApp: React.FC = () => {
               )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <input
+                type="text"
+                value={reviewerNote}
+                onChange={(e) => setReviewerNote(e.target.value)}
+                placeholder="Ghi chú phản hồi gửi thí sinh (tùy chọn)..."
+                style={{
+                  width: '100%',
+                  padding: '9px 11px',
+                  borderRadius: '10px',
+                  border: '1px solid #CBD5E1',
+                  fontSize: '12.5px',
+                  boxSizing: 'border-box',
+                }}
+              />
               <button
-                onClick={() => updateApplicationStatus(selectedApp.id, 'Đã trúng tuyển')}
+                onClick={() => {
+                  updateApplicationStatus(selectedApp.id, 'Hồ sơ hợp lệ', reviewerNote || undefined);
+                  setReviewerNote('');
+                }}
+                disabled={selectedApp.status === 'Hồ sơ hợp lệ'}
+                style={{
+                  padding: '11px',
+                  borderRadius: '12px',
+                  border: '1.5px solid #0284C7',
+                  backgroundColor: '#E0F2FE',
+                  color: '#0369A1',
+                  fontSize: '13.5px',
+                  fontWeight: 800,
+                  cursor: selectedApp.status === 'Hồ sơ hợp lệ' ? 'default' : 'pointer',
+                  opacity: selectedApp.status === 'Hồ sơ hợp lệ' ? 0.5 : 1,
+                }}
+              >
+                ✓ Xác nhận hồ sơ hợp lệ
+              </button>
+              <button
+                onClick={() => {
+                  updateApplicationStatus(selectedApp.id, 'Đã trúng tuyển', reviewerNote || undefined);
+                  setReviewerNote('');
+                }}
                 disabled={selectedApp.status === 'Đã trúng tuyển'}
                 style={{
                   padding: '12px',
@@ -772,7 +798,10 @@ export const AdminApp: React.FC = () => {
                 <CheckCircle2 size={17} /> Duyệt trúng tuyển
               </button>
               <button
-                onClick={() => updateApplicationStatus(selectedApp.id, 'Thiếu hồ sơ')}
+                onClick={() => {
+                  updateApplicationStatus(selectedApp.id, 'Thiếu hồ sơ', reviewerNote || undefined);
+                  setReviewerNote('');
+                }}
                 disabled={selectedApp.status === 'Thiếu hồ sơ'}
                 style={{
                   padding: '11px',
@@ -789,7 +818,10 @@ export const AdminApp: React.FC = () => {
                 Yêu cầu bổ sung hồ sơ
               </button>
               <button
-                onClick={() => updateApplicationStatus(selectedApp.id, 'Đã bị hủy')}
+                onClick={() => {
+                  updateApplicationStatus(selectedApp.id, 'Đã bị hủy', reviewerNote || undefined);
+                  setReviewerNote('');
+                }}
                 disabled={selectedApp.status === 'Đã bị hủy'}
                 style={{
                   padding: '11px',
@@ -898,11 +930,16 @@ export const AdminApp: React.FC = () => {
                     <span style={{ padding: '4px 9px', borderRadius: '999px', backgroundColor: meta.bg, color: meta.color, fontSize: '11px', fontWeight: 800, whiteSpace: 'nowrap' }}>{meta.label}</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', color: '#334155' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                       <Calendar size={13} color="#7C3AED" /> <strong>{bk.dateTime}</strong>
+                      {bk.channel && (
+                        <span style={{ fontSize: '11px', fontWeight: 700, backgroundColor: '#EFF6FF', color: '#1D4ED8', padding: '2px 7px', borderRadius: '6px' }}>
+                          {bk.channel}
+                        </span>
+                      )}
                     </span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                      <Phone size={13} color="#64748B" /> {bk.phone}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <Phone size={13} color="#64748B" /> {bk.phone} {bk.email ? `· ${bk.email}` : ''}
                     </span>
                     {bk.notes && <span style={{ color: '#64748B', lineHeight: 1.5 }}>{bk.notes}</span>}
                   </div>
@@ -1103,20 +1140,26 @@ export const AdminApp: React.FC = () => {
           </div>
         </div>
         <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>
-          Vai trò hiện tại: <strong style={{ color: '#2563EB' }}>Admin Hệ Thống (admin)</strong> — toàn quyền xử lý hồ sơ của {universitiesList.length} trường và quản trị CSDL. Hồ sơ cá nhân liên kết: {profile.name} · {profile.school}.
+          Vai trò hiện tại: <strong style={{ color: '#2563EB' }}>Admin Hệ Thống (admin)</strong> — toàn quyền điều phối xét tuyển cho {universitiesList.length} cơ sở giáo dục đại học trên toàn quốc, phê duyệt hồ sơ hàng loạt, theo dõi lịch tư vấn 1-1 và đồng bộ điểm chuẩn thời gian thực sang thuật toán AI Matching.
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '14px' }}>
           <button
             onClick={openNotifications}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '9px 14px', borderRadius: '11px', border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF', color: '#334155', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}
           >
-            <Bell size={14} /> Thông báo
+            <Bell size={14} /> Thông báo {unreadNotificationCount > 0 ? `(${unreadNotificationCount})` : ''}
           </button>
           <button
             onClick={openSettings}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '9px 14px', borderRadius: '11px', border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF', color: '#334155', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}
           >
             <Settings size={14} /> Cài đặt
+          </button>
+          <button
+            onClick={resetAllData}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '9px 14px', borderRadius: '11px', border: '1px solid #FECACA', backgroundColor: '#FEF2F2', color: '#DC2626', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer' }}
+          >
+            Khôi phục dữ liệu gốc Demo
           </button>
         </div>
       </div>
@@ -1265,16 +1308,21 @@ export const AdminApp: React.FC = () => {
       <button
         onClick={openNotifications}
         aria-label="Thông báo"
-        style={{ width: '38px', height: '38px', borderRadius: '11px', border: dark ? '1px solid rgba(255,255,255,0.22)' : '1px solid #E2E8F0', backgroundColor: dark ? 'rgba(255,255,255,0.08)' : '#FFFFFF', color: dark ? '#FFFFFF' : '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+        style={{ position: 'relative', width: '36px', height: '36px', borderRadius: '11px', border: dark ? '1px solid rgba(255,255,255,0.22)' : '1px solid #E2E8F0', backgroundColor: dark ? 'rgba(255,255,255,0.08)' : '#FFFFFF', color: dark ? '#FFFFFF' : '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
       >
-        <Bell size={17} />
+        <Bell size={16} />
+        {unreadNotificationCount > 0 && (
+          <span style={{ position: 'absolute', top: '-4px', right: '-4px', minWidth: '17px', height: '17px', padding: '0 4px', borderRadius: '999px', backgroundColor: '#EF4444', color: '#FFFFFF', fontSize: '9.5px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
+            {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+          </span>
+        )}
       </button>
       <button
         onClick={openSettings}
         aria-label="Cài đặt"
-        style={{ width: '38px', height: '38px', borderRadius: '11px', border: dark ? '1px solid rgba(255,255,255,0.22)' : '1px solid #E2E8F0', backgroundColor: dark ? 'rgba(255,255,255,0.08)' : '#FFFFFF', color: dark ? '#FFFFFF' : '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+        style={{ width: '36px', height: '36px', borderRadius: '11px', border: dark ? '1px solid rgba(255,255,255,0.22)' : '1px solid #E2E8F0', backgroundColor: dark ? 'rgba(255,255,255,0.08)' : '#FFFFFF', color: dark ? '#FFFFFF' : '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
       >
-        <Settings size={17} />
+        <Settings size={16} />
       </button>
     </>
   );
@@ -1349,17 +1397,17 @@ export const AdminApp: React.FC = () => {
   // Mobile shell
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#EDF1F7', width: '100%', maxWidth: '520px', margin: '0 auto', display: 'flex', flexDirection: 'column', overflowX: 'clip' }}>
-      <header style={{ background: 'linear-gradient(135deg, #0B1B36 0%, #1D4ED8 100%)', color: '#FFFFFF', padding: '15px 16px 13px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <div style={{ width: '38px', height: '38px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <ShieldCheck size={21} color="#FFFFFF" />
+      <header style={{ background: 'linear-gradient(135deg, #0B1B36 0%, #1D4ED8 100%)', color: '#FFFFFF', padding: '14px 14px 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ width: '36px', height: '36px', borderRadius: '11px', backgroundColor: 'rgba(255,255,255,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <ShieldCheck size={20} color="#FFFFFF" />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '15.5px', fontWeight: 900, lineHeight: 1.2 }}>UniPath Admin</div>
-          <div style={{ fontSize: '11.5px', color: '#B9CCF2', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            Trung tâm điều hành · {user.name}
+          <div style={{ fontSize: '15px', fontWeight: 900, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>UniPath Admin</div>
+          <div style={{ fontSize: '11px', color: '#B9CCF2', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {user.name}
           </div>
         </div>
-        <span style={{ fontSize: '10.5px', fontWeight: 800, backgroundColor: '#F59E0B', color: '#451A03', padding: '4px 9px', borderRadius: '999px', whiteSpace: 'nowrap', flexShrink: 0 }}>{pendingApps.length} chờ duyệt</span>
+        <span style={{ fontSize: '10px', fontWeight: 800, backgroundColor: '#F59E0B', color: '#451A03', padding: '4px 8px', borderRadius: '999px', whiteSpace: 'nowrap', flexShrink: 0 }}>{pendingApps.length} chờ</span>
         {utilityButtons(true)}
       </header>
 

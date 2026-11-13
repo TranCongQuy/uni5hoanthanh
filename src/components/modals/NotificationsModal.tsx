@@ -1,50 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { X, Bell, Calendar, Sparkles, CheckCheck } from 'lucide-react';
+import React, { useEffect } from 'react';
+import {
+  X,
+  Bell,
+  Calendar,
+  Sparkles,
+  CheckCheck,
+  FileText,
+  Compass,
+  ShieldCheck,
+} from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import type { NotificationItem } from '../../types';
 import { Button } from '../common/UI';
 
-interface NotificationItem {
-  id: string;
-  title: string;
-  desc: string;
-  time: string;
-  read: boolean;
-  type: 'event' | 'admission' | 'system';
-}
-
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 'n1',
-    title: 'Khai mạc Virtual EduFair 2026',
-    desc: 'Ngày hội tuyển sinh số quy tụ 30 trường Đại học chính thức mở cổng giao lưu gian hàng ảo.',
-    time: '15 phút trước',
-    read: false,
-    type: 'event',
-  },
-  {
-    id: 'n2',
-    title: 'Học bổng OJT Đại học Phú Xuân (PXU)',
-    desc: 'Công bố chính sách tài trợ 50-100% học phí dành riêng cho thí sinh khối ngành Công nghệ & Thiết kế.',
-    time: '2 giờ trước',
-    read: false,
-    type: 'admission',
-  },
-  {
-    id: 'n3',
-    title: 'Cập nhật đề thi thử ĐGNL tháng 11',
-    desc: 'Đã bổ sung 3 đề thi thử chuẩn cấu trúc ĐHQG TP.HCM vào kho tài liệu ôn luyện của bạn.',
-    time: '1 ngày trước',
-    read: true,
-    type: 'system',
-  },
-];
-
 export const NotificationsModal: React.FC = () => {
-  const { isNotificationsOpen, closeNotifications, viewMode } = useApp();
-  const isDesktop = viewMode === 'desktop';
-  const [list, setList] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const {
+    isNotificationsOpen,
+    closeNotifications,
+    visibleNotifications,
+    unreadNotificationCount,
+    markNotificationRead,
+    markAllNotificationsRead,
+    notifications,
+    toggleNotifications,
+    setActiveTab,
+    user,
+    viewMode,
+  } = useApp();
 
-  // Lock body scroll when notification modal is open on mobile
+  const isDesktop = viewMode === 'desktop';
+
   useEffect(() => {
     if (isNotificationsOpen) {
       document.body.style.overflow = 'hidden';
@@ -64,11 +49,31 @@ export const NotificationsModal: React.FC = () => {
 
   if (!isNotificationsOpen) return null;
 
-  const markAllAsRead = () => {
-    setList((prev) => prev.map((item) => ({ ...item, read: true })));
+  const getIconMeta = (type: NotificationItem['type']) => {
+    switch (type) {
+      case 'application':
+        return { bg: '#ECFDF5', color: '#059669', icon: <FileText size={18} /> };
+      case 'booking':
+        return { bg: '#EFF6FF', color: '#2563EB', icon: <Calendar size={18} /> };
+      case 'quiz':
+        return { bg: '#F5F3FF', color: '#7C3AED', icon: <Compass size={18} /> };
+      case 'deadline':
+        return { bg: '#FEF3C7', color: '#D97706', icon: <Bell size={18} /> };
+      case 'system':
+        return { bg: '#F1F5F9', color: '#334155', icon: <ShieldCheck size={18} /> };
+      case 'promo':
+      default:
+        return { bg: '#FEE2E2', color: '#EF4444', icon: <Sparkles size={18} /> };
+    }
   };
 
-  const unreadCount = list.filter((i) => !i.read).length;
+  const handleClickItem = (item: NotificationItem) => {
+    markNotificationRead(item.id);
+    if (item.targetTab !== undefined && user.role === 'student') {
+      setActiveTab(item.targetTab);
+      closeNotifications();
+    }
+  };
 
   return (
     <div
@@ -83,6 +88,7 @@ export const NotificationsModal: React.FC = () => {
         justifyContent: 'center',
         padding: isDesktop ? '24px' : '0',
         touchAction: isDesktop ? 'auto' : 'none',
+        boxSizing: 'border-box',
       }}
       onClick={closeNotifications}
     >
@@ -100,19 +106,21 @@ export const NotificationsModal: React.FC = () => {
           animation: isDesktop ? 'fadeIn 0.25s ease-out' : 'slideUp 0.3s ease-out',
           overflow: 'hidden',
           touchAction: 'pan-y',
+          boxSizing: 'border-box',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top Drag Handle for Mobile */}
-        <div
-          style={{
-            width: '44px',
-            height: '5px',
-            borderRadius: '3px',
-            backgroundColor: '#CBD5E1',
-            margin: '10px auto 4px',
-          }}
-        />
+        {!isDesktop && (
+          <div
+            style={{
+              width: '44px',
+              height: '5px',
+              borderRadius: '3px',
+              backgroundColor: '#CBD5E1',
+              margin: '10px auto 4px',
+            }}
+          />
+        )}
 
         {/* Header */}
         <div
@@ -122,9 +130,10 @@ export const NotificationsModal: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            gap: '10px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
             <div
               style={{
                 width: '36px',
@@ -135,24 +144,29 @@ export const NotificationsModal: React.FC = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: '#2563EB',
+                flexShrink: 0,
               }}
             >
               <Bell size={20} />
             </div>
-            <div>
+            <div style={{ minWidth: 0 }}>
               <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#0F172A' }}>
-                Thông báo
+                Trung tâm Thông báo
               </h3>
               <span style={{ fontSize: '12px', color: '#64748B' }}>
-                {unreadCount > 0 ? `${unreadCount} thông báo chưa đọc` : 'Đã xem tất cả'}
+                {!notifications
+                  ? 'Thông báo đang tạm tắt trong Cài đặt'
+                  : unreadNotificationCount > 0
+                  ? `${unreadNotificationCount} thông báo chưa đọc`
+                  : 'Đã xem tất cả thông báo'}
               </span>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {unreadCount > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+            {notifications && unreadNotificationCount > 0 && (
               <button
-                onClick={markAllAsRead}
+                onClick={markAllNotificationsRead}
                 style={{
                   border: 'none',
                   backgroundColor: '#EFF6FF',
@@ -165,19 +179,19 @@ export const NotificationsModal: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
+                  whiteSpace: 'nowrap',
                 }}
               >
-                <CheckCheck size={14} /> Đã đọc
+                <CheckCheck size={14} /> Đọc hết
               </button>
             )}
 
-            {/* Clear Close Button [X] */}
             <button
               onClick={closeNotifications}
               aria-label="Đóng thông báo"
               style={{
-                width: '40px',
-                height: '40px',
+                width: '38px',
+                height: '38px',
                 borderRadius: '50%',
                 backgroundColor: '#F1F5F9',
                 border: 'none',
@@ -186,80 +200,116 @@ export const NotificationsModal: React.FC = () => {
                 justifyContent: 'center',
                 cursor: 'pointer',
                 color: '#334155',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               }}
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
         </div>
 
-        {/* Content list (Contained scroll, prevents background bleed) */}
+        {/* Content list */}
         <div
           style={{
             flex: 1,
             overflowY: 'auto',
             overscrollBehavior: 'contain',
-            WebkitOverflowScrolling: 'touch',
             padding: '16px 20px',
           }}
         >
-          {list.length === 0 ? (
+          {!notifications ? (
+            <div style={{ textAlign: 'center', padding: '36px 16px' }}>
+              <Bell size={36} color="#94A3B8" style={{ margin: '0 auto 10px' }} />
+              <div style={{ fontSize: '15px', fontWeight: 800, color: '#334155', marginBottom: '6px' }}>
+                Bạn đang tắt nhận thông báo
+              </div>
+              <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#64748B' }}>
+                Bật lại thông báo để theo dõi kết quả xét duyệt hồ sơ và lịch tư vấn 1-1 tức thời.
+              </p>
+              <Button variant="primary" size="M" onClick={toggleNotifications}>
+                Bật thông báo ngay
+              </Button>
+            </div>
+          ) : visibleNotifications.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8' }}>
-              Chưa có thông báo nào
+              Chưa có thông báo nào dành cho bạn
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {list.map((item) => (
-                <div
-                  key={item.id}
-                  style={{
-                    padding: '14px',
-                    borderRadius: '16px',
-                    backgroundColor: item.read ? '#FFFFFF' : '#EFF6FF',
-                    border: item.read ? '1px solid #E2E8F0' : '1px solid #DBEAFE',
-                    display: 'flex',
-                    gap: '12px',
-                    alignItems: 'flex-start',
-                    boxShadow: item.read ? 'none' : '0 2px 6px rgba(37,99,235,0.06)',
-                  }}
-                >
+              {visibleNotifications.map((item) => {
+                const meta = getIconMeta(item.type);
+                return (
                   <div
+                    key={item.id}
+                    onClick={() => handleClickItem(item)}
                     style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '10px',
-                      backgroundColor: item.type === 'event' ? '#FEE2E2' : '#EFF6FF',
+                      padding: '14px',
+                      borderRadius: '16px',
+                      backgroundColor: item.read ? '#FFFFFF' : '#EFF6FF',
+                      border: item.read ? '1px solid #E2E8F0' : '1.5px solid #BFDBFE',
                       display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: item.type === 'event' ? '#EF4444' : '#2563EB',
-                      flexShrink: 0,
+                      gap: '12px',
+                      alignItems: 'flex-start',
+                      cursor: 'pointer',
+                      boxShadow: item.read ? 'none' : '0 2px 8px rgba(37,99,235,0.08)',
+                      transition: 'all 0.15s ease',
                     }}
                   >
-                    {item.type === 'event' ? <Calendar size={18} /> : <Sparkles size={18} />}
-                  </div>
+                    <div
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '11px',
+                        backgroundColor: meta.bg,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: meta.color,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {meta.icon}
+                    </div>
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>
-                        {item.title}
-                      </span>
-                      <span style={{ fontSize: '11px', color: '#94A3B8', flexShrink: 0, marginLeft: '6px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          gap: '8px',
+                          marginBottom: '4px',
+                        }}
+                      >
+                        <span style={{ fontSize: '13.5px', fontWeight: item.read ? 700 : 800, color: '#0F172A', lineHeight: 1.35 }}>
+                          {item.title}
+                        </span>
+                        {!item.read && (
+                          <span
+                            style={{
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              backgroundColor: '#2563EB',
+                              flexShrink: 0,
+                              marginTop: '5px',
+                            }}
+                          />
+                        )}
+                      </div>
+                      <p style={{ margin: '0 0 6px', fontSize: '12.5px', color: '#475569', lineHeight: 1.45 }}>
+                        {item.body}
+                      </p>
+                      <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600 }}>
                         {item.time}
                       </span>
                     </div>
-                    <p style={{ margin: 0, fontSize: '12px', color: '#475569', lineHeight: 1.45 }}>
-                      {item.desc}
-                    </p>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* Bottom Close Button for Mobile convenience */}
         <div
           style={{
             padding: '12px 20px',

@@ -6,10 +6,8 @@ import {
   Globe,
   HelpCircle,
   Info,
-  Trash2,
+  RotateCcw,
   ChevronRight,
-  Laptop,
-  Smartphone,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../common/UI';
@@ -24,7 +22,6 @@ export const SettingsModal: React.FC = () => {
     toggleNotifications,
     resetAllData,
     viewMode,
-    toggleViewMode,
   } = useApp();
 
   const isDesktop = viewMode === 'desktop';
@@ -164,48 +161,6 @@ export const SettingsModal: React.FC = () => {
                 />
               </div>
 
-              {/* View Mode Toggle (Mobile / Laptop) */}
-              <div
-                style={{
-                  padding: '14px 16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  borderBottom: '1px solid #F1F5F9',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  {viewMode === 'desktop' ? (
-                    <Laptop size={20} color="#2563EB" />
-                  ) : (
-                    <Smartphone size={20} color="#2563EB" />
-                  )}
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>
-                      Giao diện hiển thị
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#64748B' }}>
-                      {viewMode === 'desktop' ? 'Đang bật: Laptop / Desktop (Màn hình lớn)' : 'Đang bật: Điện thoại (Mobile)'}
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={toggleViewMode}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #CBD5E1',
-                    backgroundColor: viewMode === 'desktop' ? '#EFF6FF' : '#F8FAFC',
-                    color: viewMode === 'desktop' ? '#2563EB' : '#1E293B',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {viewMode === 'desktop' ? '📱 Sang Mobile' : '💻 Sang Desktop'}
-                </button>
-              </div>
-
               {/* Language */}
               <div
                 style={{
@@ -280,17 +235,17 @@ export const SettingsModal: React.FC = () => {
             </div>
           </div>
 
-          {/* Group 3: Dữ liệu & Đăng xuất */}
+          {/* Group 3: Khôi phục dữ liệu gốc Demo */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <Button
               variant="outline"
               size="M"
               fullWidth
               style={{ borderColor: '#EF4444', color: '#EF4444' }}
-              icon={<Trash2 size={16} />}
+              icon={<RotateCcw size={16} />}
               onClick={() => setShowResetConfirm(true)}
             >
-              Xóa toàn bộ dữ liệu ứng dụng
+              Khôi phục dữ liệu gốc Demo
             </Button>
           </div>
         </div>
@@ -517,10 +472,10 @@ export const SettingsModal: React.FC = () => {
               }}
             >
               <h4 style={{ margin: '0 0 10px', fontSize: '18px', fontWeight: 800, color: '#EF4444' }}>
-                Xóa toàn bộ dữ liệu?
+                Khôi phục dữ liệu gốc Demo?
               </h4>
-              <p style={{ margin: '0 0 20px', fontSize: '13px', color: '#64748B' }}>
-                Hành động này sẽ xóa sạch danh sách yêu thích, so sánh, kết quả trắc nghiệm và lịch tư vấn trên máy này.
+              <p style={{ margin: '0 0 20px', fontSize: '13px', color: '#64748B', lineHeight: 1.5 }}>
+                Hệ thống sẽ đưa toàn bộ hồ sơ xét tuyển, lịch tư vấn, điểm chuẩn 30 trường và tài khoản cá nhân trên máy này về trạng thái mẫu ban đầu.
               </p>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <Button
