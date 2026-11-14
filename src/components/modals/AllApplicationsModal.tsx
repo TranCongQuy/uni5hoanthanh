@@ -12,7 +12,11 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { UniversityAvatar } from '../common/UI';
-import { getStatusMeta } from '../../types';
+import {
+  CANCELLED_STATUS_FILTER_LABEL,
+  getStatusMeta,
+  isCancelledStatus,
+} from '../../types';
 import type { ApplicationStatus } from '../../types';
 
 export const AllApplicationsModal: React.FC = () => {
@@ -25,12 +29,13 @@ export const AllApplicationsModal: React.FC = () => {
   } = useApp();
 
   const isDesktop = viewMode === 'desktop';
-  const [activeFilter, setActiveFilter] = useState<'all' | ApplicationStatus>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | ApplicationStatus | 'cancelled_group'>('all');
 
   if (!isAllApplicationsOpen) return null;
 
   const filteredApps = myApplications.filter((app) => {
     if (activeFilter === 'all') return true;
+    if (activeFilter === 'cancelled_group') return isCancelledStatus(app.status);
     return app.status === activeFilter;
   });
 
@@ -54,7 +59,7 @@ export const AllApplicationsModal: React.FC = () => {
     }
   };
 
-  const FILTERS: { id: 'all' | ApplicationStatus; label: string; count: number; color?: string }[] = [
+  const FILTERS: { id: 'all' | ApplicationStatus | 'cancelled_group'; label: string; count: number; color?: string }[] = [
     { id: 'all', label: 'Tất cả', count: myApplications.length },
     {
       id: 'Đã trúng tuyển',
@@ -81,16 +86,10 @@ export const AllApplicationsModal: React.FC = () => {
       color: '#2563EB',
     },
     {
-      id: 'Đã hủy',
-      label: 'Đã tự hủy',
-      count: myApplications.filter((a) => a.status === 'Đã hủy').length,
+      id: 'cancelled_group',
+      label: CANCELLED_STATUS_FILTER_LABEL,
+      count: myApplications.filter((a) => isCancelledStatus(a.status)).length,
       color: '#64748B',
-    },
-    {
-      id: 'Đã bị hủy',
-      label: 'Từ chối',
-      count: myApplications.filter((a) => a.status === 'Đã bị hủy').length,
-      color: '#DC2626',
     },
   ];
 
@@ -302,7 +301,7 @@ export const AllApplicationsModal: React.FC = () => {
                       }}
                     >
                       {getStatusIcon(app.status)}
-                      <span>{app.status}</span>
+                      <span>{meta.label}</span>
                     </span>
                   </div>
 

@@ -33,6 +33,8 @@ import {
   Award,
   AlertCircle,
   FileText,
+  Filter,
+  Lock,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useApp } from '../../context/AppContext';
@@ -40,16 +42,22 @@ import {
   QUIZ_QUESTIONS,
   HOLLAND_NAMES,
   HOLLAND_MAJORS,
+  EXAM_BLOCKS,
   getHollandName,
+  getCutoffRangeText,
 } from '../../data/MockData';
-import { getStatusMeta } from '../../types';
-import type { HollandCode, MatchResult, EvaluationGroup } from '../../types';
+import { CANCELLED_STATUS_FILTER_LABEL, getStatusMeta, isCancelledStatus } from '../../types';
+import type { ApplicationRecord, HollandCode, MatchResult, EvaluationGroup } from '../../types';
+import { canStudentCancelApplication, computeHollandAssessment } from '../../services/ApplicationWorkflow';
+import { formatCleanDecimal, formatTuitionRange } from '../../utils/validation';
 import { UniversityAvatar, ImageSafe, Button } from '../common/UI';
 import { AccountRoleMenu } from '../common/AccountRoleMenu';
 import { SoundFX } from '../../utils/sound';
 import { RadarChart } from '../charts/RadarChart';
 import { DonutChart } from '../charts/DonutChart';
 import { evaluateMatching } from '../../services/MatchingService';
+
+const EDUFAIR_DESKTOP_TARGET_TS = new Date('2026-12-20T08:00:00+07:00').getTime();
 
 const QUIZ_OPTIONS = [
   {
@@ -102,7 +110,8 @@ export const DesktopView: React.FC = () => {
     profile,
     isLoggedIn,
     isGuest,
-    login,
+    isDemoMode,
+    demoQuickSwitch,
     universitiesList,
     openNotifications,
     unreadNotificationCount,
@@ -120,6 +129,7 @@ export const DesktopView: React.FC = () => {
     upgradePremium,
     isCompared,
     toggleCompare,
+    clearCompare,
     favoriteIds,
     toggleFavorite,
     searchKeyword,
@@ -262,6 +272,7 @@ export const DesktopView: React.FC = () => {
     score: number;
     budget: number;
     region: string;
+    examBlock: string;
     time: string;
     evaluation: EvaluationGroup;
   }
@@ -269,26 +280,31 @@ export const DesktopView: React.FC = () => {
   const [matchScore, setMatchScore] = useState<number>(aiMatchState.score ?? 15.0);
   const [matchBudget, setMatchBudget] = useState<number>(aiMatchState.budget ?? 10);
   const [matchRegion, setMatchRegion] = useState<string>(aiMatchState.region ?? 'Tất cả');
+  const [matchExamBlock, setMatchExamBlock] = useState<string>(aiMatchState.examBlock ?? 'Tất cả');
   const [matchSort, setMatchSort] = useState<'score' | 'budget' | 'location'>(aiMatchState.sortBy ?? 'score');
   const [hasMatchEvaluated, setHasMatchEvaluated] = useState<boolean>(aiMatchState.hasEvaluated ?? false);
   const [isMatchLoading, setIsMatchLoading] = useState<boolean>(false);
   const [lastMatchEvaluatedData, setLastMatchEvaluatedData] = useState<EvaluatedMatchData | null>(() => {
     if (aiMatchState.hasEvaluated) {
+      const blk = aiMatchState.examBlock ?? 'Tất cả';
       return {
         score: aiMatchState.score,
         budget: aiMatchState.budget,
         region: aiMatchState.region,
+        examBlock: blk,
         time: aiMatchState.analyzedAt || '10:30',
-        evaluation: evaluateMatching(aiMatchState.score, aiMatchState.budget, hollandResult?.primaryCode || '', aiMatchState.region, universitiesList),
+        evaluation: evaluateMatching(aiMatchState.score, aiMatchState.budget, hollandResult?.primaryCode || '', aiMatchState.region, universitiesList, blk),
       };
     }
     return null;
   });
 
   useEffect(() => {
+    const blk = aiMatchState.examBlock ?? 'Tất cả';
     setMatchScore(aiMatchState.score ?? 15.0);
     setMatchBudget(aiMatchState.budget ?? 10);
     setMatchRegion(aiMatchState.region ?? 'Tất cả');
+    setMatchExamBlock(blk);
     setMatchSort(aiMatchState.sortBy ?? 'score');
     setHasMatchEvaluated(aiMatchState.hasEvaluated ?? false);
     if (aiMatchState.hasEvaluated) {
@@ -296,8 +312,9 @@ export const DesktopView: React.FC = () => {
         score: aiMatchState.score,
         budget: aiMatchState.budget,
         region: aiMatchState.region,
+        examBlock: blk,
         time: aiMatchState.analyzedAt || '10:30',
-        evaluation: evaluateMatching(aiMatchState.score, aiMatchState.budget, hollandResult?.primaryCode || '', aiMatchState.region, universitiesList),
+        evaluation: evaluateMatching(aiMatchState.score, aiMatchState.budget, hollandResult?.primaryCode || '', aiMatchState.region, universitiesList, blk),
       });
     } else {
       setLastMatchEvaluatedData(null);
@@ -329,15 +346,24 @@ export const DesktopView: React.FC = () => {
     }
   };
 
+  const handleExamBlockChange = (val: string) => {
+    setMatchExamBlock(val);
+    if (hasMatchEvaluated) {
+      setHasMatchEvaluated(false);
+      setLastMatchEvaluatedData(null);
+    }
+  };
+
   const handleEvaluateMatching = () => {
     setIsMatchLoading(true);
     setTimeout(() => {
-      const res = evaluateMatching(matchScore, matchBudget, hollandResult?.primaryCode || '', matchRegion, universitiesList);
+      const res = evaluateMatching(matchScore, matchBudget, hollandResult?.primaryCode || '', matchRegion, universitiesList, matchExamBlock);
       const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
       setLastMatchEvaluatedData({
         score: matchScore,
         budget: matchBudget,
         region: matchRegion,
+        examBlock: matchExamBlock,
         time: timeStr,
         evaluation: res,
       });
@@ -348,10 +374,12 @@ export const DesktopView: React.FC = () => {
         score: matchScore,
         budget: matchBudget,
         region: matchRegion,
+        examBlock: matchExamBlock,
         sortBy: matchSort,
         analyzedAt: timeStr,
       });
-      showToast('Đã hoàn tất phân tích cơ hội trúng tuyển 30 trường!');
+      const matchedTotal = res.safeList.length + res.moderateList.length + res.challengingList.length;
+      showToast(`Đã đối soát ${matchedTotal}/${res.totalScopedCount} trường phù hợp tiêu chí!`);
     }, 600);
   };
 
@@ -407,12 +435,23 @@ export const DesktopView: React.FC = () => {
       setFloatingReactions((prev) => prev.filter((p) => !idsToRemove.has(p.id)));
     }, 1250);
   };
+  const [liveDaysLeft, setLiveDaysLeft] = useState<number>(() =>
+    Math.max(0, Math.floor((EDUFAIR_DESKTOP_TARGET_TS - Date.now()) / 86400000))
+  );
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      setLiveDaysLeft(Math.max(0, Math.floor((EDUFAIR_DESKTOP_TARGET_TS - Date.now()) / 86400000)));
+    }, 60000);
+    return () => clearInterval(t);
+  }, []);
+
   const [liveMessages, setLiveMessages] = useState<LiveMessage[]>([
     {
       id: 'm1',
       author: 'TS. Lê Thành Trung',
       avatar: '/images/advisor_avatar.png',
-      time: '14:28',
+      time: '4 phút trước',
       text: 'Chào các em học sinh 2k8! Ban tư vấn tuyển sinh sẵn sàng giải đáp về chỉ tiêu xét tuyển học bạ đợt 1.',
       isAdvisor: true,
     },
@@ -420,14 +459,14 @@ export const DesktopView: React.FC = () => {
       id: 'm2',
       author: 'Ngọc Lan (Huế)',
       avatar: '/images/speaker_2.png',
-      time: '14:30',
+      time: '3 phút trước',
       text: 'Thầy cho em hỏi chính sách học bổng OJT và cam kết việc làm của Đại học Phú Xuân năm nay thế nào ạ?',
     },
     {
       id: 'm3',
       author: 'Ban Tuyển sinh PXU',
       avatar: '/images/advisor_avatar.png',
-      time: '14:31',
+      time: '2 phút trước',
       text: 'Chào Lan! PXU cam kết 100% sinh viên CNTT được thực tập doanh nghiệp có lương và học bổng 50-100%!',
       isAdvisor: true,
     },
@@ -435,7 +474,7 @@ export const DesktopView: React.FC = () => {
       id: 'm4',
       author: 'Quốc Huy (Đà Nẵng)',
       avatar: '/images/avatar_user.png',
-      time: '14:32',
+      time: '1 phút trước',
       text: 'Cho em hỏi điểm chuẩn ngành Trí tuệ nhân tạo dự kiến năm 2026 khoảng bao nhiêu điểm ạ?',
     },
   ]);
@@ -455,13 +494,11 @@ export const DesktopView: React.FC = () => {
     const interval = setInterval(() => {
       const item = pool[poolIdx % pool.length];
       poolIdx++;
-      const now = new Date();
-      const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
       const newMsg: LiveMessage = {
-        id: `m-${Date.now()}`,
+        id: `m-${Date.now()}-${poolIdx}`,
         author: item.author,
         avatar: item.isAdvisor ? '/images/advisor_avatar.png' : '/images/avatar_user.png',
-        time: timeStr,
+        time: 'Vừa xong',
         text: item.text,
         isAdvisor: item.isAdvisor,
       };
@@ -476,13 +513,11 @@ export const DesktopView: React.FC = () => {
   const handleSendLiveMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!liveChatInput.trim()) return;
-    const now = new Date();
-    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     const userMsg: LiveMessage = {
       id: `m-usr-${Date.now()}`,
-      author: user.name || 'Trần Công Quý',
+      author: isLoggedIn && !isGuest ? (user.name || 'Thí sinh UniPath') : 'Bạn (Khách tham dự)',
       avatar: '/images/avatar_user.png',
-      time: timeStr,
+      time: 'Vừa xong',
       text: liveChatInput.trim(),
     };
     setLiveMessages((prev) => [...prev.slice(-7), userMsg]);
@@ -502,10 +537,11 @@ export const DesktopView: React.FC = () => {
   // =========================================================================
   const [profileSubTab, setProfileSubTab] = useState<'apps' | 'bookings' | 'saved'>('apps');
   const [appFilterStatus, setAppFilterStatus] = useState<string>('Tất cả');
+  const [pendingCancelApp, setPendingCancelApp] = useState<ApplicationRecord | null>(null);
   const filteredApps = useMemo(() => {
     if (appFilterStatus === 'Tất cả') return myApplications;
-    if (appFilterStatus === 'Đã bị hủy' || appFilterStatus === 'Đã hủy') {
-      return myApplications.filter((app) => app.status === 'Đã bị hủy' || app.status === 'Đã hủy');
+    if (appFilterStatus === CANCELLED_STATUS_FILTER_LABEL) {
+      return myApplications.filter((app) => isCancelledStatus(app.status));
     }
     return myApplications.filter((app) => app.status === appFilterStatus);
   }, [myApplications, appFilterStatus]);
@@ -852,7 +888,7 @@ export const DesktopView: React.FC = () => {
         style={{
           maxWidth: '1380px',
           margin: '0 auto',
-          padding: '24px',
+          padding: compareIds.length > 0 ? '24px 24px 96px' : '24px',
           width: '100%',
           boxSizing: 'border-box',
           flex: 1,
@@ -882,12 +918,13 @@ export const DesktopView: React.FC = () => {
                   position: 'absolute',
                   inset: 0,
                   background: 'linear-gradient(135deg, #0F2D59 0%, #1D4ED8 50%, #0284C7 100%)',
-                  padding: '28px 44px',
+                  padding: '28px 68px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: '28px',
                   opacity: homeSlide === 0 ? 1 : 0,
+                  visibility: homeSlide === 0 ? 'visible' : 'hidden',
                   pointerEvents: homeSlide === 0 ? 'auto' : 'none',
                   transition: 'opacity 0.5s ease',
                 }}
@@ -990,12 +1027,13 @@ export const DesktopView: React.FC = () => {
                   position: 'absolute',
                   inset: 0,
                   background: 'linear-gradient(135deg, #311042 0%, #6D28D9 50%, #9333EA 100%)',
-                  padding: '28px 44px',
+                  padding: '28px 68px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: '28px',
                   opacity: homeSlide === 1 ? 1 : 0,
+                  visibility: homeSlide === 1 ? 'visible' : 'hidden',
                   pointerEvents: homeSlide === 1 ? 'auto' : 'none',
                   transition: 'opacity 0.5s ease',
                 }}
@@ -1097,12 +1135,13 @@ export const DesktopView: React.FC = () => {
                   position: 'absolute',
                   inset: 0,
                   background: 'linear-gradient(135deg, #0F172A 0%, #1E1B4B 50%, #312E81 100%)',
-                  padding: '28px 44px',
+                  padding: '28px 68px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: '28px',
                   opacity: homeSlide === 2 ? 1 : 0,
+                  visibility: homeSlide === 2 ? 'visible' : 'hidden',
                   pointerEvents: homeSlide === 2 ? 'auto' : 'none',
                   transition: 'opacity 0.5s ease',
                 }}
@@ -1558,7 +1597,7 @@ export const DesktopView: React.FC = () => {
 
               {/* Card 4: Lộ trình THPT */}
               <div
-                onClick={() => openCareerPath()}
+                onClick={() => openCareerPath(hollandResult?.primaryCode)}
                 style={{
                   backgroundColor: '#FFFFFF',
                   borderRadius: '20px',
@@ -1760,7 +1799,7 @@ export const DesktopView: React.FC = () => {
                                 {m.name}
                               </div>
                               <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
-                                {m.loc} • Điểm chuẩn 2024: <strong style={{ color: '#2563EB' }}>{m.score2024}đ</strong> • Học phí: <strong style={{ color: '#059669' }}>{m.tuitionMin}tr/năm</strong>
+                                {m.loc} • Chuẩn ngành: <strong style={{ color: '#2563EB' }}>{getCutoffRangeText(m)}</strong> • Học phí: <strong style={{ color: '#059669' }}>{formatTuitionRange(m.tuitionMin, m.tuitionMax, true)}</strong>
                               </div>
                             </div>
                           </div>
@@ -1934,12 +1973,11 @@ export const DesktopView: React.FC = () => {
 
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', padding: '8px 10px', backgroundColor: '#F8FAFC', borderRadius: '10px', marginBottom: '12px' }}>
                         <div>
-                          <span style={{ color: '#64748B' }}>Điểm chuẩn: </span>
-                          <strong style={{ color: '#2563EB' }}>{uni.score2024}đ</strong>
+                          <span style={{ color: '#64748B' }}>Chuẩn ngành: </span>
+                          <strong style={{ color: '#2563EB' }}>{getCutoffRangeText(uni)}</strong>
                         </div>
                         <div>
-                          <span style={{ color: '#64748B' }}>Đánh giá: </span>
-                          <strong style={{ color: '#F59E0B' }}>⭐ {uni.rating}</strong>
+                          <strong style={{ color: '#059669' }}>{formatTuitionRange(uni.tuitionMin, uni.tuitionMax, false)}</strong>
                         </div>
                       </div>
 
@@ -2008,7 +2046,10 @@ export const DesktopView: React.FC = () => {
                   ].map((tab) => (
                     <button
                       key={tab.key}
-                      onClick={() => setSelectedRegion(tab.key)}
+                      onClick={() => {
+                        setSelectedRegion(tab.key);
+                        setDesktopVisibleCount(12);
+                      }}
                       style={{
                         padding: '7px 16px',
                         borderRadius: '10px',
@@ -2176,14 +2217,14 @@ export const DesktopView: React.FC = () => {
                           }}
                         >
                           <div>
-                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#2563EB' }}>
-                              {uni.score2024}đ
+                            <div style={{ fontSize: '13px', fontWeight: 800, color: '#2563EB' }}>
+                              {getCutoffRangeText(uni)}
                             </div>
-                            <div style={{ fontSize: '10.5px', color: '#64748B' }}>Điểm chuẩn</div>
+                            <div style={{ fontSize: '10.5px', color: '#64748B' }}>Chuẩn ngành</div>
                           </div>
                           <div style={{ borderLeft: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0' }}>
-                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#059669' }}>
-                              {uni.tuitionMin}tr
+                            <div style={{ fontSize: '13px', fontWeight: 800, color: '#059669' }}>
+                              {formatTuitionRange(uni.tuitionMin, uni.tuitionMax, false)}
                             </div>
                             <div style={{ fontSize: '10.5px', color: '#64748B' }}>Học phí/năm</div>
                           </div>
@@ -2445,7 +2486,9 @@ export const DesktopView: React.FC = () => {
             )}
 
             {/* Mode 3: Result */}
-            {quizMode === 'result' && hollandResult && (
+            {quizMode === 'result' && hollandResult && (() => {
+              const ha = computeHollandAssessment(hollandResult.scores);
+              return (
               <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: '32px', alignItems: 'start' }}>
                 {/* Left: Radar Chart */}
                 <div style={{ backgroundColor: '#F8FAFC', borderRadius: '20px', padding: '24px', border: '1px solid #E2E8F0', textAlign: 'center' }}>
@@ -2458,10 +2501,14 @@ export const DesktopView: React.FC = () => {
 
                   <div style={{ backgroundColor: '#EFF6FF', borderRadius: '12px', padding: '12px', marginBottom: '16px' }}>
                     <div style={{ fontSize: '16px', fontWeight: 900, color: '#1D4ED8' }}>
-                      Mã {hollandResult.primaryCode} — {getHollandName(hollandResult.primaryCode)}
+                      {ha.tiedTopCodes.length > 1
+                        ? `Đồng điểm nổi trội: Nhóm ${ha.tiedTopCodes.join(' & ')} (${hollandResult.scores[ha.primaryCode]}/6đ)`
+                        : `Mã ${ha.primaryCode} — ${getHollandName(ha.primaryCode)}`}
                     </div>
                     <div style={{ fontSize: '12.5px', color: '#64748B', marginTop: '4px' }}>
-                      Top 3 nhóm nổi trội: {hollandResult.topCodes.join(' - ')}
+                      {ha.topCodes.length > 0
+                        ? `Nhóm nổi trội (điểm > 0): ${ha.topCodes.join(' - ')}`
+                        : 'Chưa có nhóm điểm > 0 — hãy làm lại khảo sát để có kết quả chính xác'}
                     </div>
                   </div>
 
@@ -2470,7 +2517,7 @@ export const DesktopView: React.FC = () => {
                       variant="primary"
                       size="M"
                       fullWidth
-                      onClick={() => openCareerPath(hollandResult.primaryCode)}
+                      onClick={() => openCareerPath(ha.primaryCode)}
                     >
                       Xem lộ trình phát triển nghề nghiệp
                     </Button>
@@ -2501,7 +2548,7 @@ export const DesktopView: React.FC = () => {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
                     {(['R', 'I', 'A', 'S', 'E', 'C'] as HollandCode[]).map((code) => {
                       const score = hollandResult.scores[code];
-                      const isTop = hollandResult.topCodes.includes(code);
+                      const isTop = ha.topCodes.includes(code);
                       return (
                         <div
                           key={code}
@@ -2530,7 +2577,7 @@ export const DesktopView: React.FC = () => {
                     Chuyên ngành & Trường ĐH gợi ý cho bạn
                   </h3>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
-                    {HOLLAND_MAJORS[hollandResult.primaryCode]?.map((major, i) => (
+                    {HOLLAND_MAJORS[ha.primaryCode]?.map((major, i) => (
                       <span
                         key={i}
                         style={{
@@ -2575,7 +2622,8 @@ export const DesktopView: React.FC = () => {
                   </div>
                 </div>
               </div>
-            )}
+              );
+            })()}
           </div>
         )}
 
@@ -2680,7 +2728,7 @@ export const DesktopView: React.FC = () => {
               </div>
 
               {/* Khu vực ưu tiên */}
-              <div style={{ marginBottom: '22px' }}>
+              <div style={{ marginBottom: '18px' }}>
                 <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '8px' }}>
                   Khu vực ưu tiên
                 </label>
@@ -2701,6 +2749,34 @@ export const DesktopView: React.FC = () => {
                       }}
                     >
                       {reg}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Khối xét tuyển */}
+              <div style={{ marginBottom: '22px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '8px' }}>
+                  Khối / Tổ hợp xét tuyển
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                  {EXAM_BLOCKS.map((blk) => (
+                    <button
+                      key={blk}
+                      type="button"
+                      onClick={() => handleExamBlockChange(blk)}
+                      style={{
+                        padding: '6px 0',
+                        borderRadius: '8px',
+                        border: matchExamBlock === blk ? '1.5px solid #2563EB' : '1px solid #E2E8F0',
+                        backgroundColor: matchExamBlock === blk ? '#EFF6FF' : '#F8FAFC',
+                        color: matchExamBlock === blk ? '#1D4ED8' : '#475569',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {blk === 'Tất cả' ? 'Tất cả khối' : `Khối ${blk}`}
                     </button>
                   ))}
                 </div>
@@ -2787,24 +2863,78 @@ export const DesktopView: React.FC = () => {
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '15px', fontWeight: 800, color: '#166534', marginBottom: '3px' }}>
-                        ✅ Đã phân tích cơ hội trúng tuyển theo thông số của bạn!
+                        ✅ Đã lọc & đối soát{' '}
+                        {lastMatchEvaluatedData.evaluation.safeList.length +
+                          lastMatchEvaluatedData.evaluation.moderateList.length +
+                          lastMatchEvaluatedData.evaluation.challengingList.length}
+                        /{lastMatchEvaluatedData.evaluation.totalScopedCount} trường phù hợp thông số của bạn!
                       </div>
                       <div style={{ fontSize: '13px', color: '#15803D', lineHeight: 1.5 }}>
-                        Điểm thi THPT: <strong>{lastMatchEvaluatedData.score.toFixed(1)} điểm</strong> • Ngân sách học phí: <strong>≤ {lastMatchEvaluatedData.budget} tr/năm</strong> • Khu vực: <strong>{lastMatchEvaluatedData.region === 'Tất cả' ? 'Toàn quốc' : `Miền ${lastMatchEvaluatedData.region}`}</strong> (Phân tích lúc {lastMatchEvaluatedData.time})
+                        Điểm thi THPT: <strong>{lastMatchEvaluatedData.score.toFixed(1)} điểm</strong> • Ngân sách học phí tối thiểu:{' '}
+                        <strong>≤ {lastMatchEvaluatedData.budget} tr/năm</strong> • Khu vực:{' '}
+                        <strong>{lastMatchEvaluatedData.region === 'Tất cả' ? 'Toàn quốc' : `Miền ${lastMatchEvaluatedData.region}`}</strong>
+                        {lastMatchEvaluatedData.examBlock !== 'Tất cả' ? (
+                          <>
+                            {' '}
+                            • Tổ hợp: <strong>{lastMatchEvaluatedData.examBlock}</strong>
+                          </>
+                        ) : null}{' '}
+                        (Phân tích lúc {lastMatchEvaluatedData.time})
                       </div>
                     </div>
                   </div>
+
+                  {(lastMatchEvaluatedData.evaluation.filteredOutByBudgetCount > 0 ||
+                    lastMatchEvaluatedData.evaluation.filteredOutByBlockCount > 0) && (
+                    <div
+                      style={{
+                        backgroundColor: '#EFF6FF',
+                        border: '1px solid #BFDBFE',
+                        borderRadius: '14px',
+                        padding: '12px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        fontSize: '13px',
+                        color: '#1E40AF',
+                      }}
+                    >
+                      <Filter size={16} style={{ flexShrink: 0 }} />
+                      <span>
+                        Bộ lọc đã loại trừ{' '}
+                        {lastMatchEvaluatedData.evaluation.filteredOutByBudgetCount > 0 && (
+                          <strong>
+                            {lastMatchEvaluatedData.evaluation.filteredOutByBudgetCount} trường có học phí tối thiểu &gt; {lastMatchEvaluatedData.budget}tr/năm
+                          </strong>
+                        )}
+                        {lastMatchEvaluatedData.evaluation.filteredOutByBudgetCount > 0 &&
+                          lastMatchEvaluatedData.evaluation.filteredOutByBlockCount > 0 &&
+                          ' và '}
+                        {lastMatchEvaluatedData.evaluation.filteredOutByBlockCount > 0 && (
+                          <strong>
+                            {lastMatchEvaluatedData.evaluation.filteredOutByBlockCount} trường không xét tổ hợp {lastMatchEvaluatedData.examBlock}
+                          </strong>
+                        )}
+                        .
+                      </span>
+                    </div>
+                  )}
 
                   {/* 2. Summary & Sort bar */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', padding: '14px 20px', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
                     <div style={{ fontSize: '14px', color: '#1E293B' }}>
                       Đối soát: <strong style={{ color: '#2563EB' }}>{lastMatchEvaluatedData.score.toFixed(1)}đ</strong> • Học phí: <strong style={{ color: '#059669' }}>≤ {lastMatchEvaluatedData.budget}tr/năm</strong> • Khu vực: <strong style={{ color: '#475569' }}>{lastMatchEvaluatedData.region === 'Tất cả' ? 'Toàn quốc' : `Miền ${lastMatchEvaluatedData.region}`}</strong>
+                      {lastMatchEvaluatedData.examBlock !== 'Tất cả' ? ` • Khối ${lastMatchEvaluatedData.examBlock}` : ''}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '12px', color: '#64748B' }}>Sắp xếp:</span>
                       <select
                         value={matchSort}
-                        onChange={(e) => setMatchSort(e.target.value as 'score' | 'budget' | 'location')}
+                        onChange={(e) => {
+                          const nextSort = e.target.value as 'score' | 'budget' | 'location';
+                          setMatchSort(nextSort);
+                          saveAIMatchState({ sortBy: nextSort });
+                        }}
                         style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '12.5px' }}
                       >
                         <option value="score">Tỷ lệ trúng tuyển cao nhất</option>
@@ -2835,11 +2965,11 @@ export const DesktopView: React.FC = () => {
                             <DonutChart percent={res.matchingPercent} size={44} strokeWidth={4.5} />
                             <div style={{ minWidth: 0 }}>
                               <strong style={{ fontSize: '14px', color: '#14532D' }}>{res.university.code}</strong>
-                              <div style={{ fontSize: '12px', color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
+                              <div style={{ fontSize: '12px', color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '210px' }}>
                                 {res.university.name}
                               </div>
-                              <div style={{ fontSize: '11px', color: '#047857', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
-                                {res.matchedMajor} ({res.majorCutoff}đ)
+                              <div style={{ fontSize: '11px', color: '#047857', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '210px' }}>
+                                {res.matchedMajor} ({formatCleanDecimal(res.majorCutoff, 2)}đ) • {formatTuitionRange(res.university.tuitionMin, res.university.tuitionMax, false)}
                               </div>
                             </div>
                           </div>
@@ -2859,13 +2989,13 @@ export const DesktopView: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Group 2: Vừa Sức (45% - 79%) */}
+                  {/* Group 2: Vừa Sức (50% - 79%) */}
                   <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1.5px solid #FDE68A', padding: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#F59E0B' }} />
                         <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#92400E' }}>
-                          🟡 Nhóm Vừa Sức (Tỷ lệ 45% – 79%)
+                          🟡 Nhóm Vừa Sức (Tỷ lệ 50% – 79%)
                         </h3>
                       </div>
                       <span style={{ fontSize: '13px', fontWeight: 800, color: '#92400E', backgroundColor: '#FEF3C7', padding: '2px 8px', borderRadius: '6px' }}>
@@ -2880,11 +3010,11 @@ export const DesktopView: React.FC = () => {
                             <DonutChart percent={res.matchingPercent} size={44} strokeWidth={4.5} />
                             <div style={{ minWidth: 0 }}>
                               <strong style={{ fontSize: '14px', color: '#78350F' }}>{res.university.code}</strong>
-                              <div style={{ fontSize: '12px', color: '#92400E', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
+                              <div style={{ fontSize: '12px', color: '#92400E', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '210px' }}>
                                 {res.university.name}
                               </div>
-                              <div style={{ fontSize: '11px', color: '#B45309', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
-                                {res.matchedMajor} ({res.majorCutoff}đ)
+                              <div style={{ fontSize: '11px', color: '#B45309', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '210px' }}>
+                                {res.matchedMajor} ({formatCleanDecimal(res.majorCutoff, 2)}đ) • {formatTuitionRange(res.university.tuitionMin, res.university.tuitionMax, false)}
                               </div>
                             </div>
                           </div>
@@ -2904,13 +3034,13 @@ export const DesktopView: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Group 3: Thử Thách (< 45%) */}
+                  {/* Group 3: Thử Thách (< 50%) */}
                   <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1.5px solid #FECACA', padding: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#EF4444' }} />
                         <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#991B1B' }}>
-                          🔴 Nhóm Thử Thách (Tỷ lệ &lt; 45%)
+                          🔴 Nhóm Thử Thách (Tỷ lệ &lt; 50%)
                         </h3>
                       </div>
                       <span style={{ fontSize: '13px', fontWeight: 800, color: '#991B1B', backgroundColor: '#FEE2E2', padding: '2px 8px', borderRadius: '6px' }}>
@@ -2925,11 +3055,11 @@ export const DesktopView: React.FC = () => {
                             <DonutChart percent={res.matchingPercent} size={44} strokeWidth={4.5} />
                             <div style={{ minWidth: 0 }}>
                               <strong style={{ fontSize: '14px', color: '#7F1D1D' }}>{res.university.code}</strong>
-                              <div style={{ fontSize: '12px', color: '#991B1B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
+                              <div style={{ fontSize: '12px', color: '#991B1B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '210px' }}>
                                 {res.university.name}
                               </div>
-                              <div style={{ fontSize: '11px', color: '#B91C1C', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
-                                {res.matchedMajor} ({res.majorCutoff}đ)
+                              <div style={{ fontSize: '11px', color: '#B91C1C', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '210px' }}>
+                                {res.matchedMajor} ({formatCleanDecimal(res.majorCutoff, 2)}đ) • {formatTuitionRange(res.university.tuitionMin, res.university.tuitionMax, false)}
                               </div>
                             </div>
                           </div>
@@ -2990,7 +3120,10 @@ export const DesktopView: React.FC = () => {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: 'rgba(0,0,0,0.6)', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 700 }}>
                     <Users size={12} />
-                    <span>2,480 người xem</span>
+                    <span>2,480 người xem (Mô phỏng)</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: 'rgba(37,99,235,0.85)', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 800 }}>
+                    <span>Sự kiện chính: Còn {liveDaysLeft} ngày (20/12/2026)</span>
                   </div>
                 </div>
 
@@ -3329,13 +3462,18 @@ export const DesktopView: React.FC = () => {
                 </Button>
               </div>
 
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>
-                Đăng nhập nhanh tài khoản mẫu (Demo bảo vệ đồ án)
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <Lock size={13} />
+                <span>
+                  {isDemoMode
+                    ? 'Chế độ Kiểm thử Hội đồng đang BẬT — chuyển nhanh vai trò'
+                    : 'Chọn cổng đăng nhập theo vai trò (Yêu cầu xác thực mật khẩu)'}
+                </span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 <button
-                  onClick={() => login('quy@unipath.vn', '123456')}
+                  onClick={() => (isDemoMode ? demoQuickSwitch('student') : openAuthModal('quy@unipath.vn'))}
                   style={{
                     padding: '11px 18px',
                     borderRadius: '12px',
@@ -3352,10 +3490,10 @@ export const DesktopView: React.FC = () => {
                   }}
                 >
                   <Sparkles size={16} />
-                  <span>⚡ Thí sinh (Trần Công Quý)</span>
+                  <span>{isDemoMode ? '⚡ Thí sinh (Demo)' : '🎓 Cổng Thí sinh'}</span>
                 </button>
                 <button
-                  onClick={() => login('tuyensinh@pxu.edu.vn', 'pxu123')}
+                  onClick={() => (isDemoMode ? demoQuickSwitch('pxu') : openAuthModal('tuyensinh@pxu.edu.vn'))}
                   style={{
                     padding: '11px 18px',
                     borderRadius: '12px',
@@ -3368,10 +3506,10 @@ export const DesktopView: React.FC = () => {
                     boxShadow: '0 4px 14px rgba(5,150,105,0.25)',
                   }}
                 >
-                  🏛️ ĐH Phú Xuân (PXU)
+                  🏛️ Cổng ĐH Phú Xuân (PXU)
                 </button>
                 <button
-                  onClick={() => login('admin@unipath.vn', 'admin123')}
+                  onClick={() => (isDemoMode ? demoQuickSwitch('admin') : openAuthModal('admin@unipath.vn'))}
                   style={{
                     padding: '11px 18px',
                     borderRadius: '12px',
@@ -3384,7 +3522,7 @@ export const DesktopView: React.FC = () => {
                     boxShadow: '0 4px 14px rgba(37,99,235,0.25)',
                   }}
                 >
-                  👑 Admin Hệ Thống
+                  👑 Cổng Admin Hệ Thống
                 </button>
               </div>
             </div>
@@ -3553,21 +3691,26 @@ export const DesktopView: React.FC = () => {
                         Định hướng Holland RIASEC
                       </h4>
                     </div>
-                    {hollandResult ? (
-                      <div>
-                        <div style={{ backgroundColor: '#EFF6FF', borderRadius: '12px', padding: '12px', marginBottom: '12px' }}>
-                          <div style={{ fontSize: '14px', fontWeight: 800, color: '#1D4ED8' }}>
-                            Nhóm {hollandResult.primaryCode} — {getHollandName(hollandResult.primaryCode)}
+                    {hollandResult ? (() => {
+                      const ha = computeHollandAssessment(hollandResult.scores);
+                      return (
+                        <div>
+                          <div style={{ backgroundColor: '#EFF6FF', borderRadius: '12px', padding: '12px', marginBottom: '12px' }}>
+                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#1D4ED8' }}>
+                              Nhóm {ha.primaryCode} — {getHollandName(ha.primaryCode)}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#64748B', marginTop: '3px' }}>
+                              {ha.tiedTopCodes.length > 1
+                                ? `Đồng điểm cao nhất: ${ha.tiedTopCodes.join(' & ')} • Nổi trội: ${ha.topCodes.join(' - ')}`
+                                : `Tổ hợp nổi trội: ${ha.topCodes.join(' - ')}`}
+                            </div>
                           </div>
-                          <div style={{ fontSize: '12px', color: '#64748B', marginTop: '3px' }}>
-                            Tổ hợp nổi trội: {hollandResult.topCodes.join(' - ')}
-                          </div>
+                          <Button variant="tonal" size="M" fullWidth onClick={() => openCareerPath(ha.primaryCode)}>
+                            Xem lộ trình nghề nghiệp THPT
+                          </Button>
                         </div>
-                        <Button variant="tonal" size="M" fullWidth onClick={() => openCareerPath(hollandResult.primaryCode)}>
-                          Xem lộ trình nghề nghiệp THPT
-                        </Button>
-                      </div>
-                    ) : (
+                      );
+                    })() : (
                       <div>
                         <p style={{ margin: '0 0 12px', fontSize: '12.5px', color: '#64748B', lineHeight: 1.5 }}>
                           Hoàn thành 12 câu hỏi trắc nghiệm Holland để nhận phân tích ngành nghề và cộng điểm ưu tiên AI Matching.
@@ -3802,7 +3945,7 @@ export const DesktopView: React.FC = () => {
 
                       {/* Status filter pills */}
                       <div style={{ display: 'flex', gap: '8px', marginBottom: '18px', flexWrap: 'wrap' }}>
-                        {['Tất cả', 'Đang xét duyệt', 'Hồ sơ hợp lệ', 'Đã trúng tuyển', 'Thiếu hồ sơ', 'Đã bị hủy'].map((st) => (
+                        {['Tất cả', 'Đang xét duyệt', 'Hồ sơ hợp lệ', 'Đã trúng tuyển', 'Thiếu hồ sơ', CANCELLED_STATUS_FILTER_LABEL].map((st) => (
                           <button
                             key={st}
                             onClick={() => setAppFilterStatus(st)}
@@ -3896,13 +4039,10 @@ export const DesktopView: React.FC = () => {
                                     {app.status === 'Thiếu hồ sơ' ? 'Bổ sung hồ sơ' : 'Chi tiết'}
                                   </Button>
 
-                                  {(app.status === 'Đang xét duyệt' || app.status === 'Thiếu hồ sơ') && (
+                                  {canStudentCancelApplication(app, user.email, isGuest || !isLoggedIn).ok && (
                                     <button
-                                      onClick={() => {
-                                        if (window.confirm('Bạn có chắc chắn muốn rút / hủy hồ sơ xét tuyển này không?')) {
-                                          cancelApplication(app.id);
-                                        }
-                                      }}
+                                      type="button"
+                                      onClick={() => setPendingCancelApp(app)}
                                       style={{
                                         padding: '6px 10px',
                                         borderRadius: '8px',
@@ -4065,7 +4205,7 @@ export const DesktopView: React.FC = () => {
                               </div>
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: '4px' }}>
                                 <span style={{ fontSize: '12px', fontWeight: 700, color: '#2563EB' }}>
-                                  {uni.tuitionMin}-{uni.tuitionMax}tr/năm
+                                  {formatTuitionRange(uni.tuitionMin, uni.tuitionMax, true)}
                                 </span>
                                 <button
                                   onClick={(e) => {
@@ -4136,19 +4276,83 @@ export const DesktopView: React.FC = () => {
         </div>
       </footer>
 
-      {/* Sticky Floating Compare Bar when universities are selected on Desktop */}
+      {/* In-app Cancel Application Confirmation Modal (Zero native window.confirm) */}
+      {pendingCancelApp && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 10050,
+            backgroundColor: 'rgba(15, 23, 42, 0.55)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+          onClick={() => setPendingCancelApp(null)}
+        >
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '22px',
+              padding: '26px',
+              width: '100%',
+              maxWidth: '420px',
+              boxShadow: '0 24px 60px rgba(15, 23, 42, 0.25)',
+              border: '1px solid #E2E8F0',
+              textAlign: 'center',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#FEF2F2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+              <AlertCircle size={24} />
+            </div>
+            <h4 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 800, color: '#0F172A' }}>
+              Xác nhận rút hồ sơ xét tuyển?
+            </h4>
+            <p style={{ margin: '0 0 20px', fontSize: '13.5px', color: '#475569', lineHeight: 1.55 }}>
+              Bạn chắc chắn muốn rút nguyện vọng <strong>{pendingCancelApp.code}</strong> ({pendingCancelApp.major} — {pendingCancelApp.uniName})? Sau khi rút, hồ sơ sẽ chuyển sang trạng thái kết thúc và không thể khôi phục.
+            </p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <Button variant="outline" size="M" fullWidth onClick={() => setPendingCancelApp(null)}>
+                Giữ lại hồ sơ
+              </Button>
+              <Button
+                variant="danger"
+                size="M"
+                fullWidth
+                onClick={() => {
+                  const id = pendingCancelApp.id;
+                  setPendingCancelApp(null);
+                  cancelApplication(id);
+                }}
+              >
+                Xác nhận rút hồ sơ
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Centered & Dismissible Floating Compare Dock on Desktop (Never overlaps right-side action buttons) */}
       {compareIds.length > 0 && (
         <aside
           aria-label="So sánh trường đại học"
           style={{
             position: 'fixed',
-            bottom: '24px',
-            right: '24px',
+            bottom: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
             zIndex: 9998,
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            animation: 'bounceIn 0.3s ease-out',
+            gap: '6px',
+            backgroundColor: '#0F172A',
+            padding: '6px 8px 6px 18px',
+            borderRadius: '999px',
+            border: '1px solid rgba(255, 255, 255, 0.16)',
+            boxShadow: '0 10px 30px rgba(15, 23, 42, 0.35)',
           }}
         >
           <button
@@ -4157,26 +4361,40 @@ export const DesktopView: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              padding: '10px 18px',
+              padding: '6px 10px 6px 0',
               borderRadius: '999px',
-              background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+              background: 'transparent',
               color: '#FFFFFF',
-              border: '2px solid rgba(255, 255, 255, 0.9)',
-              boxShadow: '0 6px 24px rgba(37, 99, 235, 0.35)',
-              fontSize: '13px',
+              border: 'none',
+              fontSize: '13.5px',
               fontWeight: 800,
               cursor: 'pointer',
-              transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.06) translateY(-2px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1) translateY(0px)';
+              whiteSpace: 'nowrap',
             }}
           >
-            <GitCompare size={16} />
-            <span>So sánh ({compareIds.length}/3)</span>
+            <GitCompare size={16} color="#60A5FA" />
+            <span>So sánh chi tiết ({compareIds.length}/3 trường)</span>
+          </button>
+          <button
+            type="button"
+            onClick={clearCompare}
+            aria-label="Xóa danh sách so sánh"
+            title="Ẩn / Xóa danh sách so sánh"
+            style={{
+              width: '30px',
+              height: '30px',
+              borderRadius: '50%',
+              border: 'none',
+              backgroundColor: 'rgba(255, 255, 255, 0.14)',
+              color: '#E2E8F0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            <X size={15} />
           </button>
         </aside>
       )}

@@ -45,10 +45,17 @@ export const RadarChart: React.FC<RadarChartProps> = ({
   });
 
   const polygonPath = dataPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
+  const padX = 56;
+  const padY = 22;
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', overflow: 'visible' }}>
+      <svg
+        width={size + padX}
+        height={size + padY}
+        viewBox={`${-padX / 2} ${-padY / 2} ${size + padX} ${size + padY}`}
+        style={{ maxWidth: '100%', height: 'auto', overflow: 'visible' }}
+      >
         {/* Background grids */}
         {levels.map((lvl, lIdx) => {
           const gridPoints = CATEGORIES.map((_, idx) => getCoordinates(idx, lvl));

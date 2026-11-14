@@ -24,8 +24,24 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import type { BookingState } from '../../context/AppContext';
-import { getStatusMeta } from '../../types';
+import {
+  CANCELLED_STATUS_FILTER_LABEL,
+  getStatusMeta,
+  isCancelledStatus,
+  isTerminalStatus,
+} from '../../types';
 import type { ApplicationRecord, ApplicationStatus, University } from '../../types';
+import {
+  ALLOWED_REVIEWER_TRANSITIONS,
+  getMajorCutoffForApp,
+} from '../../services/ApplicationWorkflow';
+import {
+  formatCleanDecimal,
+  formatTuitionRange,
+  parseViDateTimeToMs,
+  sanitizeCsvCell,
+} from '../../utils/validation';
+import { getCutoffRangeText } from '../../data/MockData';
 import { UniversityAvatar } from '../common/UI';
 import { AccountRoleMenu } from '../common/AccountRoleMenu';
 
@@ -90,9 +106,20 @@ const StatusBadge: React.FC<{ status: ApplicationStatus }> = ({ status }) => {
 
 const exportAppsCsv = (rows: ApplicationRecord[], filename: string) => {
   const header = 'Mã hồ sơ,Thí sinh,Trường,Ngành,Điểm,Trạng thái,SĐT,Email,Ngày nộp';
-  const esc = (v: unknown) => `"${String(v).replace(/"/g, '""')}"`;
   const lines = rows.map((a) =>
-    [a.code, a.candidateName, a.uniName, a.major, a.score, a.status, a.phone, a.email, a.submittedAt].map(esc).join(',')
+    [
+      a.code,
+      a.candidateName,
+      a.uniName,
+      a.major,
+      formatCleanDecimal(a.score, 2),
+      getStatusMeta(a.status).label,
+      a.phone,
+      a.email,
+      a.submittedAt,
+    ]
+      .map(sanitizeCsvCell)
+      .join(',')
   );
   const blob = new Blob(['\uFEFF' + header + '\n' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -105,8 +132,7 @@ const exportAppsCsv = (rows: ApplicationRecord[], filename: string) => {
 
 const getMajorCutoff = (app: ApplicationRecord, unis: University[]): number => {
   const u = unis.find((x) => x.code === app.uniCode || x.id === app.uniId);
-  if (!u) return 20;
-  return u.cutoffScores[app.major] ?? u.score2024;
+  return getMajorCutoffForApp(u, app.major);
 };
 
 const surfaceCard: React.CSSProperties = {
@@ -157,8 +183,8 @@ export const AdminApp: React.FC = () => {
   const [uniRegion, setUniRegion] = useState<string>('Tất cả');
   const [uniSort, setUniSort] = useState<UniSort>('name');
   const [editingUniId, setEditingUniId] = useState<number | null>(null);
-  const [editScore, setEditScore] = useState<number>(20);
-  const [editTuition, setEditTuition] = useState<number>(15);
+  const [editScoreText, setEditScoreText] = useState<string>('20');
+  const [editTuitionText, setEditTuitionText] = useState<string>('15');
 
   // Derived metrics
   const totalApps = applications.length;
@@ -167,7 +193,7 @@ export const AdminApp: React.FC = () => {
   const missingApps = applications.filter((a) => a.status === 'Thiếu hồ sơ');
   const validAppsCount = countByStatus('Hồ sơ hợp lệ');
   const admittedAppsCount = countByStatus('Đã trúng tuyển');
-  const cancelledAppsCount = countByStatus('Đã hủy') + countByStatus('Đã bị hủy');
+  const cancelledAppsCount = applications.filter((a) => isCancelledStatus(a.status)).length;
   const actionQueue = applications.filter((a) => a.status === 'Đang xét duyệt' || a.status === 'Thiếu hồ sơ');
 
   const avgScore =
@@ -195,8 +221,8 @@ export const AdminApp: React.FC = () => {
     const matchStatus =
       appStatus === 'Tất cả'
         ? true
-        : appStatus === 'Đã hủy / Từ chối'
-        ? a.status === 'Đã hủy' || a.status === 'Đã bị hủy'
+        : appStatus === CANCELLED_STATUS_FILTER_LABEL || appStatus === 'Đã hủy / Từ chối'
+        ? isCancelledStatus(a.status)
         : a.status === appStatus;
     const matchUni = appUni === 'Tất cả' || a.uniCode === appUni;
     const kw = appSearch.trim().toLowerCase();
@@ -213,16 +239,17 @@ export const AdminApp: React.FC = () => {
     if (appSort === 'scoreDesc') return b.score - a.score;
     if (appSort === 'scoreAsc') return a.score - b.score;
     if (appSort === 'nameAsc') return a.candidateName.localeCompare(b.candidateName, 'vi');
-    return 0;
+    return parseViDateTimeToMs(b.submittedAt, b.submittedAtISO) - parseViDateTimeToMs(a.submittedAt, a.submittedAtISO);
   });
 
-  const APPS_PER_PAGE = 8;
+  const APPS_PER_PAGE = 6;
   const appsPageCount = Math.max(1, Math.ceil(sortedApps.length / APPS_PER_PAGE));
-  const curAppsPage = Math.min(appsPage, appsPageCount);
-  const pagedApps = sortedApps.slice((curAppsPage - 1) * APPS_PER_PAGE, curAppsPage * APPS_PER_PAGE);
+  const curAppsPage = Math.max(1, Math.min(appsPage, appsPageCount));
+  const pageStartIdx = (curAppsPage - 1) * APPS_PER_PAGE;
+  const pagedApps = sortedApps.slice(pageStartIdx, pageStartIdx + APPS_PER_PAGE);
 
   const selectedApp: ApplicationRecord | null =
-    applications.find((a) => a.id === selectedAppId) || pendingApps[0] || sortedApps[0] || applications[0] || null;
+    applications.find((a) => a.id === selectedAppId) || sortedApps[0] || pendingApps[0] || applications[0] || null;
 
   // Filtered Universities
   const filteredUnis = universitiesList
@@ -269,8 +296,10 @@ export const AdminApp: React.FC = () => {
   };
 
   const handleSaveUni = (id: number) => {
-    updateUniversityMetrics(id, editScore, editTuition);
-    setEditingUniId(null);
+    const ok = updateUniversityMetrics(id, editScoreText, editTuitionText);
+    if (ok) {
+      setEditingUniId(null);
+    }
   };
 
   const currentNavMeta = NAV_ITEMS.find((i) => i.id === section) || NAV_ITEMS[0];
@@ -294,9 +323,9 @@ export const AdminApp: React.FC = () => {
             cta: 'Xem tất cả →',
           },
           {
-            title: 'Cần thẩm định ngay',
+            title: 'Chờ thẩm định mới',
             value: pendingApps.length,
-            sub: `${missingApps.length} hồ sơ đang chờ bổ sung`,
+            sub: `+ ${missingApps.length} chờ bổ sung (Hàng đợi: ${actionQueue.length})`,
             accent: '#D97706',
             iconBg: '#FFFBEB',
             icon: <Clock size={20} color="#D97706" />,
@@ -371,12 +400,12 @@ export const AdminApp: React.FC = () => {
         ))}
       </div>
 
-      {/* Visual 4-Stage Pipeline Banner */}
+      {/* Visual 5-Stage 100% Reconciled Pipeline Banner */}
       <div style={{ ...surfaceCard, padding: '18px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
           <div>
             <h2 style={{ margin: 0, fontSize: '15.5px', fontWeight: 800, color: '#0F172A' }}>
-              Quy trình Phễu Xét Tuyển Toàn Quốc (Thời gian thực)
+              Quy trình Phễu Xét Tuyển Toàn Quốc (Đối soát 100%: {pendingApps.length + validAppsCount + admittedAppsCount + missingApps.length + cancelledAppsCount}/{totalApps} hồ sơ)
             </h2>
             <p style={{ margin: '2px 0 0', fontSize: '12.5px', color: '#64748B' }}>
               Bấm vào bất kỳ giai đoạn nào để lọc ngay danh sách hồ sơ ở bước đó
@@ -387,12 +416,13 @@ export const AdminApp: React.FC = () => {
           </span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '10px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(5, 1fr)' : 'repeat(2, 1fr)', gap: '10px' }}>
           {[
             { step: 'Bước 1', label: 'Đang chờ xét duyệt', count: pendingApps.length, color: '#B45309', bg: '#FFFBEB', border: '#FDE68A', filter: 'Đang xét duyệt' },
             { step: 'Bước 2', label: 'Hồ sơ hợp lệ', count: validAppsCount, color: '#0369A1', bg: '#F0F9FF', border: '#BAE6FD', filter: 'Hồ sơ hợp lệ' },
             { step: 'Bước 3', label: 'Đã trúng tuyển sớm', count: admittedAppsCount, color: '#047857', bg: '#ECFDF5', border: '#A7F3D0', filter: 'Đã trúng tuyển' },
             { step: 'Cần lưu ý', label: 'Chờ thí sinh bổ sung', count: missingApps.length, color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE', filter: 'Thiếu hồ sơ' },
+            { step: 'Kết thúc', label: CANCELLED_STATUS_FILTER_LABEL, count: cancelledAppsCount, color: '#64748B', bg: '#F8FAFC', border: '#CBD5E1', filter: CANCELLED_STATUS_FILTER_LABEL },
           ].map((st) => (
             <button
               key={st.label}
@@ -550,6 +580,7 @@ export const AdminApp: React.FC = () => {
                   onClick={() => {
                     setAppUni(u.code);
                     setAppStatus('Tất cả');
+                    setAppsPage(1);
                     setSection('apps');
                   }}
                   style={{ cursor: 'pointer' }}
@@ -680,7 +711,14 @@ export const AdminApp: React.FC = () => {
                 style={{ flex: 1, border: 'none', outline: 'none', fontSize: '13px', backgroundColor: 'transparent', color: '#0F172A', minWidth: 0 }}
               />
               {appSearch && (
-                <button type="button" onClick={() => setAppSearch('')} style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAppSearch('');
+                    setAppsPage(1);
+                  }}
+                  style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex' }}
+                >
                   <X size={15} color="#94A3B8" />
                 </button>
               )}
@@ -732,7 +770,7 @@ export const AdminApp: React.FC = () => {
                 cursor: 'pointer',
               }}
             >
-              <option value="list">Mới cập nhật</option>
+              <option value="list">Mới nộp gần nhất</option>
               <option value="scoreDesc">Điểm cao → thấp</option>
               <option value="scoreAsc">Điểm thấp → cao</option>
               <option value="nameAsc">Tên A → Z</option>
@@ -769,7 +807,7 @@ export const AdminApp: React.FC = () => {
               { key: 'Hồ sơ hợp lệ', count: validAppsCount },
               { key: 'Đã trúng tuyển', count: admittedAppsCount },
               { key: 'Thiếu hồ sơ', count: missingApps.length },
-              { key: 'Đã hủy / Từ chối', count: cancelledAppsCount },
+              { key: CANCELLED_STATUS_FILTER_LABEL, count: cancelledAppsCount },
             ].map((tab) => {
               const active = appStatus === tab.key;
               return (
@@ -828,14 +866,30 @@ export const AdminApp: React.FC = () => {
               boxShadow: '0 8px 24px rgba(15,23,42,0.18)',
             }}
           >
-            <span style={{ fontSize: '13px', fontWeight: 800, marginRight: '6px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 800, marginRight: '4px' }}>
               Đang chọn {checkedIds.length} hồ sơ:
             </span>
-            <button type="button" onClick={() => applyBatch('Đã trúng tuyển')} style={{ padding: '7px 12px', borderRadius: '9px', border: 'none', backgroundColor: '#059669', color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>
-              🎓 Duyệt trúng tuyển
-            </button>
+            <input
+              type="text"
+              value={reviewerNote}
+              onChange={(e) => setReviewerNote(e.target.value)}
+              placeholder="Căn cứ / Ghi chú xử lý hàng loạt..."
+              style={{
+                flex: '1 1 200px',
+                height: '32px',
+                borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.25)',
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                color: '#FFFFFF',
+                padding: '0 10px',
+                fontSize: '12px',
+              }}
+            />
             <button type="button" onClick={() => applyBatch('Hồ sơ hợp lệ')} style={{ padding: '7px 12px', borderRadius: '9px', border: 'none', backgroundColor: '#0284C7', color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>
               ✓ Xác nhận hợp lệ
+            </button>
+            <button type="button" onClick={() => applyBatch('Đã trúng tuyển')} style={{ padding: '7px 12px', borderRadius: '9px', border: 'none', backgroundColor: '#059669', color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>
+              🎓 Duyệt trúng tuyển
             </button>
             <button type="button" onClick={() => applyBatch('Thiếu hồ sơ')} style={{ padding: '7px 12px', borderRadius: '9px', border: 'none', backgroundColor: '#2563EB', color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>
               ⚠️ Yêu cầu bổ sung
@@ -843,7 +897,7 @@ export const AdminApp: React.FC = () => {
             <button type="button" onClick={() => applyBatch('Đã bị hủy')} style={{ padding: '7px 12px', borderRadius: '9px', border: 'none', backgroundColor: '#DC2626', color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>
               ✕ Từ chối
             </button>
-            <button type="button" onClick={() => setCheckedIds([])} style={{ padding: '7px 12px', borderRadius: '9px', border: '1px solid rgba(255,255,255,0.3)', backgroundColor: 'transparent', color: '#FFFFFF', fontSize: '12px', fontWeight: 700, cursor: 'pointer', marginLeft: 'auto' }}>
+            <button type="button" onClick={() => setCheckedIds([])} style={{ padding: '7px 12px', borderRadius: '9px', border: '1px solid rgba(255,255,255,0.3)', backgroundColor: 'transparent', color: '#FFFFFF', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>
               Bỏ chọn
             </button>
           </div>
@@ -875,6 +929,7 @@ export const AdminApp: React.FC = () => {
                       const cutoff = getMajorCutoff(app, universitiesList);
                       const delta = +(app.score - cutoff).toFixed(2);
                       const checked = checkedIds.includes(app.id);
+                      const terminal = isTerminalStatus(app.status);
                       return (
                         <tr
                           key={app.id}
@@ -889,18 +944,21 @@ export const AdminApp: React.FC = () => {
                             <button
                               type="button"
                               role="checkbox"
+                              disabled={terminal}
+                              title={terminal ? 'Hồ sơ đã kết thúc — không thể xử lý hàng loạt' : 'Chọn hồ sơ'}
                               aria-checked={checked}
-                              onClick={() => toggleChecked(app.id)}
+                              onClick={() => !terminal && toggleChecked(app.id)}
                               style={{
                                 width: '19px',
                                 height: '19px',
                                 borderRadius: '5px',
                                 border: checked ? '2px solid #2563EB' : '1.5px solid #CBD5E1',
-                                backgroundColor: checked ? '#2563EB' : '#FFFFFF',
+                                backgroundColor: terminal ? '#F1F5F9' : checked ? '#2563EB' : '#FFFFFF',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                cursor: 'pointer',
+                                cursor: terminal ? 'not-allowed' : 'pointer',
+                                opacity: terminal ? 0.5 : 1,
                                 padding: 0,
                               }}
                             >
@@ -970,26 +1028,46 @@ export const AdminApp: React.FC = () => {
               </div>
             )}
 
-            {/* Pagination Footer */}
+            {/* Pagination Footer — Explicit Range & Numbered Pages (Zero Lost Records) */}
             {appsPageCount > 1 && (
               <div style={{ padding: '12px 16px', borderTop: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap', backgroundColor: '#F8FAFC' }}>
-                <span style={{ fontSize: '12px', color: '#64748B' }}>
-                  Trang <strong>{curAppsPage}</strong> / {appsPageCount} ({sortedApps.length} hồ sơ)
+                <span style={{ fontSize: '12px', color: '#475569' }}>
+                  Hiển thị <strong>{pageStartIdx + 1}–{Math.min(pageStartIdx + APPS_PER_PAGE, sortedApps.length)}</strong> / tổng <strong>{sortedApps.length}</strong> hồ sơ · Trang <strong>{curAppsPage}</strong>/{appsPageCount}
                 </span>
-                <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
                   <button
                     type="button"
                     disabled={curAppsPage <= 1}
                     onClick={() => setAppsPage(curAppsPage - 1)}
-                    style={{ padding: '6px 11px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '12px', fontWeight: 700, cursor: curAppsPage <= 1 ? 'default' : 'pointer', opacity: curAppsPage <= 1 ? 0.45 : 1 }}
+                    style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '12px', fontWeight: 700, cursor: curAppsPage <= 1 ? 'default' : 'pointer', opacity: curAppsPage <= 1 ? 0.45 : 1 }}
                   >
                     ← Trước
                   </button>
+                  {Array.from({ length: appsPageCount }, (_, i) => i + 1).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setAppsPage(p)}
+                      style={{
+                        minWidth: '30px',
+                        height: '30px',
+                        borderRadius: '8px',
+                        border: curAppsPage === p ? '1.5px solid #2563EB' : '1px solid #CBD5E1',
+                        backgroundColor: curAppsPage === p ? '#2563EB' : '#FFFFFF',
+                        color: curAppsPage === p ? '#FFFFFF' : '#334155',
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {p}
+                    </button>
+                  ))}
                   <button
                     type="button"
                     disabled={curAppsPage >= appsPageCount}
                     onClick={() => setAppsPage(curAppsPage + 1)}
-                    style={{ padding: '6px 11px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '12px', fontWeight: 700, cursor: curAppsPage >= appsPageCount ? 'default' : 'pointer', opacity: curAppsPage >= appsPageCount ? 0.45 : 1 }}
+                    style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '12px', fontWeight: 700, cursor: curAppsPage >= appsPageCount ? 'default' : 'pointer', opacity: curAppsPage >= appsPageCount ? 0.45 : 1 }}
                   >
                     Sau →
                   </button>
@@ -1114,143 +1192,195 @@ export const AdminApp: React.FC = () => {
                 )}
               </div>
 
-              {/* Quick Reply Note Chips */}
-              <div style={{ marginBottom: '12px' }}>
-                <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
-                  Ghi chú phản hồi gửi thí sinh (bấm chọn nhanh hoặc tự nhập):
-                </div>
-                <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                  {QUICK_REVIEW_NOTES.map((tpl) => (
-                    <button
-                      key={tpl}
-                      type="button"
-                      onClick={() => setReviewerNote(tpl)}
-                      style={{
-                        padding: '4px 8px',
-                        borderRadius: '7px',
-                        border: '1px solid #E2E8F0',
-                        backgroundColor: reviewerNote === tpl ? '#EFF6FF' : '#F8FAFC',
-                        color: reviewerNote === tpl ? '#1D4ED8' : '#475569',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                      }}
-                    >
-                      + {tpl.length > 36 ? tpl.slice(0, 36) + '…' : tpl}
-                    </button>
-                  ))}
-                </div>
-                <input
-                  type="text"
-                  value={reviewerNote}
-                  onChange={(e) => setReviewerNote(e.target.value)}
-                  placeholder="Nhập nội dung phản hồi gửi về chuông thông báo thí sinh..."
+              {/* Quick Reply Note Chips & FSM-Guarded Decision Actions */}
+              {isTerminalStatus(selectedApp.status) ? (
+                <div
                   style={{
-                    width: '100%',
-                    padding: '9px 12px',
-                    borderRadius: '10px',
+                    backgroundColor: '#F1F5F9',
                     border: '1px solid #CBD5E1',
+                    borderRadius: '12px',
+                    padding: '12px 14px',
                     fontSize: '12.5px',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              {/* Clear Hierarchical Action Buttons */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button
-                  type="button"
-                  disabled={selectedApp.status === 'Đã trúng tuyển'}
-                  onClick={() => {
-                    updateApplicationStatus(selectedApp.id, 'Đã trúng tuyển', reviewerNote || undefined);
-                    setReviewerNote('');
-                  }}
-                  style={{
-                    width: '100%',
-                    padding: '11px',
-                    borderRadius: '11px',
-                    border: 'none',
-                    backgroundColor: selectedApp.status === 'Đã trúng tuyển' ? '#A7F3D0' : '#059669',
-                    color: '#FFFFFF',
-                    fontSize: '13.5px',
-                    fontWeight: 800,
-                    cursor: selectedApp.status === 'Đã trúng tuyển' ? 'default' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
+                    color: '#334155',
+                    fontWeight: 700,
+                    lineHeight: 1.5,
                   }}
                 >
-                  <CheckCircle2 size={16} /> Duyệt Trúng Tuyển Sớm
-                </button>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
-                  <button
-                    type="button"
-                    disabled={selectedApp.status === 'Hồ sơ hợp lệ'}
-                    onClick={() => {
-                      updateApplicationStatus(selectedApp.id, 'Hồ sơ hợp lệ', reviewerNote || undefined);
-                      setReviewerNote('');
-                    }}
-                    style={{
-                      padding: '8px 6px',
-                      borderRadius: '9px',
-                      border: '1px solid #7DD3FC',
-                      backgroundColor: '#F0F9FF',
-                      color: '#0369A1',
-                      fontSize: '11.5px',
-                      fontWeight: 800,
-                      cursor: selectedApp.status === 'Hồ sơ hợp lệ' ? 'default' : 'pointer',
-                      opacity: selectedApp.status === 'Hồ sơ hợp lệ' ? 0.5 : 1,
-                    }}
-                  >
-                    ✓ Hợp lệ
-                  </button>
-                  <button
-                    type="button"
-                    disabled={selectedApp.status === 'Thiếu hồ sơ'}
-                    onClick={() => {
-                      updateApplicationStatus(selectedApp.id, 'Thiếu hồ sơ', reviewerNote || undefined);
-                      setReviewerNote('');
-                    }}
-                    style={{
-                      padding: '8px 6px',
-                      borderRadius: '9px',
-                      border: '1px solid #93C5FD',
-                      backgroundColor: '#EFF6FF',
-                      color: '#1D4ED8',
-                      fontSize: '11.5px',
-                      fontWeight: 800,
-                      cursor: selectedApp.status === 'Thiếu hồ sơ' ? 'default' : 'pointer',
-                      opacity: selectedApp.status === 'Thiếu hồ sơ' ? 0.5 : 1,
-                    }}
-                  >
-                    ⚠️ Bổ sung
-                  </button>
-                  <button
-                    type="button"
-                    disabled={selectedApp.status === 'Đã bị hủy'}
-                    onClick={() => {
-                      updateApplicationStatus(selectedApp.id, 'Đã bị hủy', reviewerNote || undefined);
-                      setReviewerNote('');
-                    }}
-                    style={{
-                      padding: '8px 6px',
-                      borderRadius: '9px',
-                      border: '1px solid #FECACA',
-                      backgroundColor: '#FEF2F2',
-                      color: '#DC2626',
-                      fontSize: '11.5px',
-                      fontWeight: 800,
-                      cursor: selectedApp.status === 'Đã bị hủy' ? 'default' : 'pointer',
-                      opacity: selectedApp.status === 'Đã bị hủy' ? 0.5 : 1,
-                    }}
-                  >
-                    ✕ Từ chối
-                  </button>
+                  🔒 Hồ sơ đã kết thúc quy trình xét tuyển ({getStatusMeta(selectedApp.status).label}). Hệ thống đã khóa chuyển đổi trạng thái nhằm bảo toàn tính toàn vẹn dữ liệu.
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div style={{ marginBottom: '12px' }}>
+                    {selectedDelta < 0 && (
+                      <div
+                        style={{
+                          backgroundColor: '#FEF3C7',
+                          border: '1px solid #F59E0B',
+                          borderRadius: '10px',
+                          padding: '8px 10px',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          color: '#92400E',
+                          marginBottom: '8px',
+                        }}
+                      >
+                        ⚠️ Hồ sơ thấp hơn chuẩn ngành {formatCleanDecimal(Math.abs(selectedDelta), 2)}đ — Bắt buộc nhập căn cứ xét tuyển riêng (tối thiểu 8 ký tự) nếu xác nhận Hợp lệ hoặc Trúng tuyển.
+                      </div>
+                    )}
+                    <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                      Ghi chú phản hồi / căn cứ thẩm định gửi thí sinh:
+                    </div>
+                    <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                      {QUICK_REVIEW_NOTES.map((tpl) => (
+                        <button
+                          key={tpl}
+                          type="button"
+                          onClick={() => setReviewerNote(tpl)}
+                          style={{
+                            padding: '5px 9px',
+                            borderRadius: '8px',
+                            border: '1px solid #E2E8F0',
+                            backgroundColor: reviewerNote === tpl ? '#EFF6FF' : '#F8FAFC',
+                            color: reviewerNote === tpl ? '#1D4ED8' : '#475569',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            whiteSpace: 'normal',
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          + {tpl}
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      type="text"
+                      value={reviewerNote}
+                      onChange={(e) => setReviewerNote(e.target.value)}
+                      placeholder={
+                        selectedDelta < 0
+                          ? 'Bắt buộc nhập căn cứ xét tuyển riêng / lý do yêu cầu bổ sung / từ chối...'
+                          : 'Nhập nội dung phản hồi (bắt buộc khi Yêu cầu bổ sung hoặc Từ chối)...'
+                      }
+                      style={{
+                        width: '100%',
+                        padding: '9px 12px',
+                        borderRadius: '10px',
+                        border: selectedDelta < 0 ? '1.5px solid #F59E0B' : '1px solid #CBD5E1',
+                        fontSize: '12.5px',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+
+                  {/* FSM-Guarded Action Buttons */}
+                  {(() => {
+                    const allowed = ALLOWED_REVIEWER_TRANSITIONS[selectedApp.status] || [];
+                    const canAdmit = allowed.includes('Đã trúng tuyển');
+                    const canValid = allowed.includes('Hồ sơ hợp lệ');
+                    const canMissing = allowed.includes('Thiếu hồ sơ');
+                    const canReject = allowed.includes('Đã bị hủy');
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <button
+                          type="button"
+                          disabled={!canAdmit}
+                          title={!canAdmit ? 'Cần xác nhận Hồ sơ hợp lệ (Bước 2) trước khi duyệt trúng tuyển' : undefined}
+                          onClick={() => {
+                            updateApplicationStatus(selectedApp.id, 'Đã trúng tuyển', reviewerNote || undefined);
+                            setReviewerNote('');
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '11px',
+                            borderRadius: '11px',
+                            border: canAdmit ? 'none' : '1px solid #CBD5E1',
+                            backgroundColor: canAdmit ? '#059669' : '#F1F5F9',
+                            color: canAdmit ? '#FFFFFF' : '#64748B',
+                            fontSize: '13px',
+                            fontWeight: 800,
+                            cursor: canAdmit ? 'pointer' : 'not-allowed',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                          }}
+                        >
+                          <CheckCircle2 size={16} />
+                          {canAdmit ? 'Duyệt Trúng Tuyển Sớm' : 'Duyệt Trúng Tuyển (Cần xác nhận Hợp lệ trước)'}
+                        </button>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+                          <button
+                            type="button"
+                            disabled={!canValid}
+                            onClick={() => {
+                              updateApplicationStatus(selectedApp.id, 'Hồ sơ hợp lệ', reviewerNote || undefined);
+                              setReviewerNote('');
+                            }}
+                            style={{
+                              padding: '8px 6px',
+                              borderRadius: '9px',
+                              border: '1px solid #7DD3FC',
+                              backgroundColor: '#F0F9FF',
+                              color: '#0369A1',
+                              fontSize: '11.5px',
+                              fontWeight: 800,
+                              cursor: canValid ? 'pointer' : 'not-allowed',
+                              opacity: canValid ? 1 : 0.45,
+                            }}
+                          >
+                            ✓ Hợp lệ
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!canMissing}
+                            onClick={() => {
+                              updateApplicationStatus(selectedApp.id, 'Thiếu hồ sơ', reviewerNote || undefined);
+                              setReviewerNote('');
+                            }}
+                            style={{
+                              padding: '8px 6px',
+                              borderRadius: '9px',
+                              border: '1px solid #93C5FD',
+                              backgroundColor: '#EFF6FF',
+                              color: '#1D4ED8',
+                              fontSize: '11.5px',
+                              fontWeight: 800,
+                              cursor: canMissing ? 'pointer' : 'not-allowed',
+                              opacity: canMissing ? 1 : 0.45,
+                            }}
+                          >
+                            ⚠️ Bổ sung
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!canReject}
+                            onClick={() => {
+                              updateApplicationStatus(selectedApp.id, 'Đã bị hủy', reviewerNote || undefined);
+                              setReviewerNote('');
+                            }}
+                            style={{
+                              padding: '8px 6px',
+                              borderRadius: '9px',
+                              border: '1px solid #FECACA',
+                              backgroundColor: '#FEF2F2',
+                              color: '#DC2626',
+                              fontSize: '11.5px',
+                              fontWeight: 800,
+                              cursor: canReject ? 'pointer' : 'not-allowed',
+                              opacity: canReject ? 1 : 0.45,
+                            }}
+                          >
+                            ✕ Từ chối
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
             </div>
           )}
         </div>
@@ -1524,32 +1654,33 @@ export const AdminApp: React.FC = () => {
                       <td>
                         {isEditing ? (
                           <input
-                            type="number"
-                            step="0.25"
-                            min={12}
-                            max={30}
-                            value={editScore}
-                            onChange={(e) => setEditScore(Number(e.target.value))}
-                            style={{ width: '82px', padding: '6px 8px', borderRadius: '8px', border: '1.5px solid #2563EB', fontSize: '13px', fontWeight: 800 }}
+                            type="text"
+                            inputMode="decimal"
+                            value={editScoreText}
+                            onChange={(e) => setEditScoreText(e.target.value)}
+                            placeholder="12 - 30"
+                            style={{ width: '88px', padding: '6px 8px', borderRadius: '8px', border: '1.5px solid #2563EB', fontSize: '13px', fontWeight: 800 }}
                           />
                         ) : (
-                          <strong style={{ fontSize: '14px', color: '#2563EB' }}>{uni.score2024}đ</strong>
+                          <div>
+                            <strong style={{ fontSize: '14px', color: '#2563EB' }}>{formatCleanDecimal(uni.score2024, 2)}đ</strong>
+                            <div style={{ fontSize: '10.5px', color: '#64748B' }}>Ngành: {getCutoffRangeText(uni)}</div>
+                          </div>
                         )}
                       </td>
                       <td>
                         {isEditing ? (
                           <input
-                            type="number"
-                            step="1"
-                            min={0}
-                            max={150}
-                            value={editTuition}
-                            onChange={(e) => setEditTuition(Number(e.target.value))}
-                            style={{ width: '82px', padding: '6px 8px', borderRadius: '8px', border: '1.5px solid #2563EB', fontSize: '13px', fontWeight: 800 }}
+                            type="text"
+                            inputMode="decimal"
+                            value={editTuitionText}
+                            onChange={(e) => setEditTuitionText(e.target.value)}
+                            placeholder="0 - 200"
+                            style={{ width: '88px', padding: '6px 8px', borderRadius: '8px', border: '1.5px solid #2563EB', fontSize: '13px', fontWeight: 800 }}
                           />
                         ) : (
                           <span style={{ fontWeight: 700, color: '#0F172A' }}>
-                            {uni.tuitionMin} – {uni.tuitionMax} tr
+                            {formatTuitionRange(uni.tuitionMin, uni.tuitionMax, false)}
                           </span>
                         )}
                       </td>
@@ -1580,8 +1711,8 @@ export const AdminApp: React.FC = () => {
                             type="button"
                             onClick={() => {
                               setEditingUniId(uni.id);
-                              setEditScore(uni.score2024);
-                              setEditTuition(uni.tuitionMin);
+                              setEditScoreText(formatCleanDecimal(uni.score2024, 2));
+                              setEditTuitionText(formatCleanDecimal(uni.tuitionMin, 1));
                             }}
                             style={{
                               padding: '6px 12px',
@@ -1624,13 +1755,13 @@ export const AdminApp: React.FC = () => {
                   </div>
                   {!isEditing ? (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12.5px' }}>
-                      <span>Điểm chuẩn: <strong style={{ color: '#2563EB' }}>{uni.score2024}đ</strong> · Học phí: <strong>{uni.tuitionMin}tr</strong></span>
+                      <span>Chuẩn TK: <strong style={{ color: '#2563EB' }}>{formatCleanDecimal(uni.score2024, 2)}đ</strong> · Học phí: <strong>{formatTuitionRange(uni.tuitionMin, uni.tuitionMax, false)}</strong></span>
                       <button
                         type="button"
                         onClick={() => {
                           setEditingUniId(uni.id);
-                          setEditScore(uni.score2024);
-                          setEditTuition(uni.tuitionMin);
+                          setEditScoreText(formatCleanDecimal(uni.score2024, 2));
+                          setEditTuitionText(formatCleanDecimal(uni.tuitionMin, 1));
                         }}
                         style={{ padding: '5px 10px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#2563EB', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer' }}
                       >
@@ -1638,11 +1769,14 @@ export const AdminApp: React.FC = () => {
                       </button>
                     </div>
                   ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '8px', alignItems: 'center' }}>
-                      <input type="number" step="0.25" value={editScore} onChange={(e) => setEditScore(Number(e.target.value))} style={{ width: '100%', padding: '7px', borderRadius: '8px', border: '1px solid #2563EB' }} />
-                      <input type="number" step="1" value={editTuition} onChange={(e) => setEditTuition(Number(e.target.value))} style={{ width: '100%', padding: '7px', borderRadius: '8px', border: '1px solid #2563EB' }} />
-                      <button type="button" onClick={() => handleSaveUni(uni.id)} style={{ padding: '7px 12px', borderRadius: '8px', border: 'none', backgroundColor: '#059669', color: '#FFFFFF', fontWeight: 800 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '6px', alignItems: 'center' }}>
+                      <input type="text" inputMode="decimal" value={editScoreText} onChange={(e) => setEditScoreText(e.target.value)} placeholder="12-30" style={{ width: '100%', padding: '7px', borderRadius: '8px', border: '1px solid #2563EB', fontWeight: 700 }} />
+                      <input type="text" inputMode="decimal" value={editTuitionText} onChange={(e) => setEditTuitionText(e.target.value)} placeholder="0-200" style={{ width: '100%', padding: '7px', borderRadius: '8px', border: '1px solid #2563EB', fontWeight: 700 }} />
+                      <button type="button" onClick={() => handleSaveUni(uni.id)} style={{ padding: '7px 11px', borderRadius: '8px', border: 'none', backgroundColor: '#059669', color: '#FFFFFF', fontWeight: 800, cursor: 'pointer' }}>
                         Lưu
+                      </button>
+                      <button type="button" onClick={() => setEditingUniId(null)} style={{ padding: '7px 9px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#475569', fontWeight: 700, cursor: 'pointer' }}>
+                        Hủy
                       </button>
                     </div>
                   )}

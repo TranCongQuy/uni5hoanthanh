@@ -24,8 +24,24 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import type { BookingState } from '../../context/AppContext';
-import { getStatusMeta } from '../../types';
+import {
+  CANCELLED_STATUS_FILTER_LABEL,
+  getStatusMeta,
+  isCancelledStatus,
+  isTerminalStatus,
+} from '../../types';
 import type { ApplicationRecord, ApplicationStatus } from '../../types';
+import {
+  ALLOWED_REVIEWER_TRANSITIONS,
+  getMajorCutoffForApp,
+} from '../../services/ApplicationWorkflow';
+import {
+  formatCleanDecimal,
+  formatTuitionRange,
+  parseViDateTimeToMs,
+  sanitizeCsvCell,
+} from '../../utils/validation';
+import { getCutoffRangeText } from '../../data/MockData';
 import { UniversityAvatar } from '../common/UI';
 import { AccountRoleMenu } from '../common/AccountRoleMenu';
 
@@ -77,9 +93,20 @@ const StatusBadge: React.FC<{ status: ApplicationStatus }> = ({ status }) => {
 
 const exportAppsCsv = (rows: ApplicationRecord[], filename: string) => {
   const header = 'Mã hồ sơ,Thí sinh,Trường,Ngành,Điểm,Trạng thái,SĐT,Email,Ngày nộp';
-  const esc = (v: unknown) => `"${String(v).replace(/"/g, '""')}"`;
   const lines = rows.map((a) =>
-    [a.code, a.candidateName, a.uniName, a.major, a.score, a.status, a.phone, a.email, a.submittedAt].map(esc).join(',')
+    [
+      a.code,
+      a.candidateName,
+      a.uniName,
+      a.major,
+      formatCleanDecimal(a.score, 2),
+      getStatusMeta(a.status).label,
+      a.phone,
+      a.email,
+      a.submittedAt,
+    ]
+      .map(sanitizeCsvCell)
+      .join(',')
   );
   const blob = new Blob(['\uFEFF' + header + '\n' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -127,10 +154,10 @@ export const UniversityApp: React.FC = () => {
   const [appSort, setAppSort] = useState<AppSort>('list');
   const [mobileBkTab, setMobileBkTab] = useState<BookingState>('pending');
 
-  // PXU Cutoff & Tuition inline editor
+  // PXU Cutoff & Tuition inline editor (decimal text inputs supporting both . and ,)
   const [isEditingPxu, setIsEditingPxu] = useState(false);
-  const [pxuScoreInput, setPxuScoreInput] = useState<number>(18.5);
-  const [pxuTuitionInput, setPxuTuitionInput] = useState<number>(18);
+  const [pxuScoreText, setPxuScoreText] = useState<string>('24.5');
+  const [pxuTuitionText, setPxuTuitionText] = useState<string>('18');
 
   // Strict PXU Data Isolation
   const pxuUni = universitiesList.find((u) => u.code === 'PXU');
@@ -146,16 +173,20 @@ export const UniversityApp: React.FC = () => {
   const countByStatus = (s: ApplicationStatus) => pxuApps.filter((a) => a.status === s).length;
   const pendingApps = pxuApps.filter((a) => a.status === 'Đang xét duyệt');
   const missingApps = pxuApps.filter((a) => a.status === 'Thiếu hồ sơ');
+  const pxuActionQueue = pxuApps.filter((a) => a.status === 'Đang xét duyệt' || a.status === 'Thiếu hồ sơ');
   const validCount = countByStatus('Hồ sơ hợp lệ');
   const admittedCount = countByStatus('Đã trúng tuyển');
+  const cancelledCount = pxuApps.filter((a) => isCancelledStatus(a.status)).length;
 
-  const getPxuMajorCutoff = (major: string): number => {
-    if (!pxuUni) return 18.5;
-    return pxuUni.cutoffScores[major] ?? pxuUni.score2024;
-  };
+  const getPxuMajorCutoff = (major: string): number => getMajorCutoffForApp(pxuUni, major);
 
   const filteredApps = pxuApps.filter((a) => {
-    const matchStatus = appStatus === 'Tất cả' || a.status === appStatus;
+    const matchStatus =
+      appStatus === 'Tất cả'
+        ? true
+        : appStatus === CANCELLED_STATUS_FILTER_LABEL || appStatus === 'Đã bị hủy'
+        ? isCancelledStatus(a.status)
+        : a.status === appStatus;
     const matchMajor = appMajor === 'Tất cả' || a.major === appMajor;
     const kw = appSearch.trim().toLowerCase();
     const matchKw =
@@ -170,11 +201,11 @@ export const UniversityApp: React.FC = () => {
     if (appSort === 'scoreDesc') return b.score - a.score;
     if (appSort === 'scoreAsc') return a.score - b.score;
     if (appSort === 'nameAsc') return a.candidateName.localeCompare(b.candidateName, 'vi');
-    return 0;
+    return parseViDateTimeToMs(b.submittedAt, b.submittedAtISO) - parseViDateTimeToMs(a.submittedAt, a.submittedAtISO);
   });
 
   const selectedApp: ApplicationRecord | null =
-    pxuApps.find((a) => a.id === selectedAppId) || pendingApps[0] || sortedApps[0] || pxuApps[0] || null;
+    pxuApps.find((a) => a.id === selectedAppId) || sortedApps[0] || pendingApps[0] || pxuApps[0] || null;
 
   const selectAppForReview = (app: ApplicationRecord, switchTab = false) => {
     setSelectedAppId(app.id);
@@ -235,8 +266,9 @@ export const UniversityApp: React.FC = () => {
             Trường Đại học Phú Xuân (PXU) — Kỳ Tuyển Sinh 2026
           </h2>
           <p style={{ margin: 0, fontSize: '13px', color: '#D1FAE5', lineHeight: 1.55 }}>
-            Đào tạo thực chiến gắn liền doanh nghiệp (OJT ngay từ năm nhất) tại Cố đô Huế · Điểm chuẩn tham chiếu hiện hành:{' '}
-            <strong>{pxuUni?.score2024 ?? 18.5}đ</strong> · Học phí: <strong>{pxuUni?.tuitionMin ?? 18}–{pxuUni?.tuitionMax ?? 22} triệu/năm</strong>.
+            Đào tạo thực chiến gắn liền doanh nghiệp (OJT ngay từ năm nhất) tại Cố đô Huế · Chuẩn các ngành:{' '}
+            <strong>{pxuUni ? getCutoffRangeText(pxuUni) : '21–24.5đ'}</strong> (TK 2024: {pxuUni ? formatCleanDecimal(pxuUni.score2024, 2) : '24.5'}đ) · Học phí:{' '}
+            <strong>{pxuUni ? formatTuitionRange(pxuUni.tuitionMin, pxuUni.tuitionMax, true) : '18–22 triệu/năm'}</strong>.
           </p>
         </div>
 
@@ -365,7 +397,7 @@ export const UniversityApp: React.FC = () => {
           <div style={{ padding: '18px 20px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
             <div>
               <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-                Thí sinh Đăng ký PXU Cần Xét Duyệt ({pendingApps.length + missingApps.length})
+                Thí sinh Đăng ký PXU Cần Xét Duyệt ({pxuActionQueue.length})
               </h3>
               <p style={{ margin: '2px 0 0', fontSize: '12.5px', color: '#64748B' }}>
                 Hệ thống tự động đối chiếu điểm xét tuyển với điểm chuẩn ngành PXU & đề xuất Học bổng OJT
@@ -380,9 +412,9 @@ export const UniversityApp: React.FC = () => {
             </button>
           </div>
 
-          {pxuApps.length === 0 ? (
+          {pxuActionQueue.length === 0 ? (
             <div style={{ padding: '32px 20px', textAlign: 'center', color: '#64748B', fontSize: '13.5px' }}>
-              Chưa có hồ sơ nào nộp vào ĐH Phú Xuân.
+              🎉 Toàn bộ hồ sơ chờ duyệt / chờ bổ sung của ĐH Phú Xuân đã được xử lý xong!
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
@@ -391,13 +423,13 @@ export const UniversityApp: React.FC = () => {
                   <tr>
                     <th>Thí sinh</th>
                     <th>Ngành đăng ký tại PXU</th>
-                    <th>Đối chiếu Điểm chuẩn</th>
+                    <th>Đối chiếu Chuẩn ngành</th>
                     <th>Trạng thái</th>
                     <th style={{ textAlign: 'right' }}>Xét duyệt</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {pxuApps.slice(0, 6).map((app) => {
+                  {pxuActionQueue.slice(0, 6).map((app) => {
                     const cutoff = getPxuMajorCutoff(app.major);
                     const delta = +(app.score - cutoff).toFixed(2);
                     return (
@@ -412,10 +444,10 @@ export const UniversityApp: React.FC = () => {
                         </td>
                         <td>
                           <div style={{ fontWeight: 800, color: '#0F172A' }}>
-                            {app.score}đ <span style={{ fontSize: '11.5px', fontWeight: 500, color: '#94A3B8' }}>/ Chuẩn {cutoff}đ</span>
+                            {formatCleanDecimal(app.score, 2)}đ <span style={{ fontSize: '11.5px', fontWeight: 500, color: '#94A3B8' }}>/ Chuẩn ngành {formatCleanDecimal(cutoff, 2)}đ</span>
                           </div>
                           <span style={{ fontSize: '11px', fontWeight: 800, color: delta >= 4 ? '#047857' : delta >= 0 ? EMERALD : '#D97706' }}>
-                            {delta >= 4 ? `🌟 +${delta}đ (Đề xuất HB OJT)` : delta >= 0 ? `✓ +${delta}đ Đạt chuẩn` : `${delta}đ Cần xét HBạ`}
+                            {delta >= 4 ? `🌟 +${formatCleanDecimal(delta, 2)}đ (Đề xuất HB OJT)` : delta >= 0 ? `✓ +${formatCleanDecimal(delta, 2)}đ Đạt chuẩn` : `${formatCleanDecimal(delta, 2)}đ Dưới chuẩn`}
                           </span>
                         </td>
                         <td>
@@ -563,9 +595,14 @@ export const UniversityApp: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-            {['Tất cả', 'Đang xét duyệt', 'Hồ sơ hợp lệ', 'Đã trúng tuyển', 'Thiếu hồ sơ', 'Đã bị hủy'].map((st) => {
+            {['Tất cả', 'Đang xét duyệt', 'Hồ sơ hợp lệ', 'Đã trúng tuyển', 'Thiếu hồ sơ', CANCELLED_STATUS_FILTER_LABEL].map((st) => {
               const active = appStatus === st;
-              const cnt = st === 'Tất cả' ? pxuApps.length : countByStatus(st as ApplicationStatus);
+              const cnt =
+                st === 'Tất cả'
+                  ? pxuApps.length
+                  : st === CANCELLED_STATUS_FILTER_LABEL
+                  ? cancelledCount
+                  : countByStatus(st as ApplicationStatus);
               return (
                 <button
                   key={st}
@@ -717,106 +754,165 @@ export const UniversityApp: React.FC = () => {
                 )}
               </div>
 
-              {/* 1-Click PXU Quick Reply Chips */}
-              <div style={{ marginBottom: '12px' }}>
-                <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
-                  Mẫu phản hồi nhanh của Ban Tuyển sinh ĐH Phú Xuân:
-                </div>
-                <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                  {PXU_QUICK_NOTES.map((tpl) => (
-                    <button
-                      key={tpl}
-                      type="button"
-                      onClick={() => setReviewerNote(tpl)}
-                      style={{
-                        padding: '4px 8px',
-                        borderRadius: '7px',
-                        border: reviewerNote === tpl ? `1px solid ${EMERALD}` : '1px solid #E2E8F0',
-                        backgroundColor: reviewerNote === tpl ? '#ECFDF5' : '#F8FAFC',
-                        color: reviewerNote === tpl ? EMERALD_DARK : '#475569',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                      }}
-                    >
-                      + {tpl.length > 38 ? tpl.slice(0, 38) + '…' : tpl}
-                    </button>
-                  ))}
-                </div>
-                <input
-                  type="text"
-                  value={reviewerNote}
-                  onChange={(e) => setReviewerNote(e.target.value)}
-                  placeholder="Nhập lời nhắn gửi trực tiếp tới thí sinh đăng ký PXU..."
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '12.5px', boxSizing: 'border-box' }}
-                />
-              </div>
-
-              {/* Hierarchical Action Buttons */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button
-                  type="button"
-                  disabled={selectedApp.status === 'Đã trúng tuyển'}
-                  onClick={() => {
-                    updateApplicationStatus(selectedApp.id, 'Đã trúng tuyển', reviewerNote || undefined);
-                    setReviewerNote('');
-                  }}
+              {/* 1-Click PXU Quick Reply Chips & FSM-Guarded Decision Actions */}
+              {isTerminalStatus(selectedApp.status) ? (
+                <div
                   style={{
-                    width: '100%',
-                    padding: '11px',
-                    borderRadius: '11px',
-                    border: 'none',
-                    backgroundColor: selectedApp.status === 'Đã trúng tuyển' ? '#A7F3D0' : EMERALD,
-                    color: '#FFFFFF',
-                    fontSize: '13.5px',
-                    fontWeight: 800,
-                    cursor: selectedApp.status === 'Đã trúng tuyển' ? 'default' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
+                    backgroundColor: '#F1F5F9',
+                    border: '1px solid #CBD5E1',
+                    borderRadius: '12px',
+                    padding: '12px 14px',
+                    fontSize: '12.5px',
+                    color: '#334155',
+                    fontWeight: 700,
+                    lineHeight: 1.5,
                   }}
                 >
-                  <CheckCircle2 size={16} /> Duyệt Trúng Tuyển ĐH Phú Xuân
-                </button>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
-                  <button
-                    type="button"
-                    disabled={selectedApp.status === 'Hồ sơ hợp lệ'}
-                    onClick={() => {
-                      updateApplicationStatus(selectedApp.id, 'Hồ sơ hợp lệ', reviewerNote || undefined);
-                      setReviewerNote('');
-                    }}
-                    style={{ padding: '8px 6px', borderRadius: '9px', border: '1px solid #7DD3FC', backgroundColor: '#F0F9FF', color: '#0369A1', fontSize: '11.5px', fontWeight: 800, cursor: 'pointer', opacity: selectedApp.status === 'Hồ sơ hợp lệ' ? 0.5 : 1 }}
-                  >
-                    ✓ Hợp lệ
-                  </button>
-                  <button
-                    type="button"
-                    disabled={selectedApp.status === 'Thiếu hồ sơ'}
-                    onClick={() => {
-                      updateApplicationStatus(selectedApp.id, 'Thiếu hồ sơ', reviewerNote || undefined);
-                      setReviewerNote('');
-                    }}
-                    style={{ padding: '8px 6px', borderRadius: '9px', border: '1px solid #93C5FD', backgroundColor: '#EFF6FF', color: '#1D4ED8', fontSize: '11.5px', fontWeight: 800, cursor: 'pointer', opacity: selectedApp.status === 'Thiếu hồ sơ' ? 0.5 : 1 }}
-                  >
-                    ⚠️ Bổ sung
-                  </button>
-                  <button
-                    type="button"
-                    disabled={selectedApp.status === 'Đã bị hủy'}
-                    onClick={() => {
-                      updateApplicationStatus(selectedApp.id, 'Đã bị hủy', reviewerNote || undefined);
-                      setReviewerNote('');
-                    }}
-                    style={{ padding: '8px 6px', borderRadius: '9px', border: '1px solid #FECACA', backgroundColor: '#FEF2F2', color: '#DC2626', fontSize: '11.5px', fontWeight: 800, cursor: 'pointer', opacity: selectedApp.status === 'Đã bị hủy' ? 0.5 : 1 }}
-                  >
-                    ✕ Từ chối
-                  </button>
+                  🔒 Hồ sơ đã kết thúc quy trình xét tuyển ({getStatusMeta(selectedApp.status).label}). Trạng thái đã được khóa cố định, không thể chuyển đổi lại.
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div style={{ marginBottom: '12px' }}>
+                    {selectedDelta < 0 && (
+                      <div
+                        style={{
+                          backgroundColor: '#FEF3C7',
+                          border: '1px solid #F59E0B',
+                          borderRadius: '10px',
+                          padding: '8px 10px',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          color: '#92400E',
+                          marginBottom: '8px',
+                        }}
+                      >
+                        ⚠️ Hồ sơ thấp hơn chuẩn ngành {formatCleanDecimal(Math.abs(selectedDelta), 2)}đ — Bắt buộc nhập căn cứ xét tuyển riêng (tối thiểu 8 ký tự) nếu xác nhận Hợp lệ hoặc Trúng tuyển.
+                      </div>
+                    )}
+                    <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                      Mẫu phản hồi nhanh / căn cứ xét duyệt của Ban Tuyển sinh ĐH Phú Xuân:
+                    </div>
+                    <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                      {PXU_QUICK_NOTES.map((tpl) => (
+                        <button
+                          key={tpl}
+                          type="button"
+                          onClick={() => setReviewerNote(tpl)}
+                          style={{
+                            padding: '5px 9px',
+                            borderRadius: '8px',
+                            border: reviewerNote === tpl ? `1px solid ${EMERALD}` : '1px solid #E2E8F0',
+                            backgroundColor: reviewerNote === tpl ? '#ECFDF5' : '#F8FAFC',
+                            color: reviewerNote === tpl ? EMERALD_DARK : '#475569',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            whiteSpace: 'normal',
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          + {tpl}
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      type="text"
+                      value={reviewerNote}
+                      onChange={(e) => setReviewerNote(e.target.value)}
+                      placeholder={
+                        selectedDelta < 0
+                          ? 'Bắt buộc nhập căn cứ xét học bạ / xét tuyển riêng hoặc lý do bổ sung...'
+                          : 'Nhập lời nhắn gửi trực tiếp tới thí sinh đăng ký PXU...'
+                      }
+                      style={{
+                        width: '100%',
+                        padding: '9px 12px',
+                        borderRadius: '10px',
+                        border: selectedDelta < 0 ? '1.5px solid #F59E0B' : '1px solid #CBD5E1',
+                        fontSize: '12.5px',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+
+                  {/* FSM-Guarded Action Buttons */}
+                  {(() => {
+                    const allowed = ALLOWED_REVIEWER_TRANSITIONS[selectedApp.status] || [];
+                    const canAdmit = allowed.includes('Đã trúng tuyển');
+                    const canValid = allowed.includes('Hồ sơ hợp lệ');
+                    const canMissing = allowed.includes('Thiếu hồ sơ');
+                    const canReject = allowed.includes('Đã bị hủy');
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <button
+                          type="button"
+                          disabled={!canAdmit}
+                          title={!canAdmit ? 'Cần xác nhận Hồ sơ hợp lệ trước khi duyệt trúng tuyển' : undefined}
+                          onClick={() => {
+                            updateApplicationStatus(selectedApp.id, 'Đã trúng tuyển', reviewerNote || undefined);
+                            setReviewerNote('');
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '11px',
+                            borderRadius: '11px',
+                            border: canAdmit ? 'none' : '1px solid #CBD5E1',
+                            backgroundColor: canAdmit ? EMERALD : '#F1F5F9',
+                            color: canAdmit ? '#FFFFFF' : '#64748B',
+                            fontSize: '13px',
+                            fontWeight: 800,
+                            cursor: canAdmit ? 'pointer' : 'not-allowed',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                          }}
+                        >
+                          <CheckCircle2 size={16} />
+                          {canAdmit ? 'Duyệt Trúng Tuyển ĐH Phú Xuân' : 'Duyệt Trúng Tuyển (Cần xác nhận Hợp lệ trước)'}
+                        </button>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+                          <button
+                            type="button"
+                            disabled={!canValid}
+                            onClick={() => {
+                              updateApplicationStatus(selectedApp.id, 'Hồ sơ hợp lệ', reviewerNote || undefined);
+                              setReviewerNote('');
+                            }}
+                            style={{ padding: '8px 6px', borderRadius: '9px', border: '1px solid #7DD3FC', backgroundColor: '#F0F9FF', color: '#0369A1', fontSize: '11.5px', fontWeight: 800, cursor: canValid ? 'pointer' : 'not-allowed', opacity: canValid ? 1 : 0.45 }}
+                          >
+                            ✓ Hợp lệ
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!canMissing}
+                            onClick={() => {
+                              updateApplicationStatus(selectedApp.id, 'Thiếu hồ sơ', reviewerNote || undefined);
+                              setReviewerNote('');
+                            }}
+                            style={{ padding: '8px 6px', borderRadius: '9px', border: '1px solid #93C5FD', backgroundColor: '#EFF6FF', color: '#1D4ED8', fontSize: '11.5px', fontWeight: 800, cursor: canMissing ? 'pointer' : 'not-allowed', opacity: canMissing ? 1 : 0.45 }}
+                          >
+                            ⚠️ Bổ sung
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!canReject}
+                            onClick={() => {
+                              updateApplicationStatus(selectedApp.id, 'Đã bị hủy', reviewerNote || undefined);
+                              setReviewerNote('');
+                            }}
+                            style={{ padding: '8px 6px', borderRadius: '9px', border: '1px solid #FECACA', backgroundColor: '#FEF2F2', color: '#DC2626', fontSize: '11.5px', fontWeight: 800, cursor: canReject ? 'pointer' : 'not-allowed', opacity: canReject ? 1 : 0.45 }}
+                          >
+                            ✕ Từ chối
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
             </div>
           )}
         </div>
@@ -943,8 +1039,8 @@ export const UniversityApp: React.FC = () => {
                   Cấu hình Điểm chuẩn & Học phí Tuyển sinh ĐH Phú Xuân
                 </h2>
                 <div style={{ fontSize: '13px', color: '#475569' }}>
-                  Điểm chuẩn tham chiếu hiện tại: <strong style={{ color: EMERALD }}>{pxuUni.score2024}đ</strong> · Học phí sàn:{' '}
-                  <strong>{pxuUni.tuitionMin} triệu/năm</strong> · Việc làm sau tốt nghiệp: <strong>{pxuUni.employmentRate}%</strong>
+                  Chuẩn các ngành: <strong style={{ color: EMERALD }}>{getCutoffRangeText(pxuUni)}</strong> (Tham chiếu 2024: {formatCleanDecimal(pxuUni.score2024, 2)}đ) · Học phí:{' '}
+                  <strong>{formatTuitionRange(pxuUni.tuitionMin, pxuUni.tuitionMax, true)}</strong> · Việc làm sau tốt nghiệp: <strong>{pxuUni.employmentRate}%</strong>
                 </div>
               </div>
             </div>
@@ -953,8 +1049,8 @@ export const UniversityApp: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  setPxuScoreInput(pxuUni.score2024);
-                  setPxuTuitionInput(pxuUni.tuitionMin);
+                  setPxuScoreText(formatCleanDecimal(pxuUni.score2024, 2));
+                  setPxuTuitionText(formatCleanDecimal(pxuUni.tuitionMin, 1));
                   setIsEditingPxu(true);
                 }}
                 style={{
@@ -979,26 +1075,24 @@ export const UniversityApp: React.FC = () => {
           {isEditingPxu && (
             <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #D1FAE5', display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr auto' : '1fr', gap: '12px', alignItems: 'end' }}>
               <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
-                Điểm chuẩn tham chiếu PXU (tự động dịch chuyển điểm các ngành sang AI Matching)
+                Điểm chuẩn tham chiếu PXU (12–30đ, hỗ trợ dấu chấm hoặc dấu phẩy)
                 <input
-                  type="number"
-                  step="0.25"
-                  min={12}
-                  max={30}
-                  value={pxuScoreInput}
-                  onChange={(e) => setPxuScoreInput(Number(e.target.value))}
+                  type="text"
+                  inputMode="decimal"
+                  value={pxuScoreText}
+                  onChange={(e) => setPxuScoreText(e.target.value)}
+                  placeholder="VD: 24.5"
                   style={{ display: 'block', width: '100%', marginTop: '5px', padding: '9px 12px', borderRadius: '10px', border: `1.5px solid ${EMERALD}`, fontSize: '14px', fontWeight: 800, backgroundColor: '#FFFFFF', boxSizing: 'border-box' }}
                 />
               </label>
               <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
-                Học phí tối thiểu (triệu VNĐ/năm)
+                Học phí tối thiểu (0–200 triệu VNĐ/năm)
                 <input
-                  type="number"
-                  step="1"
-                  min={0}
-                  max={100}
-                  value={pxuTuitionInput}
-                  onChange={(e) => setPxuTuitionInput(Number(e.target.value))}
+                  type="text"
+                  inputMode="decimal"
+                  value={pxuTuitionText}
+                  onChange={(e) => setPxuTuitionText(e.target.value)}
+                  placeholder="VD: 18"
                   style={{ display: 'block', width: '100%', marginTop: '5px', padding: '9px 12px', borderRadius: '10px', border: `1.5px solid ${EMERALD}`, fontSize: '14px', fontWeight: 800, backgroundColor: '#FFFFFF', boxSizing: 'border-box' }}
                 />
               </label>
@@ -1006,8 +1100,10 @@ export const UniversityApp: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    updateUniversityMetrics(pxuUni.id, pxuScoreInput, pxuTuitionInput);
-                    setIsEditingPxu(false);
+                    const ok = updateUniversityMetrics(pxuUni.id, pxuScoreText, pxuTuitionText);
+                    if (ok) {
+                      setIsEditingPxu(false);
+                    }
                   }}
                   style={{ padding: '10px 16px', borderRadius: '10px', border: 'none', backgroundColor: EMERALD, color: '#FFFFFF', fontSize: '13px', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                 >
@@ -1040,7 +1136,7 @@ export const UniversityApp: React.FC = () => {
                     <GraduationCap size={20} color={EMERALD} />
                   </div>
                   <span style={{ padding: '4px 10px', borderRadius: '999px', backgroundColor: '#ECFDF5', color: EMERALD_DARK, fontSize: '12px', fontWeight: 800 }}>
-                    Chuẩn: {cutoff}đ
+                    Chuẩn ngành: {formatCleanDecimal(cutoff, 2)}đ
                   </span>
                 </div>
 

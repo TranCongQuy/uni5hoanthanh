@@ -1,7 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, FileText, ArrowRight } from 'lucide-react';
+import { X, CheckCircle2, FileText, ArrowRight, AlertTriangle } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../common/UI';
+import {
+  MAX_ACTIVE_APPLICATIONS,
+  getMajorCutoffForApp,
+  validateNewApplicationSubmission,
+} from '../../services/ApplicationWorkflow';
+import { isTerminalStatus } from '../../types';
+import {
+  formatCleanDecimal,
+  validateStudentScore,
+  validateVietnamPhone,
+} from '../../utils/validation';
+
+const ADMISSION_METHODS = [
+  'Xét điểm thi tốt nghiệp THPT năm 2026',
+  'Xét học bạ THPT (5 học kỳ)',
+  'Xét điểm thi Đánh giá năng lực ĐHQG',
+];
 
 export const ApplyDemoModal: React.FC = () => {
   const {
@@ -9,57 +26,126 @@ export const ApplyDemoModal: React.FC = () => {
     closeApplyDemo,
     applyDemoTargetUni,
     user,
+    isLoggedIn,
+    isGuest,
     profile,
+    myApplications,
     addApplication,
     setActiveTab,
     closeUniDetail,
+    openAuthModal,
     viewMode,
   } = useApp();
 
   const isDesktop = viewMode === 'desktop';
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedMajor, setSelectedMajor] = useState<string>('');
-  const [admissionMethod, setAdmissionMethod] = useState<string>('Xét điểm thi tốt nghiệp THPT năm 2026');
+  const [admissionMethod, setAdmissionMethod] = useState<string>(ADMISSION_METHODS[0]);
+  const [candidateName, setCandidateName] = useState<string>('');
+  const [phone, setPhone] = useState<string>('');
+  const [scoreText, setScoreText] = useState<string>('');
+  const [errorMsg, setErrorMsg] = useState<string>('');
+  const [createdCode, setCreatedCode] = useState<string>('');
 
+  // Complete state reset whenever modal opens/closes or target university changes (fixes B.6)
   useEffect(() => {
-    if (isApplyDemoOpen) {
-      setStep(1);
-      setSelectedMajor('');
-      setAdmissionMethod('Xét điểm thi tốt nghiệp THPT năm 2026');
-    }
-  }, [isApplyDemoOpen, applyDemoTargetUni?.id]);
+    setStep(1);
+    setSelectedMajor(applyDemoTargetUni?.majors[0] || '');
+    setAdmissionMethod(ADMISSION_METHODS[0]);
+    setCandidateName(profile.name || user.name || '');
+    setPhone(profile.phone || '');
+    setScoreText(
+      profile.expectedScore > 0 ? formatCleanDecimal(profile.expectedScore, 2) : ''
+    );
+    setErrorMsg('');
+    setCreatedCode('');
+  }, [isApplyDemoOpen, applyDemoTargetUni, profile.name, profile.phone, profile.expectedScore, user.name]);
 
   if (!isApplyDemoOpen || !applyDemoTargetUni) return null;
 
-  const currentMajor = selectedMajor || applyDemoTargetUni.majors[0];
+  // Ensure selectedMajor always belongs to the current university (never leaks from previous uni)
+  const currentMajor = applyDemoTargetUni.majors.includes(selectedMajor)
+    ? selectedMajor
+    : applyDemoTargetUni.majors[0] || '';
+
+  const activeWishCount = myApplications.filter((a) => !isTerminalStatus(a.status)).length;
+  const precheck = validateNewApplicationSubmission(
+    myApplications,
+    user.email,
+    applyDemoTargetUni.id,
+    currentMajor
+  );
+  const majorCutoff = getMajorCutoffForApp(applyDemoTargetUni, currentMajor);
 
   const handleNext = () => {
+    setErrorMsg('');
+
+    if (!isLoggedIn || isGuest || user.role !== 'student') {
+      closeApplyDemo();
+      openAuthModal();
+      return;
+    }
+
     if (step === 1) {
+      if (!currentMajor) {
+        setErrorMsg('Vui lòng chọn ngành đăng ký xét tuyển.');
+        return;
+      }
+      if (!precheck.ok) {
+        setErrorMsg(precheck.error || 'Không thể tiếp tục với ngành này.');
+        return;
+      }
       setStep(2);
-    } else if (step === 2) {
-      // Save application
-      addApplication({
+      return;
+    }
+
+    if (step === 2) {
+      if (candidateName.trim().length < 2) {
+        setErrorMsg('Vui lòng nhập họ và tên thí sinh hợp lệ (tối thiểu 2 ký tự).');
+        return;
+      }
+      const phoneCheck = validateVietnamPhone(phone);
+      if (!phoneCheck.ok) {
+        setErrorMsg(phoneCheck.error || 'Số điện thoại không hợp lệ.');
+        return;
+      }
+      const scoreCheck = validateStudentScore(scoreText);
+      if (!scoreCheck.ok || scoreCheck.value === undefined) {
+        setErrorMsg(scoreCheck.error || 'Điểm xét tuyển không hợp lệ.');
+        return;
+      }
+      if (!precheck.ok) {
+        setErrorMsg(precheck.error || 'Không thể nộp trùng nguyện vọng.');
+        return;
+      }
+
+      const created = addApplication({
         uniId: applyDemoTargetUni.id,
         uniName: applyDemoTargetUni.name,
         uniCode: applyDemoTargetUni.code,
         major: currentMajor,
-        candidateName: profile.name || user.name || 'Thí sinh UniPath',
-        phone: profile.phone || '0912 345 678',
-        email: user.email || profile.email,
-        score: profile.expectedScore || 24.5,
+        candidateName: candidateName.trim(),
+        phone: phone.trim(),
+        email: user.email,
+        score: scoreCheck.value,
         notes: `Phương thức: ${admissionMethod}. Đăng ký xét tuyển trực tuyến qua UniPath.`,
       });
-      setStep(3);
-    } else {
-      closeApplyDemo();
-      setStep(1);
+
+      if (created) {
+        setCreatedCode(created.code);
+        setStep(3);
+      }
+      return;
     }
+
+    closeApplyDemo();
+    setStep(1);
   };
 
   const handleGoToProfile = () => {
     closeApplyDemo();
     closeUniDetail();
-    setActiveTab(4); // Switch to ProfileTab
+    setActiveTab(4);
     setStep(1);
   };
 
@@ -103,19 +189,37 @@ export const ApplyDemoModal: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            gap: '12px',
           }}
         >
           <div>
-            <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#0F172A' }}>
-              Nộp hồ sơ xét tuyển — Bước {step}/3
-            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#0F172A' }}>
+                Nộp hồ sơ xét tuyển — Bước {step}/3
+              </h3>
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                  backgroundColor: activeWishCount >= MAX_ACTIVE_APPLICATIONS ? '#FEF2F2' : '#EFF6FF',
+                  color: activeWishCount >= MAX_ACTIVE_APPLICATIONS ? '#DC2626' : '#1D4ED8',
+                  border: `1px solid ${activeWishCount >= MAX_ACTIVE_APPLICATIONS ? '#FECACA' : '#BFDBFE'}`,
+                }}
+              >
+                Nguyện vọng: {activeWishCount}/{MAX_ACTIVE_APPLICATIONS}
+              </span>
+            </div>
             <span style={{ fontSize: '12px', color: '#2563EB', fontWeight: 600 }}>
               {applyDemoTargetUni.name} ({applyDemoTargetUni.code})
             </span>
           </div>
 
           <button
+            type="button"
             onClick={closeApplyDemo}
+            aria-label="Đóng hộp thoại nộp hồ sơ"
             style={{
               width: '36px',
               height: '36px',
@@ -127,6 +231,7 @@ export const ApplyDemoModal: React.FC = () => {
               justifyContent: 'center',
               cursor: 'pointer',
               color: '#64748B',
+              flexShrink: 0,
             }}
           >
             <X size={18} />
@@ -134,7 +239,28 @@ export const ApplyDemoModal: React.FC = () => {
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 96px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 104px' }}>
+          {(errorMsg || (step < 3 && !precheck.ok)) && (
+            <div
+              style={{
+                backgroundColor: '#FEF2F2',
+                border: '1px solid #FECACA',
+                color: '#B91C1C',
+                borderRadius: '14px',
+                padding: '10px 14px',
+                fontSize: '12.5px',
+                fontWeight: 700,
+                marginBottom: '14px',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '8px',
+              }}
+            >
+              <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+              <span>{errorMsg || precheck.error}</span>
+            </div>
+          )}
+
           {step === 1 && (
             <div>
               <h4 style={{ margin: '0 0 10px', fontSize: '15px', fontWeight: 800, color: '#1E293B' }}>
@@ -144,10 +270,20 @@ export const ApplyDemoModal: React.FC = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
                 {applyDemoTargetUni.majors.map((m) => {
                   const active = currentMajor === m;
+                  const mCutoff = getMajorCutoffForApp(applyDemoTargetUni, m);
+                  const alreadyApplied = myApplications.some(
+                    (a) =>
+                      !isTerminalStatus(a.status) &&
+                      a.uniId === applyDemoTargetUni.id &&
+                      a.major.trim().toLowerCase() === m.trim().toLowerCase()
+                  );
                   return (
                     <div
                       key={m}
-                      onClick={() => setSelectedMajor(m)}
+                      onClick={() => {
+                        setSelectedMajor(m);
+                        setErrorMsg('');
+                      }}
                       style={{
                         padding: '12px 14px',
                         borderRadius: '16px',
@@ -157,13 +293,30 @@ export const ApplyDemoModal: React.FC = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
+                        gap: '10px',
                         transition: 'all 0.2s',
                       }}
                     >
-                      <span style={{ fontSize: '14px', fontWeight: active ? 700 : 500, color: active ? '#2563EB' : '#1E293B' }}>
-                        {m}
-                      </span>
-                      {active && <CheckCircle2 size={18} color="#2563EB" />}
+                      <div style={{ minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontSize: '14px',
+                            fontWeight: active ? 700 : 600,
+                            color: active ? '#2563EB' : '#1E293B',
+                          }}
+                        >
+                          {m}
+                        </div>
+                        <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '2px' }}>
+                          Điểm chuẩn ngành: <strong>{formatCleanDecimal(mCutoff, 2)}đ</strong>
+                          {alreadyApplied && (
+                            <span style={{ color: '#DC2626', fontWeight: 700, marginLeft: '8px' }}>
+                              · Đã nộp nguyện vọng này
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {active && <CheckCircle2 size={18} color="#2563EB" style={{ flexShrink: 0 }} />}
                     </div>
                   );
                 })}
@@ -173,11 +326,7 @@ export const ApplyDemoModal: React.FC = () => {
                 Phương thức xét tuyển ưu tiên:
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {[
-                  'Xét điểm thi tốt nghiệp THPT năm 2026',
-                  'Xét học bạ THPT (5 học kỳ)',
-                  'Xét điểm thi Đánh giá năng lực ĐHQG',
-                ].map((item) => {
+                {ADMISSION_METHODS.map((item) => {
                   const active = admissionMethod === item;
                   return (
                     <div
@@ -204,15 +353,34 @@ export const ApplyDemoModal: React.FC = () => {
 
           {step === 2 && (
             <div>
-              <h4 style={{ margin: '0 0 12px', fontSize: '16px', fontWeight: 800, color: '#1E293B' }}>
-                2. Xác nhận thông tin hồ sơ thí sinh
-              </h4>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#1E293B' }}>
+                  2. Xác nhận & kiểm tra thông tin hồ sơ
+                </h4>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErrorMsg('');
+                    setStep(1);
+                  }}
+                  style={{
+                    border: 'none',
+                    background: 'none',
+                    color: '#2563EB',
+                    fontSize: '12.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  ← Đổi ngành
+                </button>
+              </div>
 
               <div
                 style={{
                   backgroundColor: '#F8FAFC',
                   borderRadius: '20px',
-                  padding: '18px',
+                  padding: '16px',
                   border: '1px solid #E2E8F0',
                   display: 'flex',
                   flexDirection: 'column',
@@ -221,15 +389,110 @@ export const ApplyDemoModal: React.FC = () => {
                   color: '#334155',
                 }}
               >
-                <div><strong>Họ và tên thí sinh:</strong> {profile.name || 'Trần Công Quý'}</div>
-                <div><strong>Số điện thoại:</strong> {profile.phone || '0912 345 678'}</div>
-                <div><strong>Email liên hệ:</strong> {profile.email || 'quy@unipath.vn'}</div>
-                <div><strong>Trường THPT:</strong> {profile.school} ({profile.province})</div>
-                <div><strong>Điểm thi dự kiến:</strong> <span style={{ color: '#2563EB', fontWeight: 700 }}>{profile.expectedScore} điểm</span></div>
-                <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '4px 0' }} />
-                <div><strong>Trường xét tuyển:</strong> {applyDemoTargetUni.name} ({applyDemoTargetUni.code})</div>
-                <div><strong>Ngành đăng ký:</strong> <span style={{ color: '#2563EB', fontWeight: 700 }}>{currentMajor}</span></div>
-                <div><strong>Phương thức:</strong> {admissionMethod}</div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+                    Họ và tên thí sinh *
+                  </label>
+                  <input
+                    type="text"
+                    value={candidateName}
+                    onChange={(e) => {
+                      setCandidateName(e.target.value);
+                      setErrorMsg('');
+                    }}
+                    placeholder="Nhập họ và tên trên CCCD..."
+                    style={{
+                      width: '100%',
+                      height: '42px',
+                      borderRadius: '12px',
+                      border: '1.5px solid #CBD5E1',
+                      padding: '0 12px',
+                      fontSize: '13.5px',
+                      backgroundColor: '#FFFFFF',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+                      Số điện thoại liên hệ *
+                    </label>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => {
+                        setPhone(e.target.value);
+                        setErrorMsg('');
+                      }}
+                      placeholder="VD: 0912345678"
+                      style={{
+                        width: '100%',
+                        height: '42px',
+                        borderRadius: '12px',
+                        border: '1.5px solid #CBD5E1',
+                        padding: '0 12px',
+                        fontSize: '13.5px',
+                        backgroundColor: '#FFFFFF',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+                      Điểm xét tuyển (thang 30) *
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={scoreText}
+                      onChange={(e) => {
+                        setScoreText(e.target.value);
+                        setErrorMsg('');
+                      }}
+                      placeholder="VD: 24.5"
+                      style={{
+                        width: '100%',
+                        height: '42px',
+                        borderRadius: '12px',
+                        border: '1.5px solid #CBD5E1',
+                        padding: '0 12px',
+                        fontSize: '13.5px',
+                        fontWeight: 700,
+                        color: '#1D4ED8',
+                        backgroundColor: '#FFFFFF',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ fontSize: '12.5px', color: '#475569' }}>
+                  <strong>Email định danh tài khoản:</strong> {user.email}
+                </div>
+                {profile.school && (
+                  <div style={{ fontSize: '12.5px', color: '#475569' }}>
+                    <strong>Trường THPT:</strong> {profile.school} {profile.province ? `(${profile.province})` : ''}
+                  </div>
+                )}
+
+                <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '2px 0' }} />
+
+                <div>
+                  <strong>Trường xét tuyển:</strong> {applyDemoTargetUni.name} ({applyDemoTargetUni.code})
+                </div>
+                <div>
+                  <strong>Ngành đăng ký:</strong>{' '}
+                  <span style={{ color: '#2563EB', fontWeight: 800 }}>{currentMajor}</span>{' '}
+                  <span style={{ fontSize: '12px', color: '#64748B' }}>
+                    (Điểm chuẩn ngành: {formatCleanDecimal(majorCutoff, 2)}đ)
+                  </span>
+                </div>
+                <div>
+                  <strong>Phương thức:</strong> {admissionMethod}
+                </div>
               </div>
             </div>
           )}
@@ -253,10 +516,11 @@ export const ApplyDemoModal: React.FC = () => {
                 <CheckCircle2 size={40} />
               </div>
               <h4 style={{ margin: '0 0 8px', fontSize: '19px', fontWeight: 800, color: '#0F172A' }}>
-                Hồ sơ đã nộp thành công!
+                Hồ sơ {createdCode ? `(${createdCode})` : ''} đã nộp thành công!
               </h4>
               <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#64748B', lineHeight: 1.5 }}>
-                Hồ sơ của bạn đã được ghi nhận vào hệ thống tuyển sinh của <strong>{applyDemoTargetUni.name}</strong> và được lưu trực tiếp trong trang Cá nhân của bạn.
+                Hồ sơ ngành <strong>{currentMajor}</strong> của bạn đã được ghi nhận vào hệ thống tuyển sinh của{' '}
+                <strong>{applyDemoTargetUni.name}</strong> và đồng bộ trong mục Cá nhân.
               </p>
 
               <div
@@ -308,6 +572,7 @@ export const ApplyDemoModal: React.FC = () => {
               variant="primary"
               size="L"
               fullWidth
+              disabled={!precheck.ok}
               onClick={handleNext}
             >
               {step === 1 ? 'Tiếp tục bước 2 →' : 'Xác nhận nộp hồ sơ →'}

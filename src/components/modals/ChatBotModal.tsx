@@ -22,7 +22,16 @@ const SUGGESTIONS = [
 ];
 
 export const ChatBotModal: React.FC = () => {
-  const { isChatBotOpen, closeChatBot, profile, user, isLoggedIn, isGuest, viewMode } = useApp();
+  const {
+    isChatBotOpen,
+    closeChatBot,
+    profile,
+    user,
+    isLoggedIn,
+    isGuest,
+    viewMode,
+    incrementAiQueryCount,
+  } = useApp();
   const isDesktop = viewMode === 'desktop';
   const chatKey =
     isLoggedIn && !isGuest && user?.email
@@ -114,6 +123,8 @@ export const ChatBotModal: React.FC = () => {
     const content = textToSend || inputText;
     if (!content.trim()) return;
 
+    incrementAiQueryCount();
+
     const userMsg: ChatMessage = {
       id: `u-${Date.now()}`,
       sender: 'user',
@@ -136,7 +147,7 @@ export const ChatBotModal: React.FC = () => {
       };
       setMessages((prev) => [...prev, botMsg]);
     }, 700);
-  }, [inputText, generateBotAnswer]);
+  }, [inputText, generateBotAnswer, incrementAiQueryCount]);
 
   const handleClearHistory = () => {
     setMessages(INITIAL_MESSAGES);

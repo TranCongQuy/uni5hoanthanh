@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Eye, EyeOff, Lock, Mail, User, CheckSquare, Square } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Eye, EyeOff, Lock, Mail, User, CheckSquare, Square, FlaskConical } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../common/UI';
 
@@ -7,6 +7,10 @@ export const AuthModal: React.FC = () => {
   const {
     isAuthModalOpen,
     closeAuthModal,
+    authPrefillEmail,
+    isDemoMode,
+    toggleDemoMode,
+    demoQuickSwitch,
     login,
     register,
     loginAsGuest,
@@ -15,7 +19,6 @@ export const AuthModal: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Form states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -23,8 +26,34 @@ export const AuthModal: React.FC = () => {
   const [agreedTerms, setAgreedTerms] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isAuthModalOpen) {
+      setErrorMsg('');
+      setPassword('');
+      setConfirmPassword('');
+      if (authPrefillEmail) {
+        setMode('login');
+        setEmail(authPrefillEmail);
+        setTimeout(() => passwordRef.current?.focus(), 60);
+      }
+    }
+  }, [isAuthModalOpen, authPrefillEmail]);
 
   if (!isAuthModalOpen) return null;
+
+  const selectAccountForAuth = (targetEmail: string, demoTarget: 'student' | 'admin' | 'pxu') => {
+    if (isDemoMode) {
+      demoQuickSwitch(demoTarget);
+      return;
+    }
+    setMode('login');
+    setEmail(targetEmail);
+    setPassword('');
+    setErrorMsg('');
+    setTimeout(() => passwordRef.current?.focus(), 40);
+  };
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,9 +64,9 @@ export const AuthModal: React.FC = () => {
       setLoading(false);
       const success = login(email, password);
       if (!success) {
-        setErrorMsg('Email hoặc mật khẩu không chính xác. Bạn có thể dùng tài khoản demo bên dưới!');
+        setErrorMsg('Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại thông tin xác thực!');
       }
-    }, 600);
+    }, 350);
   };
 
   const handleRegisterSubmit = (e: React.FormEvent) => {
@@ -62,11 +91,11 @@ export const AuthModal: React.FC = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      const success = register(fullName, email, password);
-      if (!success) {
-        setErrorMsg('Email này đã tồn tại trong hệ thống!');
+      const res = register(fullName, email, password);
+      if (!res.ok) {
+        setErrorMsg(res.error || 'Không thể đăng ký tài khoản với thông tin này!');
       }
-    }, 600);
+    }, 350);
   };
 
   return (
@@ -87,7 +116,7 @@ export const AuthModal: React.FC = () => {
       <div
         style={{
           width: '100%',
-          maxWidth: '440px',
+          maxWidth: '448px',
           maxHeight: '92vh',
           backgroundColor: '#FFFFFF',
           borderRadius: '28px',
@@ -101,7 +130,9 @@ export const AuthModal: React.FC = () => {
       >
         {/* Close button */}
         <button
+          type="button"
           onClick={closeAuthModal}
+          aria-label="Đóng hộp thoại đăng nhập"
           style={{
             position: 'absolute',
             top: '16px',
@@ -124,12 +155,12 @@ export const AuthModal: React.FC = () => {
 
         {/* Scrollable Container */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
-          {/* Hero Banner Header 160dp */}
+          {/* Hero Banner Header */}
           <div
             style={{
-              height: '160px',
+              height: '144px',
               background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 60%, #06B6D4 100%)',
-              padding: '24px 20px',
+              padding: '20px',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'center',
@@ -143,7 +174,7 @@ export const AuthModal: React.FC = () => {
               <img
                 src="/images/logo_unipath.png"
                 alt="Logo"
-                style={{ width: '32px', height: '32px', objectFit: 'contain' }}
+                style={{ width: '30px', height: '30px', objectFit: 'contain' }}
                 onError={(e) => {
                   (e.target as HTMLElement).style.display = 'none';
                 }}
@@ -152,8 +183,8 @@ export const AuthModal: React.FC = () => {
                 UNIPATH
               </span>
             </div>
-            <span style={{ fontSize: '13px', opacity: 0.9 }}>
-              Cùng bạn kiến tạo tương lai nghề nghiệp
+            <span style={{ fontSize: '13px', opacity: 0.92 }}>
+              Xác thực tài khoản & Phân quyền vai trò an toàn
             </span>
           </div>
 
@@ -166,7 +197,7 @@ export const AuthModal: React.FC = () => {
                 backgroundColor: '#F1F5F9',
                 borderRadius: '16px',
                 padding: '4px',
-                marginBottom: '20px',
+                marginBottom: '18px',
               }}
             >
               <button
@@ -214,14 +245,14 @@ export const AuthModal: React.FC = () => {
               </button>
             </div>
 
-            {/* Error Message */}
             {errorMsg && (
               <div
                 style={{
                   backgroundColor: '#FEF2F2',
-                  border: '1px solid #FEE2E2',
-                  color: '#EF4444',
+                  border: '1px solid #FECACA',
+                  color: '#DC2626',
                   fontSize: '13px',
+                  fontWeight: 600,
                   padding: '10px 14px',
                   borderRadius: '12px',
                   marginBottom: '16px',
@@ -231,19 +262,18 @@ export const AuthModal: React.FC = () => {
               </div>
             )}
 
-            {/* LOGIN FORM */}
             {mode === 'login' ? (
               <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                    Email
+                    Email tài khoản
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="quy@unipath.vn"
+                      placeholder="nhap-email@unipath.vn"
                       required
                       style={{
                         width: '100%',
@@ -261,14 +291,15 @@ export const AuthModal: React.FC = () => {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                    Mật khẩu
+                    Mật khẩu xác thực
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
+                      ref={passwordRef}
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••"
+                      placeholder="Nhập mật khẩu..."
                       required
                       style={{
                         width: '100%',
@@ -305,24 +336,23 @@ export const AuthModal: React.FC = () => {
                   size="L"
                   fullWidth
                   loading={loading}
-                  style={{ marginTop: '6px' }}
+                  style={{ marginTop: '4px' }}
                 >
-                  Đăng nhập ngay →
+                  Đăng nhập xác thực →
                 </Button>
               </form>
             ) : (
-              /* REGISTER FORM */
               <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                    Họ và tên
+                    Họ và tên thí sinh
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Trần Công Quý"
+                      placeholder="Nhập họ và tên..."
                       required
                       style={{
                         width: '100%',
@@ -340,14 +370,14 @@ export const AuthModal: React.FC = () => {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                    Email
+                    Email cá nhân
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="email@example.com"
+                      placeholder="hocsinh@example.com"
                       required
                       style={{
                         width: '100%',
@@ -419,7 +449,7 @@ export const AuthModal: React.FC = () => {
                 >
                   {agreedTerms ? <CheckSquare size={18} color="#2563EB" /> : <Square size={18} color="#94A3B8" />}
                   <span style={{ fontSize: '12px', color: '#475569' }}>
-                    Tôi đồng ý với Điều khoản sử dụng Unipath
+                    Tôi đồng ý với Điều khoản sử dụng & Bảo mật dữ liệu UniPath
                   </span>
                 </div>
 
@@ -435,53 +465,90 @@ export const AuthModal: React.FC = () => {
               </form>
             )}
 
-            {/* Demo & Role Fast Buttons */}
-            <div style={{ margin: '18px 0 6px', textAlign: 'center' }}>
-              <div style={{ position: 'relative', textAlign: 'center', marginBottom: '12px' }}>
-                <div style={{ height: '1px', backgroundColor: '#E2E8F0', position: 'absolute', top: '50%', left: 0, right: 0 }} />
-                <span style={{ position: 'relative', backgroundColor: '#FFFFFF', padding: '0 10px', fontSize: '11px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase' }}>
-                  hoặc chọn vai trò kiểm thử nhanh
-                </span>
+            {/* Role Selection & Explicit Demo Sandbox Switch */}
+            <div style={{ margin: '18px 0 4px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                  padding: '9px 12px',
+                  borderRadius: '12px',
+                  backgroundColor: isDemoMode ? '#FFFBEB' : '#F8FAFC',
+                  border: isDemoMode ? '1px solid #FCD34D' : '1px solid #E2E8F0',
+                  marginBottom: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '7px', textAlign: 'left' }}>
+                  <FlaskConical size={15} color={isDemoMode ? '#D97706' : '#64748B'} />
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A' }}>
+                      Chế độ Kiểm thử Hội đồng (Demo Sandbox)
+                    </div>
+                    <div style={{ fontSize: '10.5px', color: '#64748B' }}>
+                      {isDemoMode
+                        ? 'Đang bật: Bấm vai trò để vào thẳng Sandbox'
+                        : 'Mặc định tắt: Bấm vai trò sẽ điền Email & yêu cầu Mật khẩu'}
+                    </div>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={isDemoMode}
+                  onChange={toggleDemoMode}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#D97706' }}
+                />
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <Button
-                  variant="primary"
+                  type="button"
+                  variant="tonal"
                   size="M"
                   fullWidth
-                  onClick={() => login('quy@unipath.vn', '123456')}
-                  style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', border: 'none', color: '#FFFFFF' }}
+                  onClick={() => selectAccountForAuth('quy@unipath.vn', 'student')}
+                  style={{
+                    backgroundColor: '#FFFBEB',
+                    color: '#B45309',
+                    border: '1px solid #FDE68A',
+                  }}
                 >
-                  ⚡ Thí sinh 2k8: Trần Công Quý
+                  {isDemoMode
+                    ? '🧪 [DEMO] Vào thẳng Thí sinh: Trần Công Quý'
+                    : '🎓 Điền Email Thí sinh mẫu (quy@unipath.vn)'}
                 </Button>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <Button
+                    type="button"
                     variant="tonal"
                     size="S"
-                    onClick={() => login('admin@unipath.vn', 'admin123')}
+                    onClick={() => selectAccountForAuth('admin@unipath.vn', 'admin')}
                     style={{ backgroundColor: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE' }}
                   >
-                    👑 Admin Hệ Thống
+                    {isDemoMode ? '🧪 [DEMO] Admin' : '🔒 Cổng Admin'}
                   </Button>
 
                   <Button
+                    type="button"
                     variant="tonal"
                     size="S"
-                    onClick={() => login('tuyensinh@pxu.edu.vn', 'pxu123')}
+                    onClick={() => selectAccountForAuth('tuyensinh@pxu.edu.vn', 'pxu')}
                     style={{ backgroundColor: '#ECFDF5', color: '#047857', border: '1px solid #A7F3D0' }}
                   >
-                    🏛️ ĐH Phú Xuân (PXU)
+                    {isDemoMode ? '🧪 [DEMO] PXU' : '🔒 Cổng ĐH Phú Xuân'}
                   </Button>
                 </div>
 
                 <Button
+                  type="button"
                   variant="ghost"
                   size="S"
                   fullWidth
                   onClick={loginAsGuest}
                 >
-                  Tiếp tục với tư cách Khách
+                  Tiếp tục khám phá với tư cách Khách
                 </Button>
               </div>
             </div>

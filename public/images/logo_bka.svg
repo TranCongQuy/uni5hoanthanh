@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="bkaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#DC2626"/>
+      <stop offset="100%" stop-color="#991B1B"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="56" fill="url(#bkaGrad)" stroke="#FCA5A5" stroke-width="3"/>
+  <circle cx="60" cy="60" r="48" fill="none" stroke="url(#goldGrad)" stroke-width="2" stroke-dasharray="4 2"/>
+  <path d="M60 18 L86 30 L86 58 C86 78 74 92 60 100 C46 92 34 78 34 58 L34 30 Z" fill="#7F1D1D" stroke="url(#goldGrad)" stroke-width="2.5"/>
+  <path d="M48 44 L60 34 L72 44 L60 54 Z" fill="url(#goldGrad)"/>
+  <rect x="57" y="34" width="6" height="24" rx="2" fill="#FFFBEB"/>
+  <text x="60" y="80" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="21" fill="#FFFFFF" letter-spacing="1.2">BKA</text>
+</svg>

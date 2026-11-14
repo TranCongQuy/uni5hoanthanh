@@ -18,6 +18,9 @@ import {
 import { useApp } from '../../context/AppContext';
 import { getHollandName } from '../../data/MockData';
 import { getStatusMeta } from '../../types';
+import type { ApplicationRecord } from '../../types';
+import { canStudentCancelApplication, computeHollandAssessment } from '../../services/ApplicationWorkflow';
+import { formatTuitionRange } from '../../utils/validation';
 import { Button, UniversityAvatar, AppFooter } from '../common/UI';
 import { AccountRoleMenu } from '../common/AccountRoleMenu';
 import { LineChart } from '../charts/LineChart';
@@ -44,12 +47,14 @@ export const ProfileTab: React.FC = () => {
     bookingStates,
     openApplicationDetail,
     openAllApplications,
+    cancelApplication,
     setActiveTab,
     universitiesList,
   } = useApp();
 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [pendingCancelApp, setPendingCancelApp] = useState<ApplicationRecord | null>(null);
   const [subTab, setSubTab] = useState<'apps' | 'bookings' | 'saved'>('apps');
 
   // Favorite universities objects
@@ -63,7 +68,7 @@ export const ProfileTab: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '16px 18px 104px', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ padding: '16px 18px 132px', display: 'flex', flexDirection: 'column' }}>
       {/* 1. User Info Header Card with Account & 1-Click Role Menu */}
       <div
         style={{
@@ -415,13 +420,36 @@ export const ProfileTab: React.FC = () => {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #F1F5F9', paddingTop: '10px', fontSize: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #F1F5F9', paddingTop: '10px', fontSize: '12px', gap: '8px' }}>
                       <span style={{ color: '#94A3B8' }}>
                         Nộp lúc: {app.submittedAt}
                       </span>
-                      <span style={{ color: '#2563EB', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        {app.status === 'Thiếu hồ sơ' ? 'Bổ sung ngay' : 'Chi tiết'} <ChevronRight size={14} />
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {canStudentCancelApplication(app, user.email, isGuest || !isLoggedIn).ok && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPendingCancelApp(app);
+                            }}
+                            style={{
+                              border: '1px solid #FECACA',
+                              backgroundColor: '#FEF2F2',
+                              color: '#DC2626',
+                              fontSize: '11.5px',
+                              fontWeight: 700,
+                              padding: '4px 9px',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Rút hồ sơ
+                          </button>
+                        )}
+                        <span style={{ color: '#2563EB', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          {app.status === 'Thiếu hồ sơ' ? 'Bổ sung ngay' : 'Chi tiết'} <ChevronRight size={14} />
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -589,7 +617,7 @@ export const ProfileTab: React.FC = () => {
                     </div>
 
                     <div style={{ fontSize: '12px', fontWeight: 700, color: '#2563EB', marginBottom: '8px' }}>
-                      {uni.tuitionMin} - {uni.tuitionMax} tr/năm
+                      {formatTuitionRange(uni.tuitionMin, uni.tuitionMax, true)}
                     </div>
 
                     <button
@@ -643,21 +671,26 @@ export const ProfileTab: React.FC = () => {
               )}
             </div>
 
-            {hollandResult ? (
-              <div>
-                <div style={{ backgroundColor: '#EFF6FF', borderRadius: '14px', padding: '12px 14px', marginBottom: '12px' }}>
-                  <div style={{ fontSize: '14.5px', fontWeight: 800, color: '#1D4ED8' }}>
-                    Mã {hollandResult.primaryCode} — {getHollandName(hollandResult.primaryCode)}
+            {hollandResult ? (() => {
+              const ha = computeHollandAssessment(hollandResult.scores);
+              return (
+                <div>
+                  <div style={{ backgroundColor: '#EFF6FF', borderRadius: '14px', padding: '12px 14px', marginBottom: '12px' }}>
+                    <div style={{ fontSize: '14.5px', fontWeight: 800, color: '#1D4ED8' }}>
+                      Mã {ha.primaryCode} — {getHollandName(ha.primaryCode)}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
+                      {ha.tiedTopCodes.length > 1
+                        ? `Đồng hạng cao nhất: ${ha.tiedTopCodes.join(' & ')} • Nổi trội: ${ha.topCodes.join(' - ')}`
+                        : `Nhóm nổi trội: ${ha.topCodes.join(' - ')}`}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
-                    Top 3 nhóm nổi trội: {hollandResult.topCodes.join(' - ')}
-                  </div>
+                  <Button variant="tonal" size="M" fullWidth onClick={() => openCareerPath(ha.primaryCode)}>
+                    Xem lộ trình nghề nghiệp THPT
+                  </Button>
                 </div>
-                <Button variant="tonal" size="M" fullWidth onClick={() => openCareerPath(hollandResult.primaryCode)}>
-                  Xem lộ trình nghề nghiệp THPT
-                </Button>
-              </div>
-            ) : (
+              );
+            })() : (
               <div style={{ textAlign: 'center', padding: '12px 0' }}>
                 <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#64748B' }}>
                   Bạn chưa hoàn thành bài khảo sát tính cách nào.
@@ -762,7 +795,7 @@ export const ProfileTab: React.FC = () => {
       >
         {[
           { label: 'Thông tin cá nhân', icon: <User size={18} color="#2563EB" />, action: openEditProfile },
-          { label: 'Lộ trình định hướng THPT', icon: <FileText size={18} color="#10B981" />, action: () => openCareerPath() },
+          { label: 'Lộ trình định hướng THPT', icon: <FileText size={18} color="#10B981" />, action: () => openCareerPath(hollandResult?.primaryCode) },
           { label: 'Cài đặt & Tùy chọn', icon: <Settings size={18} color="#64748B" />, action: openSettings },
         ].map((item, idx) => (
           <div
@@ -954,6 +987,60 @@ export const ProfileTab: React.FC = () => {
                 }}
               >
                 Đăng xuất
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* In-app Cancel Application Confirmation Modal */}
+      {pendingCancelApp && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            zIndex: 1050,
+          }}
+          onClick={() => setPendingCancelApp(null)}
+        >
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '24px',
+              padding: '24px',
+              width: '100%',
+              maxWidth: '380px',
+              textAlign: 'center',
+              boxShadow: '0 20px 50px rgba(15, 23, 42, 0.25)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h4 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 800, color: '#0F172A' }}>
+              Xác nhận rút hồ sơ xét tuyển?
+            </h4>
+            <p style={{ margin: '0 0 18px', fontSize: '13.5px', color: '#475569', lineHeight: 1.5 }}>
+              Bạn sắp rút nguyện vọng <strong>{pendingCancelApp.code}</strong> ({pendingCancelApp.major} — {pendingCancelApp.uniName}). Hồ sơ đã rút sẽ chuyển sang trạng thái kết thúc và không thể khôi phục.
+            </p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <Button variant="outline" size="M" fullWidth onClick={() => setPendingCancelApp(null)}>
+                Giữ lại
+              </Button>
+              <Button
+                variant="danger"
+                size="M"
+                fullWidth
+                onClick={() => {
+                  const id = pendingCancelApp.id;
+                  setPendingCancelApp(null);
+                  cancelApplication(id);
+                }}
+              >
+                Xác nhận rút hồ sơ
               </Button>
             </div>
           </div>

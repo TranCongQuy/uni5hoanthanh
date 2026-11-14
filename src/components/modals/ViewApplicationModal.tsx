@@ -15,7 +15,12 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { getStatusMeta } from '../../types';
+import { getStatusMeta, isTerminalStatus } from '../../types';
+import {
+  ALLOWED_REVIEWER_TRANSITIONS,
+  getMajorCutoffForApp,
+} from '../../services/ApplicationWorkflow';
+import { formatCleanDecimal } from '../../utils/validation';
 import { Button, UniversityAvatar } from '../common/UI';
 
 const SUPPLEMENT_PRESETS = [
@@ -31,6 +36,7 @@ export const ViewApplicationModal: React.FC = () => {
     cancelApplication,
     resubmitApplicationSupplement,
     updateApplicationStatus,
+    universitiesList,
     isLoggedIn,
     isGuest,
     user,
@@ -52,6 +58,12 @@ export const ViewApplicationModal: React.FC = () => {
 
   const app = selectedAppForDetail;
   const meta = getStatusMeta(app.status);
+  const targetUni = universitiesList.find(
+    (u) => u.id === app.uniId || u.code === app.uniCode
+  );
+  const majorCutoff = getMajorCutoffForApp(targetUni, app.major);
+  const scoreDelta = Number((app.score - majorCutoff).toFixed(2));
+  const allowedTransitions = ALLOWED_REVIEWER_TRANSITIONS[app.status] || [];
 
   const isStudentOwner =
     isLoggedIn &&
@@ -264,7 +276,7 @@ export const ViewApplicationModal: React.FC = () => {
                 }}
               >
                 {renderStatusIcon()}
-                <span>{app.status}</span>
+                <span>{meta.label}</span>
               </span>
             </div>
 
@@ -398,8 +410,10 @@ export const ViewApplicationModal: React.FC = () => {
                 <span style={{ fontWeight: 700, color: '#2563EB', textAlign: 'right' }}>{app.major}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
-                <span style={{ color: '#64748B' }}>Điểm xét tuyển:</span>
-                <span style={{ fontWeight: 800, color: '#059669' }}>{app.score} điểm</span>
+                <span style={{ color: '#64748B' }}>Điểm xét tuyển / Chuẩn ngành:</span>
+                <span style={{ fontWeight: 800, color: scoreDelta >= 0 ? '#059669' : '#DC2626', textAlign: 'right' }}>
+                  {formatCleanDecimal(app.score, 2)} / {formatCleanDecimal(majorCutoff, 2)}đ ({scoreDelta >= 0 ? `+${formatCleanDecimal(scoreDelta, 2)}đ` : `${formatCleanDecimal(scoreDelta, 2)}đ`})
+                </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
                 <span style={{ color: '#64748B' }}>Ngày giờ nộp:</span>
@@ -521,7 +535,7 @@ export const ViewApplicationModal: React.FC = () => {
           )}
 
           {/* STUDENT ACTION 2: CANCEL APPLICATION (STRICTLY STUDENT OWNER ONLY!) */}
-          {isStudentOwner && app.status === 'Đang xét duyệt' && (
+          {isStudentOwner && (app.status === 'Đang xét duyệt' || app.status === 'Thiếu hồ sơ') && (
             <div style={{ marginTop: '10px' }}>
               {!showCancelConfirm ? (
                 <button
@@ -561,7 +575,7 @@ export const ViewApplicationModal: React.FC = () => {
                     <span>Xác nhận rút hồ sơ xét tuyển?</span>
                   </div>
                   <p style={{ margin: '0 0 12px', fontSize: '12px', color: '#7F1D1D', lineHeight: 1.4 }}>
-                    Hồ sơ đăng ký vào {app.uniName} sẽ chuyển sang trạng thái Đã hủy và dừng xét tuyển.
+                    Hồ sơ đăng ký vào {app.uniName} sẽ chuyển sang trạng thái Đã rút hồ sơ và dừng xét tuyển.
                   </p>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button
@@ -604,7 +618,7 @@ export const ViewApplicationModal: React.FC = () => {
             </div>
           )}
 
-          {/* INSTITUTIONAL REVIEW PANEL (FOR ADMIN & PXU ADMISSIONS ONLY) */}
+          {/* INSTITUTIONAL REVIEW PANEL (FOR ADMIN & PXU ADMISSIONS ONLY — FSM GUARDED) */}
           {canInstitutionalReview && (
             <div
               style={{
@@ -619,105 +633,172 @@ export const ViewApplicationModal: React.FC = () => {
                 <ShieldCheck size={18} color="#2563EB" />
                 <span>Thẩm định & Quyết định của Hội đồng Tuyển sinh</span>
               </div>
-              <input
-                type="text"
-                value={reviewerNote}
-                onChange={(e) => setReviewerNote(e.target.value)}
-                placeholder="Nhập ghi chú phản hồi gửi tới thí sinh (không bắt buộc)..."
-                style={{
-                  width: '100%',
-                  height: '40px',
-                  borderRadius: '10px',
-                  border: '1px solid #CBD5E1',
-                  padding: '0 12px',
-                  fontSize: '12.5px',
-                  marginBottom: '10px',
-                  backgroundColor: '#FFFFFF',
-                  boxSizing: 'border-box',
-                }}
-              />
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    updateApplicationStatus(app.id, 'Hồ sơ hợp lệ', reviewerNote || undefined);
-                    setReviewerNote('');
-                  }}
+
+              {isTerminalStatus(app.status) ? (
+                <div
                   style={{
-                    flex: '1 1 140px',
-                    padding: '9px 12px',
-                    borderRadius: '10px',
-                    border: '1px solid #7DD3FC',
-                    backgroundColor: '#E0F2FE',
-                    color: '#0369A1',
+                    backgroundColor: '#F1F5F9',
+                    border: '1px solid #CBD5E1',
+                    borderRadius: '12px',
+                    padding: '10px 12px',
                     fontSize: '12.5px',
-                    fontWeight: 800,
-                    cursor: 'pointer',
+                    color: '#475569',
+                    fontWeight: 600,
                   }}
                 >
-                  ✓ Xác nhận hợp lệ
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    updateApplicationStatus(app.id, 'Đã trúng tuyển', reviewerNote || undefined);
-                    setReviewerNote('');
-                  }}
-                  style={{
-                    flex: '1 1 140px',
-                    padding: '9px 12px',
-                    borderRadius: '10px',
-                    border: 'none',
-                    backgroundColor: '#059669',
-                    color: '#FFFFFF',
-                    fontSize: '12.5px',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                  }}
-                >
-                  🎓 Duyệt trúng tuyển
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    updateApplicationStatus(app.id, 'Thiếu hồ sơ', reviewerNote || undefined);
-                    setReviewerNote('');
-                  }}
-                  style={{
-                    flex: '1 1 140px',
-                    padding: '9px 12px',
-                    borderRadius: '10px',
-                    border: '1px solid #93C5FD',
-                    backgroundColor: '#DBEAFE',
-                    color: '#1D4ED8',
-                    fontSize: '12.5px',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                  }}
-                >
-                  📎 Yêu cầu bổ sung
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    updateApplicationStatus(app.id, 'Đã bị hủy', reviewerNote || undefined);
-                    setReviewerNote('');
-                  }}
-                  style={{
-                    flex: '1 1 140px',
-                    padding: '9px 12px',
-                    borderRadius: '10px',
-                    border: '1px solid #FCA5A5',
-                    backgroundColor: '#FEE2E2',
-                    color: '#B91C1C',
-                    fontSize: '12.5px',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                  }}
-                >
-                  ✕ Từ chối hồ sơ
-                </button>
-              </div>
+                  Hồ sơ đã kết thúc quy trình xét tuyển ({meta.label}) — Trạng thái đã được khóa cố định, không thể chuyển đổi lại.
+                </div>
+              ) : (
+                <>
+                  {scoreDelta < 0 && (
+                    <div
+                      style={{
+                        backgroundColor: '#FFFBEB',
+                        border: '1px solid #FCD34D',
+                        borderRadius: '10px',
+                        padding: '8px 10px',
+                        fontSize: '12px',
+                        color: '#92400E',
+                        fontWeight: 700,
+                        marginBottom: '8px',
+                      }}
+                    >
+                      ⚠️ Điểm hồ sơ thấp hơn chuẩn ngành {formatCleanDecimal(Math.abs(scoreDelta), 2)}đ — Bắt buộc nhập căn cứ xét tuyển riêng (tối thiểu 8 ký tự) nếu duyệt Hợp lệ / Trúng tuyển.
+                    </div>
+                  )}
+
+                  <input
+                    type="text"
+                    value={reviewerNote}
+                    onChange={(e) => setReviewerNote(e.target.value)}
+                    placeholder={
+                      scoreDelta < 0
+                        ? 'Bắt buộc nhập căn cứ xét tuyển riêng / lý do yêu cầu bổ sung / từ chối...'
+                        : 'Nhập ghi chú phản hồi (bắt buộc khi Yêu cầu bổ sung hoặc Từ chối)...'
+                    }
+                    style={{
+                      width: '100%',
+                      height: '40px',
+                      borderRadius: '10px',
+                      border: scoreDelta < 0 ? '1.5px solid #F59E0B' : '1px solid #CBD5E1',
+                      padding: '0 12px',
+                      fontSize: '12.5px',
+                      marginBottom: '10px',
+                      backgroundColor: '#FFFFFF',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {allowedTransitions.includes('Hồ sơ hợp lệ') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateApplicationStatus(app.id, 'Hồ sơ hợp lệ', reviewerNote || undefined);
+                          setReviewerNote('');
+                        }}
+                        style={{
+                          flex: '1 1 140px',
+                          padding: '9px 12px',
+                          borderRadius: '10px',
+                          border: '1px solid #7DD3FC',
+                          backgroundColor: '#E0F2FE',
+                          color: '#0369A1',
+                          fontSize: '12.5px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ✓ Xác nhận hợp lệ
+                      </button>
+                    )}
+                    {allowedTransitions.includes('Đã trúng tuyển') ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateApplicationStatus(app.id, 'Đã trúng tuyển', reviewerNote || undefined);
+                          setReviewerNote('');
+                        }}
+                        style={{
+                          flex: '1 1 140px',
+                          padding: '9px 12px',
+                          borderRadius: '10px',
+                          border: 'none',
+                          backgroundColor: '#059669',
+                          color: '#FFFFFF',
+                          fontSize: '12.5px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        🎓 Duyệt trúng tuyển
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        title="Cần xác nhận Hồ sơ hợp lệ trước khi duyệt trúng tuyển"
+                        style={{
+                          flex: '1 1 140px',
+                          padding: '9px 12px',
+                          borderRadius: '10px',
+                          border: '1px solid #E2E8F0',
+                          backgroundColor: '#F1F5F9',
+                          color: '#94A3B8',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'not-allowed',
+                        }}
+                      >
+                        🎓 Duyệt trúng tuyển (sau Hợp lệ)
+                      </button>
+                    )}
+                    {allowedTransitions.includes('Thiếu hồ sơ') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateApplicationStatus(app.id, 'Thiếu hồ sơ', reviewerNote || undefined);
+                          setReviewerNote('');
+                        }}
+                        style={{
+                          flex: '1 1 140px',
+                          padding: '9px 12px',
+                          borderRadius: '10px',
+                          border: '1px solid #93C5FD',
+                          backgroundColor: '#DBEAFE',
+                          color: '#1D4ED8',
+                          fontSize: '12.5px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        📎 Yêu cầu bổ sung
+                      </button>
+                    )}
+                    {allowedTransitions.includes('Đã bị hủy') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateApplicationStatus(app.id, 'Đã bị hủy', reviewerNote || undefined);
+                          setReviewerNote('');
+                        }}
+                        style={{
+                          flex: '1 1 140px',
+                          padding: '9px 12px',
+                          borderRadius: '10px',
+                          border: '1px solid #FCA5A5',
+                          backgroundColor: '#FEE2E2',
+                          color: '#B91C1C',
+                          fontSize: '12.5px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ✕ Từ chối hồ sơ
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>

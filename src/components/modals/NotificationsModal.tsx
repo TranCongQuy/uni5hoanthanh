@@ -157,8 +157,8 @@ export const NotificationsModal: React.FC = () => {
                 {!notifications
                   ? 'Thông báo đang tạm tắt trong Cài đặt'
                   : unreadNotificationCount > 0
-                  ? `${unreadNotificationCount} thông báo chưa đọc`
-                  : 'Đã xem tất cả thông báo'}
+                  ? `${unreadNotificationCount} chưa đọc · Tổng ${visibleNotifications.length} thông báo`
+                  : `Đã đọc hết · Tổng ${visibleNotifications.length} thông báo`}
               </span>
             </div>
           </div>

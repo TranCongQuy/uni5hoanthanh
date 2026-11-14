@@ -172,8 +172,24 @@ export const CareerPathModal: React.FC = () => {
               border: '1px solid #DBEAFE',
             }}
           >
-            <div style={{ fontSize: '12px', fontWeight: 700, color: '#2563EB', textTransform: 'uppercase' }}>
-              Mã {pathInfo.hollandCode} — {HOLLAND_NAMES[pathInfo.hollandCode]}
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                fontWeight: 800,
+                color: '#1D4ED8',
+                backgroundColor: '#DBEAFE',
+                padding: '3px 10px',
+                borderRadius: '999px',
+                letterSpacing: '0.3px',
+                marginBottom: '4px',
+              }}
+            >
+              <span>NHÓM {pathInfo.hollandCode}</span>
+              <span>•</span>
+              <span>{HOLLAND_NAMES[pathInfo.hollandCode]}</span>
             </div>
             <h4 style={{ margin: '4px 0 6px', fontSize: '17px', fontWeight: 800, color: '#1E3A8A' }}>
               {pathInfo.title}

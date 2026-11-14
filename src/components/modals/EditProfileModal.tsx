@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save } from 'lucide-react';
+import { X, Save, AlertCircle } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../common/UI';
+import {
+  formatCleanDecimal,
+  validateStudentScore,
+  validateVietnamPhone,
+} from '../../utils/validation';
 
 export const EditProfileModal: React.FC = () => {
   const { isEditProfileOpen, closeEditProfile, profile, updateProfile, showToast, viewMode } = useApp();
@@ -16,7 +21,8 @@ export const EditProfileModal: React.FC = () => {
   const [province, setProvince] = useState(profile.province);
   const [targetMajor, setTargetMajor] = useState(profile.targetMajor);
   const [dreamUni, setDreamUni] = useState(profile.dreamUni);
-  const [expectedScore, setExpectedScore] = useState(profile.expectedScore);
+  const [scoreText, setScoreText] = useState(formatCleanDecimal(profile.expectedScore, 2));
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     if (isEditProfileOpen) {
@@ -29,7 +35,8 @@ export const EditProfileModal: React.FC = () => {
       setProvince(profile.province);
       setTargetMajor(profile.targetMajor);
       setDreamUni(profile.dreamUni);
-      setExpectedScore(profile.expectedScore);
+      setScoreText(formatCleanDecimal(profile.expectedScore, 2));
+      setErrorMsg('');
     }
   }, [isEditProfileOpen, profile]);
 
@@ -37,12 +44,34 @@ export const EditProfileModal: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      showToast('Vui lòng nhập họ và tên!');
+    setErrorMsg('');
+
+    if (name.trim().length < 2) {
+      const msg = 'Vui lòng nhập họ và tên hợp lệ (tối thiểu 2 ký tự)!';
+      setErrorMsg(msg);
+      showToast(msg);
       return;
     }
 
-    updateProfile({
+    if (phone.trim().length > 0) {
+      const phoneCheck = validateVietnamPhone(phone);
+      if (!phoneCheck.ok) {
+        const msg = phoneCheck.error || 'Số điện thoại không hợp lệ!';
+        setErrorMsg(msg);
+        showToast(msg);
+        return;
+      }
+    }
+
+    const scoreCheck = validateStudentScore(scoreText);
+    if (!scoreCheck.ok || scoreCheck.value === undefined) {
+      const msg = scoreCheck.error || 'Điểm dự kiến phải nằm trong khoảng 0.5 – 30.0!';
+      setErrorMsg(msg);
+      showToast(msg);
+      return;
+    }
+
+    const saved = updateProfile({
       name: name.trim(),
       phone: phone.trim(),
       dob: dob.trim(),
@@ -52,10 +81,12 @@ export const EditProfileModal: React.FC = () => {
       province: province.trim(),
       targetMajor: targetMajor.trim(),
       dreamUni: dreamUni.trim(),
-      expectedScore: Number(expectedScore) || 24.5,
+      expectedScore: scoreCheck.value,
     });
 
-    closeEditProfile();
+    if (saved) {
+      closeEditProfile();
+    }
   };
 
   return (
@@ -104,6 +135,7 @@ export const EditProfileModal: React.FC = () => {
             Thông tin cá nhân
           </h3>
           <button
+            type="button"
             onClick={closeEditProfile}
             style={{
               width: '36px',
@@ -124,6 +156,27 @@ export const EditProfileModal: React.FC = () => {
 
         {/* Form Content */}
         <form onSubmit={handleSubmit} style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 100px' }}>
+          {errorMsg && (
+            <div
+              style={{
+                backgroundColor: '#FEF2F2',
+                border: '1px solid #FECACA',
+                color: '#B91C1C',
+                borderRadius: '14px',
+                padding: '10px 14px',
+                fontSize: '12.5px',
+                fontWeight: 700,
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <AlertCircle size={16} style={{ flexShrink: 0 }} />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
           {/* Avatar centered */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px' }}>
             <div style={{ position: 'relative' }}>
@@ -155,7 +208,6 @@ export const EditProfileModal: React.FC = () => {
 
           {/* Fields */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* Họ và tên */}
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
                 Họ và tên *
@@ -163,7 +215,10 @@ export const EditProfileModal: React.FC = () => {
               <input
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setErrorMsg('');
+                }}
                 required
                 style={{
                   width: '100%',
@@ -177,7 +232,6 @@ export const EditProfileModal: React.FC = () => {
               />
             </div>
 
-            {/* Email (read only) */}
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
                 Địa chỉ Email (Chỉ đọc)
@@ -200,16 +254,19 @@ export const EditProfileModal: React.FC = () => {
               />
             </div>
 
-            {/* SĐT + Ngày sinh */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
                   Số điện thoại
                 </label>
                 <input
-                  type="text"
+                  type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    setErrorMsg('');
+                  }}
+                  placeholder="0912345678"
                   style={{
                     width: '100%',
                     height: '48px',
@@ -244,7 +301,6 @@ export const EditProfileModal: React.FC = () => {
               </div>
             </div>
 
-            {/* Giới tính */}
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
                 Giới tính
@@ -272,7 +328,6 @@ export const EditProfileModal: React.FC = () => {
               </div>
             </div>
 
-            {/* Lớp & Trường THPT */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
@@ -320,7 +375,6 @@ export const EditProfileModal: React.FC = () => {
               </div>
             </div>
 
-            {/* Tỉnh / Thành phố */}
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
                 Tỉnh / Thành phố
@@ -341,7 +395,6 @@ export const EditProfileModal: React.FC = () => {
               />
             </div>
 
-            {/* Ngành mục tiêu & Trường mong muốn */}
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
                 Ngành học quan tâm nhất
@@ -385,15 +438,17 @@ export const EditProfileModal: React.FC = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                  Điểm dự kiến
+                  Điểm dự kiến (0.5–30) *
                 </label>
                 <input
-                  type="number"
-                  step="0.1"
-                  min="15"
-                  max="30"
-                  value={expectedScore}
-                  onChange={(e) => setExpectedScore(parseFloat(e.target.value))}
+                  type="text"
+                  inputMode="decimal"
+                  value={scoreText}
+                  onChange={(e) => {
+                    setScoreText(e.target.value);
+                    setErrorMsg('');
+                  }}
+                  placeholder="24.5"
                   style={{
                     width: '100%',
                     height: '48px',
@@ -401,6 +456,8 @@ export const EditProfileModal: React.FC = () => {
                     border: '1px solid #CBD5E1',
                     padding: '0 16px',
                     fontSize: '14px',
+                    fontWeight: 700,
+                    color: '#1D4ED8',
                     boxSizing: 'border-box',
                   }}
                 />

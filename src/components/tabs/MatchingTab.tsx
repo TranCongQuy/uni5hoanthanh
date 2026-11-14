@@ -6,9 +6,13 @@ import {
   ArrowRight,
   HelpCircle,
   CheckCircle2,
+  Calendar,
+  Filter,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { evaluateMatching, GROUP_META } from '../../services/MatchingService';
+import { EXAM_BLOCKS } from '../../data/MockData';
+import { formatCleanDecimal, formatTuitionRange } from '../../utils/validation';
 import type { EvaluationGroup, GroupType, MatchResult } from '../../types';
 import { Button, UniversityAvatar, AppFooter } from '../common/UI';
 import { DonutChart } from '../charts/DonutChart';
@@ -18,6 +22,7 @@ export const MatchingTab: React.FC = () => {
     hollandResult,
     openUniDetail,
     openChatBot,
+    openBookConsultation,
     setActiveTab,
     aiMatchState,
     universitiesList,
@@ -28,6 +33,7 @@ export const MatchingTab: React.FC = () => {
     score: number;
     budget: number;
     region: string;
+    examBlock: string;
     analyzedAt: string;
     evaluation: EvaluationGroup;
   }
@@ -36,6 +42,7 @@ export const MatchingTab: React.FC = () => {
   const [score, setScore] = useState<number>(aiMatchState.score ?? 15.0); // Min: 15.0
   const [budget, setBudget] = useState<number>(aiMatchState.budget ?? 10); // Min: 10 Triệu / năm
   const [region, setRegion] = useState<string>(aiMatchState.region ?? 'Tất cả');
+  const [examBlock, setExamBlock] = useState<string>(aiMatchState.examBlock ?? 'Tất cả');
   const [sortBy, setSortBy] = useState<'score' | 'budget' | 'location'>(aiMatchState.sortBy ?? 'score');
 
   const [hasEvaluated, setHasEvaluated] = useState<boolean>(aiMatchState.hasEvaluated ?? false);
@@ -43,17 +50,20 @@ export const MatchingTab: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [evaluatedData, setEvaluatedData] = useState<EvaluatedData | null>(() => {
     if (aiMatchState.hasEvaluated) {
+      const savedBlock = aiMatchState.examBlock ?? 'Tất cả';
       return {
         score: aiMatchState.score,
         budget: aiMatchState.budget,
         region: aiMatchState.region,
+        examBlock: savedBlock,
         analyzedAt: aiMatchState.analyzedAt || '10:30',
         evaluation: evaluateMatching(
           aiMatchState.score,
           aiMatchState.budget,
           hollandResult?.primaryCode || '',
           aiMatchState.region,
-          universitiesList
+          universitiesList,
+          savedBlock
         ),
       };
     }
@@ -62,9 +72,11 @@ export const MatchingTab: React.FC = () => {
 
   // Synchronize when aiMatchState is reset (e.g. fresh demo login)
   useEffect(() => {
+    const savedBlock = aiMatchState.examBlock ?? 'Tất cả';
     setScore(aiMatchState.score ?? 15.0);
     setBudget(aiMatchState.budget ?? 10);
     setRegion(aiMatchState.region ?? 'Tất cả');
+    setExamBlock(savedBlock);
     setSortBy(aiMatchState.sortBy ?? 'score');
     setHasEvaluated(aiMatchState.hasEvaluated ?? false);
     setIsEditingParams(!aiMatchState.hasEvaluated);
@@ -73,13 +85,15 @@ export const MatchingTab: React.FC = () => {
         score: aiMatchState.score,
         budget: aiMatchState.budget,
         region: aiMatchState.region,
+        examBlock: savedBlock,
         analyzedAt: aiMatchState.analyzedAt || '10:30',
         evaluation: evaluateMatching(
           aiMatchState.score,
           aiMatchState.budget,
           hollandResult?.primaryCode || '',
           aiMatchState.region,
-          universitiesList
+          universitiesList,
+          savedBlock
         ),
       });
     } else {
@@ -112,6 +126,14 @@ export const MatchingTab: React.FC = () => {
     }
   };
 
+  const handleExamBlockChange = (val: string) => {
+    setExamBlock(val);
+    if (hasEvaluated) {
+      setHasEvaluated(false);
+      setEvaluatedData(null);
+    }
+  };
+
   const handleEvaluate = () => {
     setLoading(true);
     setTimeout(() => {
@@ -120,13 +142,15 @@ export const MatchingTab: React.FC = () => {
         budget,
         hollandResult?.primaryCode || '',
         region,
-        universitiesList
+        universitiesList,
+        examBlock
       );
       const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
       setEvaluatedData({
         score,
         budget,
         region,
+        examBlock,
         analyzedAt: timeStr,
         evaluation: evalRes,
       });
@@ -138,6 +162,7 @@ export const MatchingTab: React.FC = () => {
         score,
         budget,
         region,
+        examBlock,
         sortBy,
         analyzedAt: timeStr,
       });
@@ -298,6 +323,23 @@ export const MatchingTab: React.FC = () => {
             >
               {region === 'Tất cả' ? 'Toàn quốc' : `Miền ${region}`}
             </span>
+            {examBlock !== 'Tất cả' && (
+              <>
+                <span style={{ color: '#94A3B8' }}>•</span>
+                <span
+                  style={{
+                    fontSize: '12.5px',
+                    fontWeight: 700,
+                    color: '#7C3AED',
+                    backgroundColor: '#F5F3FF',
+                    padding: '4px 9px',
+                    borderRadius: '10px',
+                  }}
+                >
+                  Khối {examBlock}
+                </span>
+              </>
+            )}
           </div>
 
           <button
@@ -491,7 +533,7 @@ export const MatchingTab: React.FC = () => {
           </div>
 
           {/* Row 3: Priority Region */}
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '18px' }}>
             <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748B', display: 'block', marginBottom: '8px' }}>
               Khu vực ưu tiên
             </span>
@@ -524,6 +566,37 @@ export const MatchingTab: React.FC = () => {
                     }}
                   >
                     {reg}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Row 4: Exam Block Filter (Khối xét tuyển) */}
+          <div style={{ marginBottom: '24px' }}>
+            <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748B', display: 'block', marginBottom: '8px' }}>
+              Khối / Tổ hợp xét tuyển
+            </span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px' }}>
+              {EXAM_BLOCKS.map((blk) => {
+                const active = examBlock === blk;
+                return (
+                  <button
+                    key={blk}
+                    type="button"
+                    onClick={() => handleExamBlockChange(blk)}
+                    style={{
+                      height: '36px',
+                      borderRadius: '12px',
+                      border: active ? '1.5px solid #2563EB' : '1px solid #E2E8F0',
+                      backgroundColor: active ? '#EFF6FF' : '#F8FAFC',
+                      color: active ? '#1D4ED8' : '#475569',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {blk}
                   </button>
                 );
               })}
@@ -610,13 +683,58 @@ export const MatchingTab: React.FC = () => {
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#166534' }}>
-                ✅ Đã phân tích cơ hội trúng tuyển 30 trường!
+                ✅ Đã lọc & đối soát{' '}
+                {evaluatedData.evaluation.safeList.length +
+                  evaluatedData.evaluation.moderateList.length +
+                  evaluatedData.evaluation.challengingList.length}
+                /{evaluatedData.evaluation.totalScopedCount} trường phù hợp tiêu chí!
               </div>
               <div style={{ fontSize: '12px', color: '#15803D', marginTop: '2px', lineHeight: 1.4 }}>
-                Điểm thi: <strong>{evaluatedData.score.toFixed(1)}đ</strong> • Học phí: <strong>≤ {evaluatedData.budget}tr</strong> • {evaluatedData.region === 'Tất cả' ? 'Toàn quốc' : `Miền ${evaluatedData.region}`} (Lúc {evaluatedData.analyzedAt})
+                Điểm thi: <strong>{evaluatedData.score.toFixed(1)}đ</strong> • Ngân sách học phí tối thiểu:{' '}
+                <strong>≤ {evaluatedData.budget}tr/năm</strong> •{' '}
+                {evaluatedData.region === 'Tất cả' ? 'Toàn quốc' : `Miền ${evaluatedData.region}`}
+                {evaluatedData.examBlock !== 'Tất cả' ? ` • Khối ${evaluatedData.examBlock}` : ''} (Lúc {evaluatedData.analyzedAt})
               </div>
             </div>
           </div>
+
+          {(evaluatedData.evaluation.filteredOutByBudgetCount > 0 ||
+            evaluatedData.evaluation.filteredOutByBlockCount > 0) && (
+            <div
+              style={{
+                backgroundColor: '#EFF6FF',
+                border: '1px solid #BFDBFE',
+                borderRadius: '16px',
+                padding: '10px 14px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                fontSize: '12px',
+                color: '#1E40AF',
+                lineHeight: 1.45,
+              }}
+            >
+              <Filter size={16} style={{ flexShrink: 0 }} />
+              <span>
+                Đã ẩn{' '}
+                {evaluatedData.evaluation.filteredOutByBudgetCount > 0 && (
+                  <strong>
+                    {evaluatedData.evaluation.filteredOutByBudgetCount} trường có học phí tối thiểu &gt; {evaluatedData.budget}tr/năm
+                  </strong>
+                )}
+                {evaluatedData.evaluation.filteredOutByBudgetCount > 0 &&
+                  evaluatedData.evaluation.filteredOutByBlockCount > 0 &&
+                  ' và '}
+                {evaluatedData.evaluation.filteredOutByBlockCount > 0 && (
+                  <strong>
+                    {evaluatedData.evaluation.filteredOutByBlockCount} trường không xét tổ hợp {evaluatedData.examBlock}
+                  </strong>
+                )}
+                .
+              </span>
+            </div>
+          )}
 
           {/* 4. Sorting Tabs (Điểm số / Ngân sách / Vị trí) */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -749,14 +867,15 @@ export const MatchingTab: React.FC = () => {
                               textOverflow: 'ellipsis',
                             }}
                           >
-                            {item.matchedMajor} (Chuẩn: {item.majorCutoff}đ)
+                            {item.matchedMajor} (Chuẩn ngành: {formatCleanDecimal(item.majorCutoff, 2)}đ)
                           </div>
 
                           <div
                             style={{
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '8px',
+                              gap: '6px',
+                              flexWrap: 'wrap',
                               fontSize: '11px',
                               color: '#64748B',
                               marginTop: '3px',
@@ -764,7 +883,11 @@ export const MatchingTab: React.FC = () => {
                           >
                             <span>{item.university.loc.split(',')[0]}</span>
                             <span>•</span>
-                            <span>{item.university.tuitionMin}-{item.university.tuitionMax} tr/năm</span>
+                            <span>{formatTuitionRange(item.university.tuitionMin, item.university.tuitionMax, true)}</span>
+                            <span>•</span>
+                            <span style={{ color: '#0F766E', fontWeight: 700 }}>
+                              Cơ bản {item.basePercent}%{item.hollandBonus ? ` +${item.hollandBonus}% Holland` : ''}
+                            </span>
                           </div>
                         </div>
 
@@ -802,15 +925,26 @@ export const MatchingTab: React.FC = () => {
         </span>
       </div>
 
-      <Button
-        variant="primary"
-        size="L"
-        fullWidth
-        icon={<Bot size={18} />}
-        onClick={() => openChatBot()}
-      >
-        Trò chuyện cùng Trợ lý AI để chọn trường chuẩn →
-      </Button>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <Button
+          variant="primary"
+          size="L"
+          fullWidth
+          icon={<Bot size={18} />}
+          onClick={() => openChatBot()}
+        >
+          Trò chuyện cùng Trợ lý AI để chọn trường chuẩn →
+        </Button>
+        <Button
+          variant="outline"
+          size="L"
+          fullWidth
+          icon={<Calendar size={18} />}
+          onClick={() => openBookConsultation()}
+        >
+          Đặt lịch tư vấn 1-1 cùng Ban Tuyển sinh
+        </Button>
+      </div>
 
       <AppFooter text="Thuật toán Matching được phát triển độc quyền bởi Unipath." />
     </div>

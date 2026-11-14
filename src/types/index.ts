@@ -58,6 +58,8 @@ export interface ConsultationBooking {
   email?: string;
   phone: string;
   dateTime: string;
+  scheduledDateISO?: string;
+  timeSlot?: string;
   channel?: string;
   uniId?: number;
   uniName?: string;
@@ -83,12 +85,15 @@ export type GroupType = 'SAFE' | 'MODERATE' | 'CHALLENGING';
 export interface MatchResult {
   university: University;
   matchingPercent: number; // 0 - 100%
+  basePercent: number;
+  hollandBonus: number;
   group: GroupType;
   matchedMajor: string;
   majorCutoff: number;
   diffScore: number;
   isBudgetMatched: boolean;
   isHollandMatched: boolean;
+  matchedExamBlocks?: string[];
 }
 
 export interface EvaluationGroup {
@@ -96,6 +101,10 @@ export interface EvaluationGroup {
   moderateList: MatchResult[];
   challengingList: MatchResult[];
   totalCount: number;
+  totalScopedCount: number;
+  filteredOutByBudgetCount: number;
+  filteredOutByBlockCount: number;
+  examBlockUsed?: string;
 }
 
 export interface ChatMessage {
@@ -113,6 +122,8 @@ export type ApplicationStatus =
   | 'Đã hủy'
   | 'Đã bị hủy';
 
+export const CANCELLED_STATUS_FILTER_LABEL = 'Đã rút / Từ chối';
+
 export interface ApplicationRecord {
   id: string;
   code: string;
@@ -125,6 +136,8 @@ export interface ApplicationRecord {
   email: string;
   score: number;
   submittedAt: string;
+  submittedAtISO?: string;
+  admissionMethod?: string;
   status: ApplicationStatus;
   statusColor: string;
   notes?: string;
@@ -136,6 +149,7 @@ export interface AIMatchState {
   score: number;
   budget: number;
   region: string;
+  examBlock?: string;
   sortBy: 'score' | 'budget' | 'location';
   analyzedAt?: string;
 }
@@ -189,11 +203,19 @@ export interface StatusVisualMeta {
   shortLabel: string;
 }
 
-export function getStatusMeta(status: ApplicationStatus): StatusVisualMeta {
+export function isCancelledStatus(status: ApplicationStatus | string): boolean {
+  return status === 'Đã hủy' || status === 'Đã bị hủy';
+}
+
+export function isTerminalStatus(status: ApplicationStatus | string): boolean {
+  return status === 'Đã trúng tuyển' || status === 'Đã hủy' || status === 'Đã bị hủy';
+}
+
+export function getStatusMeta(status: ApplicationStatus | string): StatusVisualMeta {
   switch (status) {
     case 'Đã trúng tuyển':
       return {
-        label: status,
+        label: 'Đã trúng tuyển',
         color: '#047857',
         bg: '#D1FAE5',
         border: '#6EE7B7',
@@ -202,7 +224,7 @@ export function getStatusMeta(status: ApplicationStatus): StatusVisualMeta {
       };
     case 'Hồ sơ hợp lệ':
       return {
-        label: status,
+        label: 'Hồ sơ hợp lệ',
         color: '#0369A1',
         bg: '#E0F2FE',
         border: '#7DD3FC',
@@ -211,7 +233,7 @@ export function getStatusMeta(status: ApplicationStatus): StatusVisualMeta {
       };
     case 'Đang xét duyệt':
       return {
-        label: status,
+        label: 'Đang xét duyệt',
         color: '#B45309',
         bg: '#FEF3C7',
         border: '#FCD34D',
@@ -220,7 +242,7 @@ export function getStatusMeta(status: ApplicationStatus): StatusVisualMeta {
       };
     case 'Thiếu hồ sơ':
       return {
-        label: status,
+        label: 'Thiếu hồ sơ',
         color: '#1D4ED8',
         bg: '#DBEAFE',
         border: '#93C5FD',
@@ -229,24 +251,22 @@ export function getStatusMeta(status: ApplicationStatus): StatusVisualMeta {
       };
     case 'Đã bị hủy':
       return {
-        label: status,
+        label: 'Từ chối xét duyệt',
         color: '#B91C1C',
         bg: '#FEE2E2',
         border: '#FCA5A5',
         dot: '#EF4444',
-        shortLabel: 'Từ chối hồ sơ',
+        shortLabel: 'Từ chối xét duyệt',
       };
     case 'Đã hủy':
     default:
       return {
-        label: status,
+        label: 'Đã rút hồ sơ',
         color: '#475569',
         bg: '#F1F5F9',
         border: '#CBD5E1',
         dot: '#64748B',
-        shortLabel: 'Đã tự hủy',
+        shortLabel: 'Đã rút hồ sơ',
       };
   }
 }
-
-

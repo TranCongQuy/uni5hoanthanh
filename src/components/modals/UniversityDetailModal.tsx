@@ -11,7 +11,9 @@ import {
   Calendar,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { pickReferenceCutoff, admissionPercent } from '../../services/MatchingService';
+import { calculateSingleMatch } from '../../services/MatchingService';
+import { getMajorExamBlocks, getMajorQuota, getCutoffRangeText } from '../../data/MockData';
+import { formatCleanDecimal, formatTuitionRange } from '../../utils/validation';
 import { Button, UniversityAvatar, ImageSafe } from '../common/UI';
 import { BarChart } from '../charts/BarChart';
 import { DonutChart } from '../charts/DonutChart';
@@ -45,40 +47,31 @@ export const UniversityDetailModal: React.FC = () => {
 
   // Thuật toán % trúng tuyển THỐNG NHẤT toàn hệ thống: cùng ngành tham chiếu và
   // cùng bảng bậc % với AI Matching (MatchingService) — không còn 2 công thức lệch nhau.
-  const userScore = profile.expectedScore || 15.0;
-  const refPick = pickReferenceCutoff(uni, userScore, hollandResult?.primaryCode || undefined);
-  const cutoff = refPick.cutoff;
-  const diff = Number((userScore - cutoff).toFixed(2));
-
-  let matchPercent = admissionPercent(diff);
-  if (refPick.isHolland) {
-    matchPercent = Math.min(100, matchPercent + 5);
-  }
+  const userScore = profile.expectedScore || 24.5;
+  const match = calculateSingleMatch(uni, userScore, hollandResult?.primaryCode || undefined);
+  const cutoff = match.majorCutoff;
+  const diff = match.diffScore;
+  const matchPercent = match.matchingPercent;
+  const formulaTag = match.hollandBonus
+    ? `Cơ bản ${match.basePercent}% + ${match.hollandBonus}% tương thích Holland`
+    : `Tỷ lệ cơ bản theo chuẩn ngành ${match.basePercent}%`;
 
   let matchStatus: string;
   let matchColor: string;
   let matchDesc: string;
 
-  if (matchPercent >= 88) {
-    matchStatus = `Cơ hội rất cao (${matchPercent}%)`;
+  if (match.group === 'SAFE') {
+    matchStatus = matchPercent >= 88 ? `Cơ hội rất cao (${matchPercent}%)` : `An toàn / Khả quan (${matchPercent}%)`;
     matchColor = '#10B981';
-    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm của bạn vượt điểm chuẩn ngành ${refPick.major} (${cutoff} điểm) là +${diff} điểm. Tỷ lệ trúng tuyển rất an toàn!`;
-  } else if (matchPercent >= 75) {
-    matchStatus = `Cơ hội tốt (${matchPercent}%)`;
-    matchColor = '#059669';
-    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm ngang bằng hoặc nhỉnh hơn điểm chuẩn ngành ${refPick.major} (${cutoff} điểm). Cơ hội trúng tuyển khả quan nếu giữ vững phong độ!`;
-  } else if (matchPercent >= 50) {
+    matchDesc = `Điểm dự kiến ${userScore.toFixed(1)}đ so với chuẩn ngành ${match.matchedMajor} (${cutoff}đ) chênh lệch ${diff >= 0 ? `+${diff}` : diff}đ. Tỷ lệ trúng tuyển nhóm An toàn!`;
+  } else if (match.group === 'MODERATE') {
     matchStatus = `Vừa sức / Cạnh tranh (${matchPercent}%)`;
     matchColor = '#F59E0B';
-    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm xấp xỉ điểm chuẩn ngành ${refPick.major} (${cutoff} điểm), chênh lệch ${diff} điểm. Cần nỗ lực thêm ở các tổ hợp môn!`;
-  } else if (matchPercent >= 35) {
-    matchStatus = `Thách thức cao (${matchPercent}%)`;
-    matchColor = '#EA580C';
-    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm thấp hơn điểm chuẩn ngành ${refPick.major} (${cutoff} điểm) là ${Math.abs(diff)} điểm. Nguyện vọng này có mức cạnh tranh cao.`;
+    matchDesc = `Điểm dự kiến ${userScore.toFixed(1)}đ so với chuẩn ngành ${match.matchedMajor} (${cutoff}đ) chênh lệch ${diff >= 0 ? `+${diff}` : diff}đ. Cần giữ vững phong độ ở tổ hợp xét tuyển!`;
   } else {
-    matchStatus = `Rất khó / Thách thức lớn (${matchPercent}%)`;
+    matchStatus = matchPercent >= 30 ? `Thách thức cao (${matchPercent}%)` : `Thách thức lớn (${matchPercent}%)`;
     matchColor = '#EF4444';
-    matchDesc = `Điểm thi dự kiến ${userScore.toFixed(1)} điểm thấp hơn điểm chuẩn ngành ${refPick.major} (${cutoff} điểm) tận ${Math.abs(diff)} điểm. Bạn nên cân nhắc thêm trường an toàn hơn hoặc phương thức xét học bạ.`;
+    matchDesc = `Điểm dự kiến ${userScore.toFixed(1)}đ thấp hơn chuẩn ngành ${match.matchedMajor} (${cutoff}đ) là ${Math.abs(diff)}đ. Bạn nên kết hợp thêm nguyện vọng an toàn hoặc xét học bạ.`;
   }
 
   return (
@@ -264,8 +257,8 @@ export const UniversityDetailModal: React.FC = () => {
                   border: '1px solid #E2E8F0',
                 }}
               >
-                <div style={{ fontSize: '16px', fontWeight: 800, color: '#2563EB' }}>
-                  {uni.tuitionMin}-{uni.tuitionMax} tr
+                <div style={{ fontSize: '15px', fontWeight: 800, color: '#2563EB' }}>
+                  {formatTuitionRange(uni.tuitionMin, uni.tuitionMax, false)}
                 </div>
                 <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
                   Học phí / năm
@@ -281,11 +274,11 @@ export const UniversityDetailModal: React.FC = () => {
                   border: '1px solid #E2E8F0',
                 }}
               >
-                <div style={{ fontSize: '16px', fontWeight: 800, color: '#10B981' }}>
-                  {uni.score2024} đ
+                <div style={{ fontSize: '15px', fontWeight: 800, color: '#10B981' }}>
+                  {getCutoffRangeText(uni)}
                 </div>
                 <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
-                  Điểm chuẩn 2024
+                  Chuẩn ngành (TK {formatCleanDecimal(uni.score2024, 2)}đ)
                 </div>
               </div>
 
@@ -404,6 +397,9 @@ export const UniversityDetailModal: React.FC = () => {
                     <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px', lineHeight: 1.4 }}>
                       {matchDesc}
                     </div>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#2563EB', marginTop: '6px' }}>
+                      Công thức thống nhất: {formulaTag}
+                    </div>
                   </div>
                 </div>
 
@@ -459,15 +455,15 @@ export const UniversityDetailModal: React.FC = () => {
                         <div style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>
                           {major}
                         </div>
-                        <div style={{ fontSize: '11px', color: '#64748B' }}>
-                          Chỉ tiêu tuyển sinh: 120-180 sinh viên
+                        <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+                          Chỉ tiêu 2026: <strong>{getMajorQuota(uni, major)} SV</strong> · Khối: {getMajorExamBlocks(major).join(', ')}
                         </div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
                         <div style={{ fontSize: '16px', fontWeight: 800, color: '#2563EB' }}>
-                          {cutoff.toFixed(2)} đ
+                          {formatCleanDecimal(cutoff, 2)} đ
                         </div>
-                        <div style={{ fontSize: '10px', color: '#94A3B8' }}>Chuẩn 2024</div>
+                        <div style={{ fontSize: '10px', color: '#94A3B8' }}>Chuẩn ngành</div>
                       </div>
                     </div>
                   ))}

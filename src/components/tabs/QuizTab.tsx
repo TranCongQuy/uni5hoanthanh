@@ -17,6 +17,7 @@ import {
   HOLLAND_MAJORS,
   getHollandName,
 } from '../../data/MockData';
+import { computeHollandAssessment } from '../../services/ApplicationWorkflow';
 import type { HollandCode } from '../../types';
 import { Button, AppFooter } from '../common/UI';
 import { RadarChart } from '../charts/RadarChart';
@@ -584,9 +585,14 @@ export const QuizTab: React.FC = () => {
     completedAt: 'Hôm nay',
   };
 
-  const primaryName = getHollandName(resultData.primaryCode);
-  const primaryDesc = HOLLAND_DESCRIPTIONS[resultData.primaryCode];
-  const matchingMajors = HOLLAND_MAJORS[resultData.primaryCode] || [];
+  const assessment = computeHollandAssessment(resultData.scores);
+  const displayPrimaryCode = assessment.primaryCode;
+  const displayTopCodes = assessment.topCodes.length > 0 ? assessment.topCodes : [displayPrimaryCode];
+  const tiedTopCodes = assessment.tiedTopCodes;
+
+  const primaryName = getHollandName(displayPrimaryCode);
+  const primaryDesc = HOLLAND_DESCRIPTIONS[displayPrimaryCode];
+  const matchingMajors = HOLLAND_MAJORS[displayPrimaryCode] || [];
 
   return (
     <div style={{ padding: '20px 20px 104px', display: 'flex', flexDirection: 'column' }}>
@@ -639,43 +645,52 @@ export const QuizTab: React.FC = () => {
         }}
       >
         <div style={{ fontSize: '13px', color: '#1E40AF', fontWeight: 600, marginBottom: '2px' }}>
-          Bạn thuộc nhóm tính cách nổi trội:
+          {tiedTopCodes.length > 1
+            ? `Đồng điểm nổi trội nhất (${resultData.scores[displayPrimaryCode]}/6 điểm): Nhóm ${tiedTopCodes.join(' & ')}`
+            : 'Bạn thuộc nhóm tính cách nổi trội:'}
         </div>
         <div style={{ fontSize: '20px', fontWeight: 800, color: '#1D4ED8', marginBottom: '8px' }}>
-          {primaryName}
+          {tiedTopCodes.length > 1
+            ? tiedTopCodes.map((c) => `${c} (${HOLLAND_NAMES[c].split('(')[0].trim()})`).join(' • ')
+            : primaryName}
         </div>
         <div style={{ fontSize: '13px', color: '#1E293B', lineHeight: 1.45 }}>
           {primaryDesc}
         </div>
       </div>
 
-      {/* 3 Top Holland Badges */}
+      {/* Top Holland Badges (only non-zero groups, with tie labels) */}
       <div style={{ marginBottom: '20px' }}>
         <span style={{ fontSize: '13px', fontWeight: 700, color: '#64748B', display: 'block', marginBottom: '8px' }}>
-          Mã định danh Holland top 3 của bạn:
+          {displayTopCodes.length < 3
+            ? `Nhóm tính cách nổi trội có điểm > 0 (${displayTopCodes.length} nhóm):`
+            : 'Mã định danh Holland nổi trội của bạn:'}
         </span>
         <div style={{ display: 'flex', gap: '8px' }}>
-          {resultData.topCodes.map((code, idx) => (
-            <div
-              key={idx}
-              style={{
-                flex: 1,
-                backgroundColor: '#FFFFFF',
-                borderRadius: '16px',
-                padding: '10px 8px',
-                border: '1px solid #E2E8F0',
-                textAlign: 'center',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-              }}
-            >
-              <div style={{ fontSize: '20px', fontWeight: 900, color: '#2563EB' }}>
-                {code}
+          {displayTopCodes.map((code, idx) => {
+            const isTiedTop = tiedTopCodes.length > 1 && tiedTopCodes.includes(code);
+            return (
+              <div
+                key={code}
+                style={{
+                  flex: 1,
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '16px',
+                  padding: '10px 8px',
+                  border: isTiedTop ? '1.5px solid #2563EB' : '1px solid #E2E8F0',
+                  textAlign: 'center',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+                }}
+              >
+                <div style={{ fontSize: '20px', fontWeight: 900, color: '#2563EB' }}>
+                  {code}
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px', fontWeight: 600 }}>
+                  {isTiedTop ? 'Đồng hạng 1' : `Top ${idx + 1}`} • {resultData.scores[code]}đ
+                </div>
               </div>
-              <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
-                Top {idx + 1}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

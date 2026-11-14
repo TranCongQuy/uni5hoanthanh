@@ -17,16 +17,15 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import type { University } from '../../types';
-import { pickReferenceCutoff, admissionPercent } from '../../services/MatchingService';
+import { calculateSingleMatch } from '../../services/MatchingService';
+import { getCutoffRangeText } from '../../data/MockData';
+import { formatTuitionRange } from '../../utils/validation';
 import { UniversityAvatar, ImageSafe, AppFooter, EmptyState } from '../common/UI';
 import { AccountRoleMenu } from '../common/AccountRoleMenu';
 
-// % phù hợp hiển thị trên thẻ trường: dùng CHUNG thuật toán với AI Matching và
-// trang chi tiết trường (ngành tham chiếu + bảng bậc %), không còn số cứng.
+// % phù hợp hiển thị trên thẻ trường: dùng CHUNG công thức thống nhất với AI Matching và Chi tiết trường.
 const badgePercent = (uni: University, score: number, hollandCode?: string): number => {
-  const ref = pickReferenceCutoff(uni, score, hollandCode);
-  const pct = admissionPercent(score - ref.cutoff) + (ref.isHolland ? 5 : 0);
-  return Math.min(100, pct);
+  return calculateSingleMatch(uni, score, hollandCode).matchingPercent;
 };
 
 export const HomeTab: React.FC = () => {
@@ -39,6 +38,7 @@ export const HomeTab: React.FC = () => {
     toggleFavorite,
     compareIds,
     toggleCompare,
+    clearCompare,
     setActiveTab,
     openUniDetail,
     openCompareModal,
@@ -341,6 +341,7 @@ export const HomeTab: React.FC = () => {
               justifyContent: 'space-between',
               gap: '12px',
               opacity: currentSlide === 0 ? 1 : 0,
+              visibility: currentSlide === 0 ? 'visible' : 'hidden',
               pointerEvents: currentSlide === 0 ? 'auto' : 'none',
               transition: 'opacity 0.6s ease',
             }}
@@ -454,6 +455,7 @@ export const HomeTab: React.FC = () => {
               justifyContent: 'space-between',
               gap: '12px',
               opacity: currentSlide === 1 ? 1 : 0,
+              visibility: currentSlide === 1 ? 'visible' : 'hidden',
               pointerEvents: currentSlide === 1 ? 'auto' : 'none',
               transition: 'opacity 0.6s ease',
             }}
@@ -577,6 +579,7 @@ export const HomeTab: React.FC = () => {
               justifyContent: 'space-between',
               gap: '12px',
               opacity: currentSlide === 2 ? 1 : 0,
+              visibility: currentSlide === 2 ? 'visible' : 'hidden',
               pointerEvents: currentSlide === 2 ? 'auto' : 'none',
               transition: 'opacity 0.6s ease',
             }}
@@ -1262,7 +1265,7 @@ export const HomeTab: React.FC = () => {
 
           {/* Card 4: Lộ trình THPT */}
           <div
-            onClick={() => handleShortcutClick(4, () => openCareerPath())}
+            onClick={() => handleShortcutClick(4, () => openCareerPath(hollandResult?.primaryCode))}
             style={{
               borderRadius: '20px',
               background: activatingShortcutId === 4
@@ -1432,7 +1435,7 @@ export const HomeTab: React.FC = () => {
                       boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
                     }}
                   >
-                    {badgePercent(uni, profile.expectedScore || 15.0, hollandResult?.primaryCode)}% phù hợp
+                    {badgePercent(uni, profile.expectedScore || 24.5, hollandResult?.primaryCode)}% phù hợp
                   </div>
                 </div>
 
@@ -1483,7 +1486,7 @@ export const HomeTab: React.FC = () => {
                     }}
                   >
                     <span style={{ fontSize: '12px', fontWeight: 700, color: '#2563EB' }}>
-                      {uni.tuitionMin} - {uni.tuitionMax} tr/năm
+                      {formatTuitionRange(uni.tuitionMin, uni.tuitionMax, true)}
                     </span>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       <button
@@ -1785,12 +1788,12 @@ export const HomeTab: React.FC = () => {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#1E293B' }}>
                       <span style={{ color: '#64748B' }}>Học phí:</span>
-                      <strong style={{ color: '#2563EB' }}>{uni.tuitionMin}-{uni.tuitionMax} tr/năm</strong>
+                      <strong style={{ color: '#2563EB' }}>{formatTuitionRange(uni.tuitionMin, uni.tuitionMax, true)}</strong>
                     </div>
                     <span style={{ color: '#CBD5E1' }}>•</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#1E293B' }}>
-                      <span style={{ color: '#64748B' }}>Chuẩn 2024:</span>
-                      <strong>{uni.score2024} đ</strong>
+                      <span style={{ color: '#64748B' }}>Chuẩn ngành:</span>
+                      <strong>{getCutoffRangeText(uni)}</strong>
                     </div>
                     <span style={{ color: '#CBD5E1' }}>•</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#1E293B' }}>
@@ -1864,37 +1867,66 @@ export const HomeTab: React.FC = () => {
         <AppFooter text={`Đang hiển thị ${Math.min(visibleCount, filteredUniversities.length)}/${filteredUniversities.length} trường đại học`} />
       </div>
 
-      {/* 7. Floating Action Button: So sánh (n) - Positioned safely above bottom navigation */}
+      {/* 7. Floating Compare Dock: Centered & Dismissible so it never overlaps right-aligned buttons */}
       {compareIds.length > 0 && (
         <div
           style={{
             position: 'fixed',
             bottom: 'calc(84px + env(safe-area-inset-bottom, 12px))',
-            right: 'max(16px, calc((100vw - 520px) / 2 + 16px))',
+            left: '50%',
+            transform: 'translateX(-50%)',
             zIndex: 75,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            backgroundColor: '#0F172A',
+            padding: '5px 6px 5px 16px',
+            borderRadius: '26px',
+            boxShadow: '0 8px 24px rgba(15, 23, 42, 0.35)',
+            border: '1px solid rgba(255,255,255,0.14)',
           }}
         >
           <button
             onClick={openCompareModal}
             style={{
-              height: '48px',
-              padding: '0 20px',
-              borderRadius: '24px',
-              backgroundColor: '#2563EB',
+              height: '36px',
+              padding: '0 10px 0 0',
+              borderRadius: '18px',
+              backgroundColor: 'transparent',
               color: '#FFFFFF',
               border: 'none',
-              boxShadow: '0 6px 20px rgba(37,99,235,0.4)',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              fontWeight: 700,
-              fontSize: '14px',
+              fontWeight: 800,
+              fontSize: '13.5px',
               cursor: 'pointer',
-              animation: 'bounceIn 0.3s ease',
+              whiteSpace: 'nowrap',
             }}
           >
-            <Scale size={18} />
-            <span>So sánh ({compareIds.length})</span>
+            <Scale size={17} color="#60A5FA" />
+            <span>So sánh ({compareIds.length}/3)</span>
+          </button>
+          <button
+            type="button"
+            onClick={clearCompare}
+            aria-label="Xóa danh sách so sánh"
+            title="Ẩn / Xóa danh sách so sánh"
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255,255,255,0.14)',
+              color: '#E2E8F0',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            <X size={15} />
           </button>
         </div>
       )}

@@ -20,26 +20,26 @@ interface LiveChatMessage {
   isAdvisor?: boolean;
 }
 
+const EDUFAIR_TARGET_TS = new Date('2026-12-20T08:00:00+07:00').getTime();
+
+const computeCountdownParts = () => {
+  const diffSec = Math.max(0, Math.floor((EDUFAIR_TARGET_TS - Date.now()) / 1000));
+  const days = Math.floor(diffSec / 86400);
+  const hours = Math.floor((diffSec % 86400) / 3600);
+  const minutes = Math.floor((diffSec % 3600) / 60);
+  const seconds = diffSec % 60;
+  return { days, hours, minutes, seconds };
+};
+
 export const LiveTab: React.FC = () => {
   const { openUniDetail, openBookConsultation, showToast, universitiesList } = useApp();
 
-  // Countdown timer state
-  const [timeLeft, setTimeLeft] = useState({
-    days: 3,
-    hours: 8,
-    minutes: 42,
-    seconds: 15,
-  });
+  // Real future-date countdown timer (EduFair Finale 20/12/2026 08:00 GMT+7)
+  const [timeLeft, setTimeLeft] = useState(computeCountdownParts);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
-        if (prev.minutes > 0) return { ...prev, minutes: 59, seconds: 59 };
-        if (prev.hours > 0) return { ...prev, hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        if (prev.days > 0) return { ...prev, days: prev.days - 1, hours: 23, minutes: 59, seconds: 59 };
-        return prev;
-      });
+      setTimeLeft(computeCountdownParts());
     }, 1000);
     return () => clearInterval(timer);
   }, []);
@@ -54,7 +54,7 @@ export const LiveTab: React.FC = () => {
       id: 'm1',
       author: 'TS. Lê Thành Trung',
       avatar: '/images/advisor_avatar.png',
-      time: '14:28',
+      time: '4 phút trước',
       text: 'Chào các bạn học sinh 2k8! Thầy và ban tư vấn tuyển sinh sẵn sàng giải đáp thắc mắc về phương thức xét tuyển sớm.',
       isAdvisor: true,
     },
@@ -62,22 +62,22 @@ export const LiveTab: React.FC = () => {
       id: 'm2',
       author: 'Ngọc Lan (Huế)',
       avatar: '/images/speaker_2.png',
-      time: '14:30',
+      time: '3 phút trước',
       text: 'Thầy cho em hỏi điểm chuẩn ngành CNTT và cơ hội nhận học bổng OJT tại trường Phú Xuân năm nay thế nào ạ?',
     },
     {
       id: 'm3',
       author: 'Ban Tư vấn Tuyển sinh',
       avatar: '/images/advisor_avatar.png',
-      time: '14:31',
-      text: 'Chào Lan! Điểm chuẩn CNTT dự kiến từ 24.5. Trường đang có gói học bổng 50-100% cho thí sinh nộp hồ sơ đợt 1 nhé!',
+      time: '2 phút trước',
+      text: 'Chào Lan! Điểm chuẩn CNTT dự kiến 24.5đ. Trường đang có gói học bổng 50-100% cho thí sinh nộp hồ sơ đợt 1 nhé!',
       isAdvisor: true,
     },
     {
       id: 'm4',
       author: 'Quốc Huy (Đà Nẵng)',
       avatar: '/images/avatar_user.png',
-      time: '14:32',
+      time: '1 phút trước',
       text: 'Cho em hỏi điểm xét học bạ ngành Trí tuệ nhân tạo có lấy chứng chỉ tiếng Anh để quy đổi điểm không ạ?',
     },
   ]);
@@ -317,7 +317,7 @@ export const LiveTab: React.FC = () => {
             fontWeight: 700,
           }}
         >
-          Còn 3 ngày
+          {timeLeft.days > 0 ? `Còn ${timeLeft.days} ngày` : 'Đang diễn ra'}
         </span>
       </div>
 
@@ -485,7 +485,7 @@ export const LiveTab: React.FC = () => {
                         backgroundColor: '#EF4444',
                       }}
                     />
-                    LIVE ({viewers})
+                    LIVE ({viewers} • mô phỏng)
                   </div>
                 ) : (
                   <div
@@ -597,7 +597,7 @@ export const LiveTab: React.FC = () => {
                 gap: '4px',
               }}
             >
-              <Users size={14} /> 1.250 đang xem
+              <Users size={14} /> 1.250 đang xem (Mô phỏng)
             </span>
           </div>
 

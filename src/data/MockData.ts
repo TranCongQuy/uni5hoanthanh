@@ -363,8 +363,8 @@ export const UNIVERSITIES: University[] = [
     desc: 'Trường đại học tiên phong đào tạo theo mô hình thực chiến gắn liền doanh nghiệp tại cố đô Huế.',
     employmentRate: 92,
     score2022: 23.0,
-    score2023: 24.8,
-    score2024: 25.2,
+    score2023: 23.8,
+    score2024: 24.5,
   },
   {
     id: 12,
@@ -823,4 +823,72 @@ export function getAverageCutoffScore(uni: University): number {
   const sum = scores.reduce((acc, curr) => acc + curr, 0);
   return Number((sum / scores.length).toFixed(2));
 }
+
+export const EXAM_BLOCKS = ['Tất cả', 'A00', 'A01', 'D01', 'B00', 'C00'] as const;
+
+export function getMajorExamBlocks(major: string): string[] {
+  const m = (major || '').toLowerCase();
+  if (
+    m.includes('y ') ||
+    m.startsWith('y') ||
+    m.includes('dược') ||
+    m.includes('răng') ||
+    m.includes('điều dưỡng') ||
+    m.includes('xét nghiệm') ||
+    m.includes('sinh') ||
+    m.includes('thủy sản') ||
+    m.includes('nông nghiệp') ||
+    m.includes('môi trường')
+  ) {
+    return ['B00', 'A00'];
+  }
+  if (m.includes('hóa')) {
+    return ['A00', 'B00'];
+  }
+  if (
+    m.includes('ngữ văn') ||
+    m.includes('báo chí') ||
+    m.includes('luật') ||
+    m.includes('quan hệ quốc tế') ||
+    m.includes('quốc tế học') ||
+    m.includes('tâm lý') ||
+    m.includes('xã hội') ||
+    m.includes('đạo diễn')
+  ) {
+    return ['C00', 'D01'];
+  }
+  if (m.includes('ngôn ngữ') || m.includes('tiếng anh')) {
+    return ['D01', 'A01'];
+  }
+  return ['A00', 'A01', 'D01'];
+}
+
+export function getUniversityExamBlocks(uni: University): string[] {
+  const set = new Set<string>();
+  for (const major of uni.majors) {
+    for (const blk of getMajorExamBlocks(major)) {
+      set.add(blk);
+    }
+  }
+  return Array.from(set);
+}
+
+export function getMajorQuota(uni: University, major: string): number {
+  let hash = uni.id * 17;
+  for (let i = 0; i < major.length; i++) {
+    hash = (hash * 31 + major.charCodeAt(i)) % 997;
+  }
+  // Deterministic realistic quota per major between 90 and 260 (in multiples of 10)
+  return 90 + (hash % 18) * 10;
+}
+
+export function getCutoffRangeText(uni: University): string {
+  const vals = Object.values(uni.cutoffScores);
+  if (vals.length === 0) return `${uni.score2024}đ`;
+  const min = Math.round(Math.min(...vals) * 100) / 100;
+  const max = Math.round(Math.max(...vals) * 100) / 100;
+  if (min === max) return `${max}đ`;
+  return `${min}–${max}đ`;
+}
+
 

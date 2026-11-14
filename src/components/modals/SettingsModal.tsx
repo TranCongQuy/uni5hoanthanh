@@ -20,11 +20,16 @@ export const SettingsModal: React.FC = () => {
     toggleReduceMotion,
     notifications,
     toggleNotifications,
+    resetPersonalData,
     resetAllData,
+    user,
+    isDemoMode,
+    toggleDemoMode,
     viewMode,
   } = useApp();
 
   const isDesktop = viewMode === 'desktop';
+  const isSystemResetAllowed = user.role === 'admin' || isDemoMode;
   const [showGuide, setShowGuide] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -235,8 +240,38 @@ export const SettingsModal: React.FC = () => {
             </div>
           </div>
 
-          {/* Group 3: Khôi phục dữ liệu gốc Demo */}
+          {/* Group 3: Đặt lại dữ liệu cá nhân / hệ thống */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div
+              style={{
+                padding: '12px 14px',
+                borderRadius: '16px',
+                backgroundColor: isDemoMode ? '#FFFBEB' : '#F8FAFC',
+                border: isDemoMode ? '1px solid #FCD34D' : '1px solid #E2E8F0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '10px',
+              }}
+            >
+              <div>
+                <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A' }}>
+                  Chế độ Kiểm thử Hội đồng (Demo Sandbox)
+                </div>
+                <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+                  {isDemoMode
+                    ? 'Đang bật chuyển nhanh vai trò trong phiên này'
+                    : 'Mặc định tắt — Mọi cổng vai trò bắt buộc mật khẩu'}
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={isDemoMode}
+                onChange={toggleDemoMode}
+                style={{ width: '19px', height: '19px', cursor: 'pointer', accentColor: '#D97706' }}
+              />
+            </div>
+
             <Button
               variant="outline"
               size="M"
@@ -245,7 +280,9 @@ export const SettingsModal: React.FC = () => {
               icon={<RotateCcw size={16} />}
               onClick={() => setShowResetConfirm(true)}
             >
-              Khôi phục dữ liệu gốc Demo
+              {isSystemResetAllowed
+                ? 'Khôi phục dữ liệu mẫu hệ thống'
+                : 'Đặt lại dữ liệu học tập cá nhân'}
             </Button>
           </div>
         </div>
@@ -472,10 +509,14 @@ export const SettingsModal: React.FC = () => {
               }}
             >
               <h4 style={{ margin: '0 0 10px', fontSize: '18px', fontWeight: 800, color: '#EF4444' }}>
-                Khôi phục dữ liệu gốc Demo?
+                {isSystemResetAllowed
+                  ? 'Khôi phục dữ liệu mẫu hệ thống?'
+                  : 'Đặt lại dữ liệu học tập cá nhân?'}
               </h4>
               <p style={{ margin: '0 0 20px', fontSize: '13px', color: '#64748B', lineHeight: 1.5 }}>
-                Hệ thống sẽ đưa toàn bộ hồ sơ xét tuyển, lịch tư vấn, điểm chuẩn 30 trường và tài khoản cá nhân trên máy này về trạng thái mẫu ban đầu.
+                {isSystemResetAllowed
+                  ? 'Hệ thống sẽ đưa hồ sơ mẫu, lịch tư vấn và điểm chuẩn 30 trường về mặc định (nhưng vẫn bảo toàn các tài khoản thí sinh đã đăng ký mới).'
+                  : 'Chỉ đặt lại thông tin cá nhân, bài trắc nghiệm Holland và danh sách lưu của riêng bạn (không ảnh hưởng đến dữ liệu tuyển sinh chung hay tài khoản khác).'}
               </p>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <Button
@@ -492,11 +533,15 @@ export const SettingsModal: React.FC = () => {
                   fullWidth
                   onClick={() => {
                     setShowResetConfirm(false);
-                    resetAllData();
+                    if (isSystemResetAllowed) {
+                      resetAllData();
+                    } else {
+                      resetPersonalData();
+                    }
                     closeSettings();
                   }}
                 >
-                  Xác nhận xóa
+                  Xác nhận
                 </Button>
               </div>
             </div>

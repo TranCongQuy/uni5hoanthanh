@@ -12,6 +12,12 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button, UniversityAvatar } from '../common/UI';
+import {
+  getLocalOffsetDateISO,
+  getLocalTodayISO,
+  isPastDateISO,
+  validateVietnamPhone,
+} from '../../utils/validation';
 
 const TIME_SLOTS = [
   '09:00 - 09:30 (Sáng)',
@@ -46,7 +52,7 @@ export const BookConsultationModal: React.FC = () => {
   const [selectedMajor, setSelectedMajor] = useState<string>('');
   const [candidateName, setCandidateName] = useState<string>(profile.name);
   const [phone, setPhone] = useState<string>(profile.phone);
-  const [dateInput, setDateInput] = useState<string>('2026-11-18');
+  const [dateInput, setDateInput] = useState<string>(() => getLocalOffsetDateISO(1));
   const [timeSlot, setTimeSlot] = useState<string>(TIME_SLOTS[1]);
   const [channel, setChannel] = useState<string>(CHANNELS[0]);
   const [notes, setNotes] = useState<string>('');
@@ -67,13 +73,17 @@ export const BookConsultationModal: React.FC = () => {
         setSelectedUniId(target.id);
         setSelectedMajor(target.majors[0] || 'Cần định hướng chọn ngành phù hợp');
       }
-      setCandidateName(profile.name || user.name);
+      setCandidateName(profile.name || user.name || '');
       setPhone(profile.phone || '');
+      setDateInput(getLocalOffsetDateISO(1));
+      setNotes('');
       setIsSubmitted(false);
     }
   }, [isBookConsultationOpen, consultationTargetUni, universitiesList, profile.name, profile.phone, user.name]);
 
   if (!isBookConsultationOpen || !selectedUni) return null;
+
+  const todayISO = getLocalTodayISO();
 
   const handleUniChange = (newId: number) => {
     setSelectedUniId(newId);
@@ -85,13 +95,17 @@ export const BookConsultationModal: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!candidateName.trim()) {
-      showToast('Vui lòng nhập họ và tên thí sinh!');
+    if (candidateName.trim().length < 2) {
+      showToast('Vui lòng nhập họ và tên thí sinh (tối thiểu 2 ký tự)!');
       return;
     }
-    const cleanDigits = phone.replace(/\D/g, '');
-    if (cleanDigits.length < 9) {
-      showToast('Vui lòng nhập số điện thoại hợp lệ (từ 9 chữ số)!');
+    const phoneCheck = validateVietnamPhone(phone);
+    if (!phoneCheck.ok) {
+      showToast(phoneCheck.error || 'Vui lòng nhập số điện thoại Việt Nam hợp lệ!');
+      return;
+    }
+    if (!dateInput || isPastDateISO(dateInput)) {
+      showToast('Ngày hẹn tư vấn không được nằm trong quá khứ! Vui lòng chọn từ hôm nay trở đi.');
       return;
     }
 
@@ -100,11 +114,13 @@ export const BookConsultationModal: React.FC = () => {
       parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateInput;
     const shortSlot = timeSlot.replace(/\s*\(.*\)/, '');
 
-    addBooking({
+    const ok = addBooking({
       name: candidateName.trim(),
       email: user.email,
       phone: phone.trim(),
       dateTime: `${shortSlot} - ${formattedDate}`,
+      scheduledDateISO: dateInput,
+      timeSlot: shortSlot,
       channel,
       uniId: selectedUni.id,
       uniName: selectedUni.name,
@@ -115,7 +131,9 @@ export const BookConsultationModal: React.FC = () => {
         `Đăng ký tư vấn 1-1 (${channel}) về điều kiện xét tuyển sớm và chính sách học bổng năm 2026.`,
     });
 
-    setIsSubmitted(true);
+    if (ok) {
+      setIsSubmitted(true);
+    }
   };
 
   return (
@@ -483,6 +501,7 @@ export const BookConsultationModal: React.FC = () => {
                 </label>
                 <input
                   type="date"
+                  min={todayISO}
                   value={dateInput}
                   onChange={(e) => setDateInput(e.target.value)}
                   style={{

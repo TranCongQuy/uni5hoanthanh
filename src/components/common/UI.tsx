@@ -93,10 +93,14 @@ export const UniversityAvatar: React.FC<UniversityAvatarProps> = ({
 }) => {
   const [loadError, setLoadError] = useState(false);
   const cleanCode = code.toLowerCase().trim();
-  const logoExt = cleanCode === 'pxu' ? 'png' : 'jpg';
+  const logoExt = cleanCode === 'bka' ? 'svg' : cleanCode === 'pxu' ? 'png' : 'jpg';
   const logoPath = `/images/logo_${cleanCode}.${logoExt}`;
 
   const colors = UNI_COLORS[code.toUpperCase()] || ['#2563EB', '#1D4ED8'];
+
+  useEffect(() => {
+    setLoadError(false);
+  }, [logoPath]);
 
   if (!loadError) {
     return (
@@ -108,7 +112,12 @@ export const UniversityAvatar: React.FC<UniversityAvatarProps> = ({
           src={logoPath}
           alt={name || code}
           onError={() => setLoadError(true)}
-          style={{ width: '100%', height: '100%', objectFit: 'contain', padding: size >= 48 ? '4px' : '2px' }}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            padding: cleanCode === 'bka' ? '0px' : size >= 48 ? '4px' : '2px',
+          }}
         />
       </div>
     );

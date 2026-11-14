@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { X, Scale, Plus, Search } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import type { University } from '../../types';
+import { getCutoffRangeText } from '../../data/MockData';
+import { formatTuitionRange } from '../../utils/validation';
 import { Button, UniversityAvatar } from '../common/UI';
 
 export const CompareModal: React.FC = () => {
@@ -235,9 +237,9 @@ export const CompareModal: React.FC = () => {
                           textAlign: 'center',
                         }}
                       >
-                        <div style={{ fontSize: '10px', color: '#64748B' }}>Học phí</div>
-                        <div style={{ fontSize: '13px', fontWeight: 800, color: isBestTuition ? '#059669' : '#1E293B' }}>
-                          {uni.tuitionMin}-{uni.tuitionMax} tr
+                        <div style={{ fontSize: '10px', color: '#64748B' }}>Học phí/năm</div>
+                        <div style={{ fontSize: '12.5px', fontWeight: 800, color: isBestTuition ? '#059669' : '#1E293B' }}>
+                          {formatTuitionRange(uni.tuitionMin, uni.tuitionMax, false)}
                         </div>
                         {isBestTuition && (
                           <span style={{ fontSize: '9px', fontWeight: 700, color: '#059669' }}>
@@ -246,7 +248,7 @@ export const CompareModal: React.FC = () => {
                         )}
                       </div>
 
-                      {/* Row 2: Điểm chuẩn 2024 */}
+                      {/* Row 2: Điểm chuẩn theo ngành */}
                       <div
                         style={{
                           padding: '8px',
@@ -256,12 +258,12 @@ export const CompareModal: React.FC = () => {
                           textAlign: 'center',
                         }}
                       >
-                        <div style={{ fontSize: '10px', color: '#64748B' }}>Chuẩn 2024</div>
-                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#2563EB' }}>
-                          {uni.score2024} đ
+                        <div style={{ fontSize: '10px', color: '#64748B' }}>Chuẩn ngành</div>
+                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#2563EB' }}>
+                          {getCutoffRangeText(uni)}
                         </div>
                         <div style={{ fontSize: '9px', color: '#94A3B8' }}>
-                          2023: {uni.score2023}đ
+                          TB 2023: {uni.score2023}đ
                         </div>
                       </div>
 
