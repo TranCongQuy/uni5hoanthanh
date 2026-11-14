@@ -396,6 +396,7 @@ export const ApplyDemoModal: React.FC = () => {
                   <input
                     type="text"
                     value={candidateName}
+                    autoComplete="name"
                     onChange={(e) => {
                       setCandidateName(e.target.value);
                       setErrorMsg('');
@@ -422,6 +423,8 @@ export const ApplyDemoModal: React.FC = () => {
                     <input
                       type="tel"
                       value={phone}
+                      autoComplete="tel"
+                      inputMode="tel"
                       onChange={(e) => {
                         setPhone(e.target.value);
                         setErrorMsg('');

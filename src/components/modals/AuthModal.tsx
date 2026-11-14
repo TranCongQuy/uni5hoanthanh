@@ -275,6 +275,9 @@ export const AuthModal: React.FC = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="nhap-email@unipath.vn"
                       required
+                      autoComplete="email"
+                      spellCheck={false}
+                      inputMode="email"
                       style={{
                         width: '100%',
                         height: '48px',
@@ -301,6 +304,7 @@ export const AuthModal: React.FC = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Nhập mật khẩu..."
                       required
+                      autoComplete="current-password"
                       style={{
                         width: '100%',
                         height: '48px',
@@ -354,6 +358,7 @@ export const AuthModal: React.FC = () => {
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="Nhập họ và tên..."
                       required
+                      autoComplete="name"
                       style={{
                         width: '100%',
                         height: '48px',
@@ -379,6 +384,9 @@ export const AuthModal: React.FC = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="hocsinh@example.com"
                       required
+                      autoComplete="email"
+                      spellCheck={false}
+                      inputMode="email"
                       style={{
                         width: '100%',
                         height: '48px',
@@ -404,6 +412,7 @@ export const AuthModal: React.FC = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••"
                       required
+                      autoComplete="new-password"
                       style={{
                         width: '100%',
                         height: '48px',

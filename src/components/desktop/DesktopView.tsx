@@ -35,6 +35,8 @@ import {
   FileText,
   Filter,
   Lock,
+  Building2,
+  ShieldCheck,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useApp } from '../../context/AppContext';
@@ -3477,52 +3479,60 @@ export const DesktopView: React.FC = () => {
                   style={{
                     padding: '11px 18px',
                     borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                    backgroundColor: 'var(--up-color-primary, #0284C7)',
                     color: '#FFFFFF',
                     border: 'none',
                     fontSize: '13px',
-                    fontWeight: 800,
+                    fontWeight: 700,
                     cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(245,158,11,0.25)',
+                    boxShadow: 'var(--up-shadow-sm)',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
+                    gap: '7px',
                   }}
                 >
-                  <Sparkles size={16} />
-                  <span>{isDemoMode ? '⚡ Thí sinh (Demo)' : '🎓 Cổng Thí sinh'}</span>
+                  {isDemoMode ? <Sparkles size={16} /> : <GraduationCap size={16} />}
+                  <span>{isDemoMode ? 'Thí sinh (Demo)' : 'Cổng Thí sinh'}</span>
                 </button>
                 <button
                   onClick={() => (isDemoMode ? demoQuickSwitch('pxu') : openAuthModal('tuyensinh@pxu.edu.vn'))}
                   style={{
                     padding: '11px 18px',
                     borderRadius: '12px',
-                    backgroundColor: '#059669',
+                    backgroundColor: 'var(--up-color-success, #059669)',
                     color: '#FFFFFF',
                     border: 'none',
                     fontSize: '13px',
-                    fontWeight: 800,
+                    fontWeight: 700,
                     cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(5,150,105,0.25)',
+                    boxShadow: 'var(--up-shadow-sm)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '7px',
                   }}
                 >
-                  🏛️ Cổng ĐH Phú Xuân (PXU)
+                  <Building2 size={16} />
+                  <span>Cổng ĐH Phú Xuân (PXU)</span>
                 </button>
                 <button
                   onClick={() => (isDemoMode ? demoQuickSwitch('admin') : openAuthModal('admin@unipath.vn'))}
                   style={{
                     padding: '11px 18px',
                     borderRadius: '12px',
-                    backgroundColor: '#2563EB',
+                    backgroundColor: 'var(--up-color-info, #2563EB)',
                     color: '#FFFFFF',
                     border: 'none',
                     fontSize: '13px',
-                    fontWeight: 800,
+                    fontWeight: 700,
                     cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(37,99,235,0.25)',
+                    boxShadow: 'var(--up-shadow-sm)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '7px',
                   }}
                 >
-                  👑 Cổng Admin Hệ Thống
+                  <ShieldCheck size={16} />
+                  <span>Cổng Admin Hệ Thống</span>
                 </button>
               </div>
             </div>

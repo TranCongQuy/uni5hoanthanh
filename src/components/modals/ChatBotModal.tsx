@@ -447,6 +447,7 @@ export const ChatBotModal: React.FC = () => {
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
+                if (e.nativeEvent.isComposing || e.keyCode === 229) return;
                 e.preventDefault();
                 handleSendMessage();
               }

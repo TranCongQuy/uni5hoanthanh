@@ -449,6 +449,7 @@ export const BookConsultationModal: React.FC = () => {
                 <input
                   type="text"
                   value={candidateName}
+                  autoComplete="name"
                   onChange={(e) => setCandidateName(e.target.value)}
                   placeholder="Nhập họ và tên..."
                   style={{
@@ -471,6 +472,8 @@ export const BookConsultationModal: React.FC = () => {
                 <input
                   type="tel"
                   value={phone}
+                  autoComplete="tel"
+                  inputMode="tel"
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="VD: 0912 345 678"
                   style={{

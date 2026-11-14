@@ -414,10 +414,10 @@ export const UniversityApp: React.FC = () => {
 
           {pxuActionQueue.length === 0 ? (
             <div style={{ padding: '32px 20px', textAlign: 'center', color: '#64748B', fontSize: '13.5px' }}>
-              🎉 Toàn bộ hồ sơ chờ duyệt / chờ bổ sung của ĐH Phú Xuân đã được xử lý xong!
+              Toàn bộ hồ sơ chờ duyệt / chờ bổ sung của ĐH Phú Xuân đã được xử lý hoàn tất.
             </div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
+            <div tabIndex={0} role="region" aria-label="Bảng hàng đợi xử lý hồ sơ PXU" style={{ overflowX: 'auto', maxHeight: 'min(500px, 70vh)' }}>
               <table className="up-table">
                 <thead>
                   <tr>
@@ -634,7 +634,7 @@ export const UniversityApp: React.FC = () => {
                 Không có hồ sơ PXU nào khớp bộ lọc hiện tại.
               </div>
             ) : (
-              <div style={{ overflowX: 'auto' }}>
+              <div tabIndex={0} role="region" aria-label="Bảng hồ sơ đăng ký ĐH Phú Xuân" style={{ overflowX: 'auto', maxHeight: 'min(650px, 80vh)' }}>
                 <table className="up-table">
                   <thead>
                     <tr>

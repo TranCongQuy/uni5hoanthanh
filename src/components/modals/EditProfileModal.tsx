@@ -215,6 +215,7 @@ export const EditProfileModal: React.FC = () => {
               <input
                 type="text"
                 value={name}
+                autoComplete="name"
                 onChange={(e) => {
                   setName(e.target.value);
                   setErrorMsg('');
@@ -240,6 +241,7 @@ export const EditProfileModal: React.FC = () => {
                 type="email"
                 value={profile.email}
                 disabled
+                autoComplete="email"
                 style={{
                   width: '100%',
                   height: '48px',
@@ -262,6 +264,8 @@ export const EditProfileModal: React.FC = () => {
                 <input
                   type="tel"
                   value={phone}
+                  autoComplete="tel"
+                  inputMode="tel"
                   onChange={(e) => {
                     setPhone(e.target.value);
                     setErrorMsg('');

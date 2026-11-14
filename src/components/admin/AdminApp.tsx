@@ -21,6 +21,9 @@ import {
   ArrowRight,
   Sparkles,
   ExternalLink,
+  GraduationCap,
+  AlertTriangle,
+  XCircle,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import type { BookingState } from '../../context/AppContext';
@@ -442,7 +445,7 @@ export const AdminApp: React.FC = () => {
               }}
             >
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: '10.5px', fontWeight: 800, textTransform: 'uppercase', color: st.color, letterSpacing: '0.4px' }}>
+                <div style={{ fontSize: '11.5px', fontWeight: 700, color: st.color }}>
                   {st.step}
                 </div>
                 <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', marginTop: '2px' }}>{st.label}</div>
@@ -649,7 +652,7 @@ export const AdminApp: React.FC = () => {
                       <div style={{ color: '#475569', marginTop: '2px' }}>
                         <span>{log.fromStatus}</span> <ArrowRight size={11} style={{ verticalAlign: 'middle' }} />{' '}
                         <strong style={{ color: getStatusMeta(log.toStatus).color }}>{log.toStatus}</strong>
-                        <span style={{ color: '#94A3B8' }}> · bởi {log.actorName}</span>
+                        <span style={{ color: 'var(--up-color-text-tertiary, #64748B)', marginLeft: '6px' }}>(bởi {log.actorName})</span>
                       </div>
                       {log.note && (
                         <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '3px', fontStyle: 'italic' }}>
@@ -885,17 +888,17 @@ export const AdminApp: React.FC = () => {
                 fontSize: '12px',
               }}
             />
-            <button type="button" onClick={() => applyBatch('Hồ sơ hợp lệ')} style={{ padding: '7px 12px', borderRadius: '9px', border: 'none', backgroundColor: '#0284C7', color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>
-              ✓ Xác nhận hợp lệ
+            <button type="button" onClick={() => applyBatch('Hồ sơ hợp lệ')} style={{ padding: '7px 12px', borderRadius: '9px', border: 'none', backgroundColor: 'var(--up-color-primary, #0284C7)', color: '#FFFFFF', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+              <CheckCircle2 size={13} /> Xác nhận hợp lệ
             </button>
-            <button type="button" onClick={() => applyBatch('Đã trúng tuyển')} style={{ padding: '7px 12px', borderRadius: '9px', border: 'none', backgroundColor: '#059669', color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>
-              🎓 Duyệt trúng tuyển
+            <button type="button" onClick={() => applyBatch('Đã trúng tuyển')} style={{ padding: '7px 12px', borderRadius: '9px', border: 'none', backgroundColor: 'var(--up-color-success, #059669)', color: '#FFFFFF', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+              <GraduationCap size={13} /> Duyệt trúng tuyển
             </button>
-            <button type="button" onClick={() => applyBatch('Thiếu hồ sơ')} style={{ padding: '7px 12px', borderRadius: '9px', border: 'none', backgroundColor: '#2563EB', color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>
-              ⚠️ Yêu cầu bổ sung
+            <button type="button" onClick={() => applyBatch('Thiếu hồ sơ')} style={{ padding: '7px 12px', borderRadius: '9px', border: 'none', backgroundColor: 'var(--up-color-warning, #D97706)', color: '#FFFFFF', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+              <AlertTriangle size={13} /> Yêu cầu bổ sung
             </button>
-            <button type="button" onClick={() => applyBatch('Đã bị hủy')} style={{ padding: '7px 12px', borderRadius: '9px', border: 'none', backgroundColor: '#DC2626', color: '#FFFFFF', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>
-              ✕ Từ chối
+            <button type="button" onClick={() => applyBatch('Đã bị hủy')} style={{ padding: '7px 12px', borderRadius: '9px', border: 'none', backgroundColor: 'var(--up-color-danger, #DC2626)', color: '#FFFFFF', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+              <XCircle size={13} /> Từ chối
             </button>
             <button type="button" onClick={() => setCheckedIds([])} style={{ padding: '7px 12px', borderRadius: '9px', border: '1px solid rgba(255,255,255,0.3)', backgroundColor: 'transparent', color: '#FFFFFF', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>
               Bỏ chọn
@@ -912,7 +915,7 @@ export const AdminApp: React.FC = () => {
                 Không có hồ sơ nào khớp điều kiện lọc hiện tại.
               </div>
             ) : isDesktop ? (
-              <div style={{ overflowX: 'auto' }}>
+              <div tabIndex={0} role="region" aria-label="Bảng hồ sơ xét tuyển toàn quốc" style={{ overflowX: 'auto', maxHeight: 'min(650px, 80vh)' }}>
                 <table className="up-table">
                   <thead>
                     <tr>

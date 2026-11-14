@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Bell,
   Bot,
@@ -80,13 +80,8 @@ export const HomeTab: React.FC = () => {
     return 'Chào buổi tối,';
   };
 
-  // Hero slides auto rotate
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % 3);
-    }, 4500);
-    return () => clearInterval(timer);
-  }, []);
+  // Hero slide initial state: user-controlled, no intrusive auto-rotation (Taste Skill Rule 5)
+  // Maintains visual stability and prevents jarring layout shifts.
 
   // Filter universities
   const baseList =

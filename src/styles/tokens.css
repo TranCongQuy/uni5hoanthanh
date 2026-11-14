@@ -1,0 +1,79 @@
+/**
+ * UniPath 2.0 Design Tokens
+ * Hallmark & Impeccable Design System - Single Source of Truth
+ */
+
+:root {
+  /* Brand Primary */
+  --up-color-primary: #0284C7;
+  --up-color-primary-hover: #0369A1;
+  --up-color-primary-active: #075985;
+  --up-color-primary-light: #F0F9FF;
+  --up-color-primary-subtle: #E0F2FE;
+
+  /* Semantic Feedback */
+  --up-color-success: #059669;
+  --up-color-success-hover: #047857;
+  --up-color-success-light: #ECFDF5;
+  --up-color-success-border: #A7F3D0;
+
+  --up-color-warning: #D97706;
+  --up-color-warning-hover: #B45309;
+  --up-color-warning-light: #FFFBEB;
+  --up-color-warning-border: #FDE68A;
+
+  --up-color-danger: #DC2626;
+  --up-color-danger-hover: #B91C1C;
+  --up-color-danger-light: #FEF2F2;
+  --up-color-danger-border: #FECACA;
+
+  --up-color-info: #2563EB;
+  --up-color-info-hover: #1D4ED8;
+  --up-color-info-light: #EFF6FF;
+  --up-color-info-border: #BFDBFE;
+
+  /* Surfaces & Backgrounds */
+  --up-color-bg-page: #F8FAFC;
+  --up-color-surface: #FFFFFF;
+  --up-color-surface-subtle: #F1F5F9;
+  --up-color-surface-hover: #F8FAFC;
+
+  /* Typography Colors */
+  --up-color-text-primary: #0F172A;
+  --up-color-text-secondary: #475569;
+  --up-color-text-tertiary: #64748B;
+  --up-color-text-inverse: #FFFFFF;
+
+  /* Borders & Dividers */
+  --up-color-border-subtle: #E2E8F0;
+  --up-color-border-strong: #CBD5E1;
+
+  /* Spacing Scale (4px base) */
+  --up-space-1: 4px;
+  --up-space-2: 8px;
+  --up-space-3: 12px;
+  --up-space-4: 16px;
+  --up-space-5: 20px;
+  --up-space-6: 24px;
+  --up-space-8: 32px;
+  --up-space-10: 40px;
+  --up-space-12: 48px;
+
+  /* Radii */
+  --up-radius-sm: 6px;
+  --up-radius-md: 10px;
+  --up-radius-lg: 16px;
+  --up-radius-xl: 20px;
+  --up-radius-full: 9999px;
+
+  /* Shadows */
+  --up-shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --up-shadow-card: 0 4px 16px -2px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --up-shadow-lg: 0 12px 32px -4px rgba(15, 23, 42, 0.12);
+
+  /* Modern Web Standards */
+  --scrollbar-thumb: #CBD5E1;
+  --scrollbar-track: transparent;
+  accent-color: var(--up-color-primary);
+  color-scheme: light;
+}
