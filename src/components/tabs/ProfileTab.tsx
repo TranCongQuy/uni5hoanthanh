@@ -20,7 +20,7 @@ import { getHollandName } from '../../data/MockData';
 import type { ApplicationRecord } from '../../types';
 import { canStudentCancelApplication, computeHollandAssessment } from '../../services/ApplicationWorkflow';
 import { formatTuitionRange } from '../../utils/validation';
-import { Button, UniversityAvatar, AppFooter, StatusChip } from '../common/UI';
+import { Button, UniversityAvatar, AppFooter, StatusChip, EmptyState } from '../common/UI';
 import { AccountRoleMenu } from '../common/AccountRoleMenu';
 import { LineChart } from '../charts/LineChart';
 import { ApplicationTimeline } from '../common/ApplicationTimeline';
@@ -348,29 +348,17 @@ export const ProfileTab: React.FC = () => {
           </div>
 
           {myApplications.length === 0 ? (
-            <div
-              style={{
-                padding: '24px',
-                backgroundColor: '#FFFFFF',
-                borderRadius: '20px',
-                textAlign: 'center',
-                border: '1px dashed #CBD5E1',
-              }}
-            >
-              <FileText size={28} color="#CBD5E1" style={{ margin: '0 auto 8px' }} />
-              <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#64748B' }}>
-                {!isLoggedIn || isGuest
+            <EmptyState
+              icon={<FileText size={26} strokeWidth={1.75} />}
+              title={!isLoggedIn || isGuest ? 'Chưa đăng nhập tài khoản thí sinh' : 'Chưa có hồ sơ xét tuyển nào'}
+              description={
+                !isLoggedIn || isGuest
                   ? 'Đăng nhập tài khoản thí sinh để nộp và theo dõi hồ sơ xét tuyển đại học trực tuyến.'
-                  : 'Bạn chưa nộp hồ sơ xét tuyển nào. Hãy chọn trường và nộp hồ sơ trực tuyến ngay!'}
-              </p>
-              <Button
-                variant="tonal"
-                size="M"
-                onClick={() => (!isLoggedIn || isGuest ? openAuthModal() : setActiveTab(0))}
-              >
-                {!isLoggedIn || isGuest ? 'Đăng nhập ngay' : 'Khám phá trường ngay'}
-              </Button>
-            </div>
+                  : 'Bạn chưa nộp hồ sơ xét tuyển nào. Hãy chọn trường và nộp hồ sơ trực tuyến ngay!'
+              }
+              actionText={!isLoggedIn || isGuest ? 'Đăng nhập ngay' : 'Khám phá trường ngay'}
+              onAction={() => (!isLoggedIn || isGuest ? openAuthModal() : setActiveTab(0))}
+            />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {myApplications.map((app) => {
@@ -499,23 +487,13 @@ export const ProfileTab: React.FC = () => {
           </div>
 
           {myBookings.length === 0 ? (
-            <div
-              style={{
-                padding: '20px',
-                backgroundColor: '#FFFFFF',
-                borderRadius: '20px',
-                textAlign: 'center',
-                border: '1px dashed #CBD5E1',
-              }}
-            >
-              <Calendar size={26} color="#CBD5E1" style={{ margin: '0 auto 8px' }} />
-              <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#64748B' }}>
-                Đặt lịch gặp gỡ trực tiếp 1-1 cùng giảng viên và ban tuyển sinh các trường đại học.
-              </p>
-              <Button variant="tonal" size="M" onClick={() => openBookConsultation()}>
-                Đặt lịch tư vấn 1-1 ngay
-              </Button>
-            </div>
+            <EmptyState
+              icon={<Calendar size={26} strokeWidth={1.75} />}
+              title="Chưa có lịch hẹn tư vấn nào"
+              description="Đặt lịch gặp gỡ trực tiếp 1-1 cùng giảng viên và ban tuyển sinh các trường đại học."
+              actionText="Đặt lịch tư vấn 1-1 ngay"
+              onAction={() => openBookConsultation()}
+            />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {myBookings.map((bk) => {
@@ -583,20 +561,13 @@ export const ProfileTab: React.FC = () => {
             </div>
 
             {favoriteUnis.length === 0 ? (
-              <div
-                style={{
-                  padding: '22px',
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '20px',
-                  textAlign: 'center',
-                  border: '1px dashed #CBD5E1',
-                }}
-              >
-                <Heart size={26} color="#CBD5E1" style={{ margin: '0 auto 8px' }} />
-                <p style={{ margin: 0, fontSize: '13px', color: '#64748B' }}>
-                  Chưa có trường nào được lưu. Bấm biểu tượng trái tim để lưu trường bạn yêu thích!
-                </p>
-              </div>
+              <EmptyState
+                icon={<Heart size={26} strokeWidth={1.75} />}
+                title="Chưa có trường nào được lưu"
+                description="Bấm biểu tượng trái tim tại trang chủ để lưu các trường đại học bạn quan tâm."
+                actionText="Khám phá trường ngay"
+                onAction={() => setActiveTab(0)}
+              />
             ) : (
               <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '6px' }}>
                 {favoriteUnis.map((uni) => (

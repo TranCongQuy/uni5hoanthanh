@@ -14,7 +14,7 @@ import { evaluateMatching, GROUP_META } from '../../services/MatchingService';
 import { EXAM_BLOCKS } from '../../data/MockData';
 import { formatCleanDecimal, formatTuitionRange } from '../../utils/validation';
 import type { EvaluationGroup, GroupType, MatchResult } from '../../types';
-import { Button, UniversityAvatar, AppFooter } from '../common/UI';
+import { Button, UniversityAvatar, AppFooter, EmptyState, Skeleton } from '../common/UI';
 import { DonutChart } from '../charts/DonutChart';
 
 export const MatchingTab: React.FC = () => {
@@ -613,42 +613,40 @@ export const MatchingTab: React.FC = () => {
           >
             {loading ? 'Đang đối soát 30 trường...' : '🚀 Phân tích cơ hội trúng tuyển ngay →'}
           </Button>
+
+          {loading && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+              <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '16px', border: '1px solid #E2E8F0', display: 'flex', gap: '14px', alignItems: 'center' }}>
+                <Skeleton width="48px" height="48px" borderRadius="14px" />
+                <div style={{ flex: 1 }}>
+                  <Skeleton width="60%" height="16px" style={{ marginBottom: '8px' }} />
+                  <Skeleton width="40%" height="12px" />
+                </div>
+                <Skeleton width="54px" height="54px" borderRadius="999px" />
+              </div>
+              <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '16px', border: '1px solid #E2E8F0', display: 'flex', gap: '14px', alignItems: 'center' }}>
+                <Skeleton width="48px" height="48px" borderRadius="14px" />
+                <div style={{ flex: 1 }}>
+                  <Skeleton width="55%" height="16px" style={{ marginBottom: '8px' }} />
+                  <Skeleton width="35%" height="12px" />
+                </div>
+                <Skeleton width="54px" height="54px" borderRadius="999px" />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* Conditionally show results only after user clicks analyze */}
       {!hasEvaluated || !evaluatedData ? (
-        <div
-          style={{
-            padding: '36px 20px',
-            backgroundColor: '#FFFFFF',
-            borderRadius: '24px',
-            textAlign: 'center',
-            border: '1.5px dashed #CBD5E1',
-            marginBottom: '24px',
-          }}
-        >
-          <div
-            style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: '50%',
-              backgroundColor: '#EFF6FF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#2563EB',
-              margin: '0 auto 12px',
-            }}
-          >
-            <HelpCircle size={30} />
-          </div>
-          <h4 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-            Chưa có dữ liệu phân tích
-          </h4>
-          <p style={{ margin: 0, fontSize: '13px', color: '#64748B', lineHeight: 1.5 }}>
-            Vui lòng chọn mức điểm dự kiến, ngân sách học phí và bấm nút <strong>"Phân tích cơ hội trúng tuyển ngay"</strong> phía trên để AI đối soát và phân nhóm 30 trường đại học!
-          </p>
+        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '20px', border: '1px solid var(--up-color-slate-200, #E2E8F0)', marginBottom: '24px' }}>
+          <EmptyState
+            icon={<HelpCircle size={28} strokeWidth={1.75} />}
+            title="Chưa có dữ liệu phân tích"
+            description="Vui lòng chọn mức điểm dự kiến, ngân sách học phí và bấm nút 'Phân tích cơ hội trúng tuyển ngay' phía trên để AI đối soát và phân nhóm 30 trường đại học!"
+            actionText="Phân tích ngay"
+            onAction={handleEvaluate}
+          />
         </div>
       ) : (
         <>
@@ -807,19 +805,10 @@ export const MatchingTab: React.FC = () => {
 
                 {/* University Cards */}
                 {list.length === 0 ? (
-                  <div
-                    style={{
-                      padding: '16px',
-                      backgroundColor: '#F8FAFC',
-                      borderRadius: '16px',
-                      textAlign: 'center',
-                      fontSize: '13px',
-                      color: '#94A3B8',
-                      border: '1px dashed #E2E8F0',
-                    }}
-                  >
-                    Không có trường nào thuộc nhóm này theo tiêu chí lọc
-                  </div>
+                  <EmptyState
+                    title="Chưa có trường nào thuộc nhóm này"
+                    description="Thử điều chỉnh điểm THPT hoặc nới rộng ngân sách học phí để mở rộng phạm vi đối soát."
+                  />
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {list.map((item) => (
