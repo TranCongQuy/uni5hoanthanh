@@ -75,7 +75,7 @@ Màu sắc chip trạng thái hồ sơ phải **THỐNG NHẤT 100%** giữa c�
 
 1. **`Button`**: Hỗ trợ các biến thể `primary`, `secondary`, `outline`, `tonal`, `ghost`, `danger`. Tích hợp trạng thái `loading` (spinner CSS) và `disabled`. Hiệu ứng chuyển động mượt mà 150ms.
 2. **`Card`**: Thẻ surface nền trắng chuẩn SaaS, viền mỏng 1px slate-200, tùy chọn `hoverable` nâng nhẹ `translateY(-2px)`.
-3. **`StatusChip`**: Hiển thị trạng thái hồ sơ chuẩn hóa với màu sắc và icon cố định.
+3. **`StatusChip`**: Hiển thị trạng thái hồ sơ chuẩn hóa với màu sắc và icon cố định; luôn giữ nguyên trên 1 dòng duy nhất (`white-space: nowrap`, `display: inline-flex`), chống gãy dòng trên cả 1440px và 390px.
 4. **`Badge`**: Huy hiệu phân loại theo ngữ cảnh (primary, success, warning, danger, info, neutral).
 5. **`Input` & `Select`**: Tích hợp nhãn (`label`), thông báo lỗi đỏ (`error`) kèm icon `AlertCircle`, text hỗ trợ (`helper`).
 6. **`Tabs`**: Hỗ trợ 2 kiểu giao diện: thanh gạch chân (`underline`) và viên thuốc (`pills`).

@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { UNIVERSITIES } from '../data/MockData';
+import {
+  syncQuizResultToCloud,
+  fetchUniversitiesFromCloud,
+  mergeUniversitiesWithCloud,
+  type SupabaseUniversityRow,
+} from '../lib/supabase';
 import {
   MAX_ACTIVE_APPLICATIONS,
   canStudentCancelApplication,
@@ -440,5 +446,186 @@ describe('Hạng mục 7 — Giải thích % trúng tuyển Vì sao X%? (Explain
 
     expect(exp.isBudgetMatched).toBe(false);
     expect(exp.budgetExplanation).toContain('vượt ngân sách');
+  });
+});
+
+describe('Hạng mục 2 — Lưu kết quả trắc nghiệm Holland lên Supabase (quiz_results)', () => {
+  it('gửi đúng payload và bảng quiz_results khi có Supabase env', async () => {
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://mock-project.supabase.co');
+    vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'mock-anon-key');
+
+    let calledUrl = '';
+    let calledOptions: RequestInit | undefined;
+
+    const mockFetch = vi.fn().mockImplementation((url: string, options?: RequestInit) => {
+      calledUrl = url;
+      calledOptions = options;
+      return Promise.resolve({ ok: true, status: 201 });
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const testScores = { R: 10, I: 20, A: 15, S: 12, E: 25, C: 18 };
+    const res = await syncQuizResultToCloud('ThaoVy.Le@gmail.com', {
+      scores: testScores,
+      primaryCode: 'E',
+      topCodes: ['E', 'I', 'C'],
+    });
+
+    expect(res).toBe(true);
+    expect(calledUrl).toBe('https://mock-project.supabase.co/rest/v1/quiz_results');
+    expect(calledOptions?.method).toBe('POST');
+    const headers = calledOptions?.headers as Record<string, string>;
+    expect(headers.apikey).toBe('mock-anon-key');
+    expect(headers.Authorization).toBe('Bearer mock-anon-key');
+
+    const body = JSON.parse(calledOptions?.body as string);
+    expect(body.profile_email).toBe('thaovy.le@gmail.com');
+    expect(body.scores).toEqual(testScores);
+    expect(body.primary_code).toBe('E');
+    expect(body.secondary_code).toBe('I');
+
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it('không ném lỗi khi fetch reject hoặc trả về lỗi HTTP 500', async () => {
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://mock-project.supabase.co');
+    vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'mock-anon-key');
+
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network offline')));
+
+    const testScores = { R: 10, I: 20, A: 15, S: 12, E: 25, C: 18 };
+    // Phải nuốt lỗi an toàn, không được crash
+    await expect(
+      syncQuizResultToCloud('user@example.com', {
+        scores: testScores,
+        primaryCode: 'R',
+      })
+    ).resolves.toBe(false);
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }));
+    await expect(
+      syncQuizResultToCloud('user@example.com', {
+        scores: testScores,
+        primaryCode: 'R',
+      })
+    ).resolves.toBe(false);
+
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it('no-op và trả false khi thiếu env hoặc email trống', async () => {
+    vi.stubEnv('VITE_SUPABASE_URL', '');
+    vi.stubEnv('VITE_SUPABASE_ANON_KEY', '');
+    const mockFetch = vi.fn();
+    vi.stubGlobal('fetch', mockFetch);
+
+    const res = await syncQuizResultToCloud('user@example.com', {
+      scores: { R: 10 },
+      primaryCode: 'R',
+    });
+
+    expect(res).toBe(false);
+    expect(mockFetch).not.toHaveBeenCalled();
+
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+});
+
+describe('Hạng mục 4 — App đọc danh sách trường từ Supabase (Có Fallback an toàn)', () => {
+  it('trộn đúng dữ liệu khi fetch Supabase thành công: DB thắng ở cột DB có, giữ nguyên các cột còn lại', async () => {
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://mock-project.supabase.co');
+    vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'mock-anon-key');
+
+    const mockCloudRows: SupabaseUniversityRow[] = [
+      {
+        id: 1,
+        code: 'BKA',
+        name: 'ĐH Bách Khoa Hà Nội (Cập nhật từ Supabase)',
+        loc: 'Hà Nội',
+        region: 'Bắc',
+        tuition_min: 32.5,
+        tuition_max: 55.0,
+        score_2024: 29.1,
+        cutoff_scores: {
+          'Khoa học Máy tính': 29.8,
+        },
+      },
+    ];
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockCloudRows),
+      })
+    );
+
+    const fetchedRows = await fetchUniversitiesFromCloud();
+    expect(fetchedRows).toHaveLength(1);
+
+    const { merged, source } = mergeUniversitiesWithCloud(UNIVERSITIES, fetchedRows);
+    expect(source).toBe('db');
+    expect(merged).toHaveLength(UNIVERSITIES.length);
+
+    const bka = merged.find((u) => u.code === 'BKA');
+    expect(bka).toBeDefined();
+    // Các cột DB có: DB thắng
+    expect(bka?.name).toBe('ĐH Bách Khoa Hà Nội (Cập nhật từ Supabase)');
+    expect(bka?.tuitionMin).toBe(32.5);
+    expect(bka?.tuitionMax).toBe(55.0);
+    expect(bka?.score2024).toBe(29.1);
+    expect(bka?.cutoffScores['Khoa học Máy tính']).toBe(29.8);
+
+    // Các cột DB không có: Giữ nguyên từ MockData
+    const originalBka = UNIVERSITIES.find((u) => u.code === 'BKA');
+    expect(bka?.majors).toEqual(originalBka?.majors);
+    expect(bka?.rating).toBe(originalBka?.rating);
+    expect(bka?.desc).toBe(originalBka?.desc);
+    expect(bka?.employmentRate).toBe(originalBka?.employmentRate);
+    expect(bka?.score2022).toBe(originalBka?.score2022);
+    expect(bka?.score2023).toBe(originalBka?.score2023);
+
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it('fallback nguyên vẹn về MockData khi fetch lỗi mạng hoặc server trả mã 500', async () => {
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://mock-project.supabase.co');
+    vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'mock-anon-key');
+
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network timeout')));
+
+    const fetchedRows = await fetchUniversitiesFromCloud();
+    expect(fetchedRows).toBeNull();
+
+    const { merged, source } = mergeUniversitiesWithCloud(UNIVERSITIES, fetchedRows);
+    expect(source).toBe('local');
+    expect(merged).toBe(UNIVERSITIES);
+    expect(merged).toHaveLength(30);
+
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it('fallback nguyên vẹn về MockData khi thiếu biến môi trường Supabase', async () => {
+    vi.stubEnv('VITE_SUPABASE_URL', '');
+    vi.stubEnv('VITE_SUPABASE_ANON_KEY', '');
+
+    const mockFetch = vi.fn();
+    vi.stubGlobal('fetch', mockFetch);
+
+    const fetchedRows = await fetchUniversitiesFromCloud();
+    expect(fetchedRows).toBeNull();
+    expect(mockFetch).not.toHaveBeenCalled();
+
+    const { merged, source } = mergeUniversitiesWithCloud(UNIVERSITIES, fetchedRows);
+    expect(source).toBe('local');
+    expect(merged).toBe(UNIVERSITIES);
+
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 });

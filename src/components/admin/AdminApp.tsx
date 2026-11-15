@@ -487,7 +487,7 @@ export const AdminApp: React.FC = () => {
                     <th>Thí sinh</th>
                     <th>Trường & Ngành</th>
                     <th>Điểm / Chuẩn</th>
-                    <th>Trạng thái</th>
+                    <th style={{ width: '145px', minWidth: '140px', whiteSpace: 'nowrap' }}>Trạng thái</th>
                     <th style={{ textAlign: 'right' }}>Tác vụ</th>
                   </tr>
                 </thead>
@@ -526,7 +526,7 @@ export const AdminApp: React.FC = () => {
                             {delta >= 0 ? `+${delta}đ Đạt chuẩn` : `${delta}đ Dưới chuẩn`}
                           </span>
                         </td>
-                        <td>
+                        <td style={{ width: '145px', minWidth: '140px', whiteSpace: 'nowrap' }}>
                           <StatusBadge status={app.status} />
                         </td>
                         <td style={{ textAlign: 'right' }}>
@@ -911,7 +911,7 @@ export const AdminApp: React.FC = () => {
                       <th>Thí sinh & Mã HS</th>
                       <th>Trường & Ngành đăng ký</th>
                       <th>Điểm / Chuẩn</th>
-                      <th>Trạng thái</th>
+                      <th style={{ width: '145px', minWidth: '140px', whiteSpace: 'nowrap' }}>Trạng thái</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -979,7 +979,7 @@ export const AdminApp: React.FC = () => {
                               {delta >= 0 ? `+${delta}đ` : `${delta}đ`}
                             </span>
                           </td>
-                          <td>
+                          <td style={{ width: '145px', minWidth: '140px', whiteSpace: 'nowrap' }}>
                             <StatusBadge status={app.status} />
                           </td>
                         </tr>

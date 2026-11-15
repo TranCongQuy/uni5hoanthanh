@@ -121,20 +121,119 @@ Hệ thống hỗ trợ cấu hình linh hoạt thông qua tệp `.env` (máy c�
 
 ---
 
-## 🗄️ HƯỚNG DẪN KHỞI TẠO CƠ SỞ DỮ LIỆU (SUPABASE DATABASE INIT)
+## 🗄️ KIẾN TRÚC CƠ SỞ DỮ LIỆU & QUY TRÌNH SUPABASE (DATABASE ARCHITECTURE)
 
-Dự án cung cấp sẵn kịch bản SQL toàn diện tại [supabase/schema.sql](supabase/schema.sql) để triển khai CSDL quan hệ PostgreSQL kèm bảo mật hàng dữ liệu (Row Level Security - RLS):
+Hệ thống cơ sở dữ liệu của **UniPath 2.0** được xây dựng trên nền tảng **PostgreSQL (Supabase project ref: `uclleeywalenfwfoonjl`)** với bảo mật cấp hàng (Row Level Security - RLS) nghiêm ngặt.
 
-1. **Đăng nhập vào Supabase Dashboard:** Tạo một project mới tại [supabase.com](https://supabase.com).
-2. **Mở Trình biên tập SQL (SQL Editor):** Nhấn vào biểu tượng **SQL Editor** ở thanh điều hướng bên trái -> Chọn **New query**.
-3. **Thực thi kịch bản:**
-   - Mở tệp `supabase/schema.sql` trong mã nguồn.
-   - Sao chép toàn bộ nội dung và dán vào cửa sổ truy vấn của Supabase.
-   - Nhấn **Run** để khởi tạo các bảng:
-     - `public.users`: Lưu trữ thông tin tài khoản và phân quyền vai trò.
-     - `public.applications`: Lưu trữ hồ sơ xét tuyển trực tuyến, mã hồ sơ, điểm số và trạng thái FSM.
-     - `public.consultation_bookings`: Quản lý lịch hẹn tư vấn tuyển sinh 1-1.
-     - Kèm theo các chính sách bảo mật RLS đảm bảo thí sinh chỉ đọc/ghi dữ liệu của chính mình, Admin có quyền xem toàn bộ và PXU chỉ truy cập hồ sơ trường mình.
+### 1. Sơ Đồ 7 Bảng Dữ Liệu Quan Hệ (Database Tables)
+
+```mermaid
+erDiagram
+    PROFILES ||--o{ APPLICATIONS : "nộp"
+    UNIVERSITIES ||--o{ MAJORS : "đào tạo"
+    UNIVERSITIES ||--o{ APPLICATIONS : "tiếp nhận"
+    PROFILES ||--o{ BOOKINGS : "đặt lịch"
+    PROFILES ||--o{ QUIZ_RESULTS : "kết quả"
+    APPLICATIONS ||--o{ PROCESSING_LOGS : "thẩm định"
+
+    PROFILES {
+        uuid id PK
+        text email UK
+        text full_name
+        text role
+        numeric expected_score
+        text holland_primary
+    }
+    UNIVERSITIES {
+        int id PK
+        text code UK
+        text name
+        text region
+        numeric tuition_min
+        numeric tuition_max
+        numeric score_2024
+        jsonb cutoff_scores
+    }
+    MAJORS {
+        bigint id PK
+        bigint university_id FK
+        text name
+        numeric cutoff
+    }
+    APPLICATIONS {
+        text id PK
+        text code UK
+        int uni_id FK
+        text uni_code
+        text major
+        text candidate_name
+        numeric score
+        text status
+    }
+    BOOKINGS {
+        text id PK
+        text name
+        text email
+        text uni_code
+        text major
+        date scheduled_date
+        text time_slot
+        text status
+    }
+    PROCESSING_LOGS {
+        text id PK
+        text actor
+        text role
+        text action
+        text target_code
+        text uni_code
+        text detail
+    }
+    QUIZ_RESULTS {
+        bigint id PK
+        text profile_email
+        jsonb scores
+        text primary_code
+        text secondary_code
+    }
+```
+
+1. **`public.profiles`**: Hồ sơ người dùng và phân quyền RBAC (`student`, `admin`, `university_pxu`).
+2. **`public.universities`**: Danh mục 30 trường Đại học Bắc – Trung – Nam, học phí sàn/trần, điểm sàn năm 2024. Cột `cutoff_scores` (jsonb) được giữ lại để tương thích ngược 100% với client hiện hành.
+3. **`public.majors`**: Chuẩn hóa dữ liệu ngành đào tạo (1-n với `universities`), quản lý mã trường, tên ngành và điểm chuẩn tuyển sinh (120 ngành cho 30 trường).
+4. **`public.applications`**: Hồ sơ xét tuyển trực tuyến, mã hồ sơ chuẩn hóa, điểm xét tuyển, máy trạng thái FSM 6 bước và partial index chống nộp trùng.
+5. **`public.bookings`**: Đặt lịch hẹn tư vấn 1-1 trực tuyến với ban tuyển sinh các trường.
+6. **`public.processing_logs`**: Nhật ký kiểm toán thẩm định hồ sơ của hội đồng tuyển sinh.
+7. **`public.quiz_results`**: Lưu trữ kết quả trắc nghiệm định hướng nghề nghiệp Holland (điểm số 6 nhóm RIASEC, nhóm trội chính, nhóm phụ).
+
+---
+
+### 2. Cơ Chế Nạp Dữ Liệu Hybrid (Supabase REST + Safe MockData Fallback)
+
+Ứng dụng hoạt động theo cơ chế **Hybrid Data Loading**:
+- **Khởi động**: App kích hoạt `fetchUniversitiesFromCloud()` qua REST API Supabase với bộ đếm thời gian giới hạn **4 giây** (`AbortController`).
+- **Trộn dữ liệu (`mergeUniversitiesWithCloud`)**:
+  - Cột phía Database quản lý (`id`, `code`, `name`, `loc`, `region`, `tuitionMin`, `tuitionMax`, `score2024`, `cutoffScores`): Lấy trực tiếp từ Supabase DB.
+  - Cột giao diện phong phú phía client (`majors`, `rating`, `desc`, `employmentRate`, `score2022`, `score2023`, `emoji`): Bảo toàn nguyên vẹn từ `MockData.ts`.
+- **Dự phòng an toàn (Zero Disruption Fallback)**: Nếu mất mạng, hết thời gian chờ 4s hoặc chưa cấu hình biến môi trường Supabase, app tự động dùng 100% dữ liệu từ `MockData.ts`. Giao diện hoạt động trơn tru không hiện bất kỳ lỗi nào với người dùng. Cờ trạng thái nguồn dữ liệu được ghi rõ tại Console: `[UniPath Data]`.
+
+---
+
+### 3. Thứ Tự Chạy Script SQL Khi Cài Mới (Execution Sequence)
+
+Khi khởi tạo cơ sở dữ liệu mới trên Supabase SQL Editor, người quản trị chạy các tệp SQL theo thứ tự sau:
+
+1. **`supabase/schema.sql`**: Khởi tạo 7 bảng cốt lõi, hàm kiểm tra quyền `current_user_role()` và các chính sách bảo mật hàng RLS.
+2. **`supabase/migration-002-majors-quiz.sql`**: Tạo bảng `majors` và `quiz_results` kèm RLS (cho môi trường nâng cấp từ schema v1).
+3. **Seed bảng `universities`**: Nạp danh sách 30 trường đại học Bắc – Trung – Nam.
+4. **`supabase/seed-majors.sql`**: Nạp 120 ngành học và điểm chuẩn tương ứng cho 30 trường.
+   - *Kiểm chứng*: `select count(*) from public.majors;` → **120 ngành**; PXU → **4 ngành**.
+5. **`supabase/seed-demo-data.sql`**: Nạp dữ liệu mẫu hoàn chỉnh khớp 100% với bản demo:
+   - *Kiểm chứng*:
+     - `select count(*) from public.profiles;` → **6 tài khoản** (3 tài khoản demo hệ thống + 3 thí sinh).
+     - `select count(*) from public.applications;` → **8 hồ sơ** (đủ 6 trạng thái FSM).
+     - `select count(*) from public.bookings;` → **3 lịch tư vấn**.
+     - `select count(*) from public.processing_logs;` → **4 nhật ký xử lý**.
 
 ---
 
