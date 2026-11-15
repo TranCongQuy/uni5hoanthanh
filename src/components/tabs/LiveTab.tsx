@@ -366,11 +366,13 @@ export const LiveTab: React.FC = () => {
               }}
             >
               <span
+                className="up-live-pulse"
                 style={{
                   width: '6px',
                   height: '6px',
                   borderRadius: '50%',
                   backgroundColor: '#FFFFFF',
+                  display: 'inline-block',
                 }}
               />
               LIVE NOW
@@ -578,9 +580,10 @@ export const LiveTab: React.FC = () => {
                 borderRadius: '8px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
+                gap: '6px',
               }}
             >
+              <span className="up-live-pulse" style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#FFFFFF', display: 'inline-block' }} />
               <Radio size={14} /> LIVE
             </span>
             <span
