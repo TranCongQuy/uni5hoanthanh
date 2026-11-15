@@ -9,7 +9,7 @@ import {
   validateNewApplicationSubmission,
   validateReviewerStatusChange,
 } from '../services/ApplicationWorkflow';
-import { calculateSingleMatch, evaluateMatching } from '../services/MatchingService';
+import { calculateSingleMatch, evaluateMatching, resolveAdmissionScore, explainMatchResult } from '../services/MatchingService';
 import { sendChatMessageToAssistant } from '../services/AiChatService';
 import type { ApplicationRecord } from '../types';
 import {
@@ -387,5 +387,58 @@ describe('Hạng mục 8 — Validation Schema Zod & Form Validation', () => {
     if (!mismatch.success) {
       expect(mismatch.error.issues[0]?.message).toContain('không khớp');
     }
+  });
+});
+
+describe('Hạng mục 6 — Đồng bộ điểm AI Matching sang Modal Chi tiết trường', () => {
+  it('ưu tiên điểm vừa nhập ở AI Matching (ví dụ 26.5đ) thay vì lùi về điểm mặc định hồ sơ (24.5đ)', () => {
+    const profileScore = 24.5;
+    const matchingScore = 26.5;
+    const resolved = resolveAdmissionScore(profileScore, matchingScore);
+
+    expect(resolved.score).toBe(26.5);
+    expect(resolved.source).toBe('matching');
+    expect(resolved.sourceLabel).toContain('Tính theo điểm bạn vừa nhập 26.5 điểm tại AI Matching');
+
+    // Điểm profile gốc không bị thay đổi / ô nhiễm
+    expect(profileScore).toBe(24.5);
+  });
+
+  it('fallback về điểm dự kiến trong hồ sơ khi chưa từng nhập điểm ở Matching', () => {
+    const profileScore = 25.0;
+    const resolved = resolveAdmissionScore(profileScore, null);
+
+    expect(resolved.score).toBe(25.0);
+    expect(resolved.source).toBe('profile');
+    expect(resolved.sourceLabel).toContain('Tính theo điểm dự kiến trong hồ sơ (25.0 điểm)');
+  });
+});
+
+describe('Hạng mục 7 — Giải thích % trúng tuyển Vì sao X%? (Explainable Matching Breakdown)', () => {
+  it('bóc tách đúng ngành tham chiếu, chênh lệch delta, % cơ bản, thưởng Holland và ngân sách', () => {
+    const uni = UNIVERSITIES.find((u) => u.code === 'PXU') || UNIVERSITIES[0];
+    const match = calculateSingleMatch(uni, 20.0, 'R', undefined, 20);
+    const exp = explainMatchResult(match, 20.0, 20);
+
+    expect(exp.matchedMajor).toBe(match.matchedMajor);
+    expect(exp.majorCutoff).toBe(match.majorCutoff);
+    expect(exp.userScore).toBe(20.0);
+    expect(exp.diffScore).toBe(match.diffScore);
+    expect(exp.basePercent).toBe(match.basePercent);
+    expect(exp.matchingPercent).toBe(match.matchingPercent);
+    expect(exp.isBudgetMatched).toBe(match.isBudgetMatched);
+    expect(exp.budgetExplanation).toBeTruthy();
+    if (match.hollandBonus > 0) {
+      expect(exp.hollandExplanation).toContain('Holland');
+    }
+  });
+
+  it('báo vượt ngân sách học phí khi mức học phí tối thiểu lớn hơn ngân sách người dùng', () => {
+    const uni = UNIVERSITIES.find((u) => u.tuitionMin > 20) || UNIVERSITIES[0];
+    const match = calculateSingleMatch(uni, 25.0, undefined, undefined, 10);
+    const exp = explainMatchResult(match, 25.0, 10);
+
+    expect(exp.isBudgetMatched).toBe(false);
+    expect(exp.budgetExplanation).toContain('vượt ngân sách');
   });
 });

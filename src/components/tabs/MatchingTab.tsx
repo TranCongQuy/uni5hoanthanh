@@ -14,8 +14,9 @@ import { evaluateMatching, GROUP_META } from '../../services/MatchingService';
 import { EXAM_BLOCKS } from '../../data/MockData';
 import { formatCleanDecimal, formatTuitionRange } from '../../utils/validation';
 import type { EvaluationGroup, GroupType, MatchResult } from '../../types';
-import { Button, UniversityAvatar, AppFooter } from '../common/UI';
+import { Button, UniversityAvatar, AppFooter, EmptyState, Skeleton } from '../common/UI';
 import { DonutChart } from '../charts/DonutChart';
+import { MatchingBreakdownAccordion } from '../common/MatchingBreakdownAccordion';
 
 export const MatchingTab: React.FC = () => {
   const {
@@ -27,6 +28,7 @@ export const MatchingTab: React.FC = () => {
     aiMatchState,
     universitiesList,
     saveAIMatchState,
+    setMatchingInputScore,
   } = useApp();
 
   interface EvaluatedData {
@@ -104,6 +106,7 @@ export const MatchingTab: React.FC = () => {
   // Handlers that reset evaluation when sliders/parameters change
   const handleScoreChange = (val: number) => {
     setScore(val);
+    setMatchingInputScore(val);
     if (hasEvaluated) {
       setHasEvaluated(false);
       setEvaluatedData(null);
@@ -613,42 +616,40 @@ export const MatchingTab: React.FC = () => {
           >
             {loading ? 'Đang đối soát 30 trường...' : '🚀 Phân tích cơ hội trúng tuyển ngay →'}
           </Button>
+
+          {loading && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+              <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '16px', border: '1px solid #E2E8F0', display: 'flex', gap: '14px', alignItems: 'center' }}>
+                <Skeleton width="48px" height="48px" borderRadius="14px" />
+                <div style={{ flex: 1 }}>
+                  <Skeleton width="60%" height="16px" style={{ marginBottom: '8px' }} />
+                  <Skeleton width="40%" height="12px" />
+                </div>
+                <Skeleton width="54px" height="54px" borderRadius="999px" />
+              </div>
+              <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '16px', border: '1px solid #E2E8F0', display: 'flex', gap: '14px', alignItems: 'center' }}>
+                <Skeleton width="48px" height="48px" borderRadius="14px" />
+                <div style={{ flex: 1 }}>
+                  <Skeleton width="55%" height="16px" style={{ marginBottom: '8px' }} />
+                  <Skeleton width="35%" height="12px" />
+                </div>
+                <Skeleton width="54px" height="54px" borderRadius="999px" />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* Conditionally show results only after user clicks analyze */}
       {!hasEvaluated || !evaluatedData ? (
-        <div
-          style={{
-            padding: '36px 20px',
-            backgroundColor: '#FFFFFF',
-            borderRadius: '24px',
-            textAlign: 'center',
-            border: '1.5px dashed #CBD5E1',
-            marginBottom: '24px',
-          }}
-        >
-          <div
-            style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: '50%',
-              backgroundColor: '#EFF6FF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#2563EB',
-              margin: '0 auto 12px',
-            }}
-          >
-            <HelpCircle size={30} />
-          </div>
-          <h4 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-            Chưa có dữ liệu phân tích
-          </h4>
-          <p style={{ margin: 0, fontSize: '13px', color: '#64748B', lineHeight: 1.5 }}>
-            Vui lòng chọn mức điểm dự kiến, ngân sách học phí và bấm nút <strong>"Phân tích cơ hội trúng tuyển ngay"</strong> phía trên để AI đối soát và phân nhóm 30 trường đại học!
-          </p>
+        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '20px', border: '1px solid var(--up-color-slate-200, #E2E8F0)', marginBottom: '24px' }}>
+          <EmptyState
+            icon={<HelpCircle size={28} strokeWidth={1.75} />}
+            title="Chưa có dữ liệu phân tích"
+            description="Vui lòng chọn mức điểm dự kiến, ngân sách học phí và bấm nút 'Phân tích cơ hội trúng tuyển ngay' phía trên để AI đối soát và phân nhóm 30 trường đại học!"
+            actionText="Phân tích ngay"
+            onAction={handleEvaluate}
+          />
         </div>
       ) : (
         <>
@@ -807,19 +808,10 @@ export const MatchingTab: React.FC = () => {
 
                 {/* University Cards */}
                 {list.length === 0 ? (
-                  <div
-                    style={{
-                      padding: '16px',
-                      backgroundColor: '#F8FAFC',
-                      borderRadius: '16px',
-                      textAlign: 'center',
-                      fontSize: '13px',
-                      color: '#94A3B8',
-                      border: '1px dashed #E2E8F0',
-                    }}
-                  >
-                    Không có trường nào thuộc nhóm này theo tiêu chí lọc
-                  </div>
+                  <EmptyState
+                    title="Chưa có trường nào thuộc nhóm này"
+                    description="Thử điều chỉnh điểm THPT hoặc nới rộng ngân sách học phí để mở rộng phạm vi đối soát."
+                  />
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {list.map((item) => (
@@ -834,72 +826,77 @@ export const MatchingTab: React.FC = () => {
                           borderLeft: `5px solid ${meta.color}`,
                           boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
                           display: 'flex',
-                          alignItems: 'center',
-                          gap: '12px',
+                          flexDirection: 'column',
+                          gap: '6px',
                           cursor: 'pointer',
                         }}
                       >
-                        <UniversityAvatar code={item.university.code} size={50} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <UniversityAvatar code={item.university.code} size={50} />
 
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div
-                            style={{
-                              fontSize: '15px',
-                              fontWeight: 700,
-                              color: '#0F172A',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              lineHeight: 1.25,
-                            }}
-                          >
-                            {item.university.name}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div
+                              style={{
+                                fontSize: '15px',
+                                fontWeight: 700,
+                                color: '#0F172A',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                lineHeight: 1.25,
+                              }}
+                            >
+                              {item.university.name}
+                            </div>
+
+                            <div
+                              style={{
+                                fontSize: '12px',
+                                color: '#2563EB',
+                                fontWeight: 600,
+                                marginTop: '3px',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                            >
+                              {item.matchedMajor} (Chuẩn ngành: {formatCleanDecimal(item.majorCutoff, 2)}đ)
+                            </div>
+
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                flexWrap: 'wrap',
+                                fontSize: '11px',
+                                color: '#64748B',
+                                marginTop: '3px',
+                              }}
+                            >
+                              <span>{item.university.loc.split(',')[0]}</span>
+                              <span>•</span>
+                              <span>{formatTuitionRange(item.university.tuitionMin, item.university.tuitionMax, true)}</span>
+                            </div>
                           </div>
 
-                          <div
-                            style={{
-                              fontSize: '12px',
-                              color: '#2563EB',
-                              fontWeight: 600,
-                              marginTop: '3px',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                            }}
-                          >
-                            {item.matchedMajor} (Chuẩn ngành: {formatCleanDecimal(item.majorCutoff, 2)}đ)
-                          </div>
-
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              flexWrap: 'wrap',
-                              fontSize: '11px',
-                              color: '#64748B',
-                              marginTop: '3px',
-                            }}
-                          >
-                            <span>{item.university.loc.split(',')[0]}</span>
-                            <span>•</span>
-                            <span>{formatTuitionRange(item.university.tuitionMin, item.university.tuitionMax, true)}</span>
-                            <span>•</span>
-                            <span style={{ color: '#0F766E', fontWeight: 700 }}>
-                              Cơ bản {item.basePercent}%{item.hollandBonus ? ` +${item.hollandBonus}% Holland` : ''}
-                            </span>
+                          {/* Donut Chart with matching percentage */}
+                          <div style={{ flexShrink: 0 }}>
+                            <DonutChart
+                              percent={item.matchingPercent}
+                              color={meta.color}
+                              size={56}
+                              strokeWidth={5}
+                            />
                           </div>
                         </div>
 
-                        {/* Donut Chart with matching percentage */}
-                        <div style={{ flexShrink: 0 }}>
-                          <DonutChart
-                            percent={item.matchingPercent}
-                            color={meta.color}
-                            size={56}
-                            strokeWidth={5}
-                          />
-                        </div>
+                        {/* Explainable Matching Breakdown: Vì sao X%? */}
+                        <MatchingBreakdownAccordion
+                          item={item}
+                          userScore={evaluatedData.score}
+                          maxBudget={evaluatedData.budget}
+                        />
                       </div>
                     ))}
                   </div>

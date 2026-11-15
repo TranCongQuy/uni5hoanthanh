@@ -45,7 +45,7 @@ import {
   sanitizeCsvCell,
 } from '../../utils/validation';
 import { getCutoffRangeText } from '../../data/MockData';
-import { UniversityAvatar } from '../common/UI';
+import { UniversityAvatar, StatusChip } from '../common/UI';
 import { AccountRoleMenu } from '../common/AccountRoleMenu';
 
 type AdminSection = 'dashboard' | 'apps' | 'bookings' | 'unis' | 'account';
@@ -82,29 +82,8 @@ const PERMISSION_ROWS = [
   { label: 'Nộp hồ sơ, bổ sung minh chứng & tự rút nguyện vọng', admin: '—', pxu: '—', student: 'Chính chủ' },
 ];
 
-const StatusBadge: React.FC<{ status: ApplicationStatus }> = ({ status }) => {
-  const m = getStatusMeta(status);
-  return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '4px 10px',
-        borderRadius: '999px',
-        fontSize: '11.5px',
-        fontWeight: 800,
-        color: m.color,
-        backgroundColor: m.bg,
-        border: `1px solid ${m.border}`,
-        whiteSpace: 'nowrap',
-        flexShrink: 0,
-      }}
-    >
-      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: m.dot, flexShrink: 0 }} />
-      {m.label}
-    </span>
-  );
+const StatusBadge: React.FC<{ status: ApplicationStatus; size?: 'sm' | 'md' }> = ({ status, size = 'md' }) => {
+  return <StatusChip status={status} size={size} />;
 };
 
 const exportAppsCsv = (rows: ApplicationRecord[], filename: string) => {
@@ -391,7 +370,16 @@ export const AdminApp: React.FC = () => {
               </span>
             </div>
             <div>
-              <div style={{ fontSize: isDesktop ? '28px' : '24px', fontWeight: 900, color: '#0F172A', lineHeight: 1.1 }}>
+              <div
+                className="tabular-nums"
+                style={{
+                  fontSize: isDesktop ? '28px' : '24px',
+                  fontWeight: 900,
+                  color: 'var(--up-admin-navy, #0F172A)',
+                  lineHeight: 1.1,
+                  fontFamily: 'var(--up-font-family)',
+                }}
+              >
                 {kpi.value}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', gap: '6px' }}>
@@ -1952,17 +1940,18 @@ export const AdminApp: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '10px',
-                    padding: '10px 12px',
-                    borderRadius: '11px',
+                    padding: '10px 12px 10px 10px',
+                    borderRadius: '0 10px 10px 0',
                     border: 'none',
-                    backgroundColor: active ? '#2563EB' : 'transparent',
-                    color: active ? '#FFFFFF' : '#CBD5E1',
+                    borderLeft: active ? '3px solid var(--up-admin-accent, #38BDF8)' : '3px solid transparent',
+                    backgroundColor: active ? 'var(--up-admin-navy-hover, #334155)' : 'transparent',
+                    color: active ? '#FFFFFF' : 'var(--up-color-slate-300, #CBD5E1)',
                     fontSize: '13.5px',
                     fontWeight: active ? 800 : 600,
                     cursor: 'pointer',
                     textAlign: 'left',
                     width: '100%',
-                    transition: 'background-color 0.15s ease',
+                    transition: 'all var(--up-transition-fast, 150ms ease)',
                   }}
                 >
                   {item.icon}
@@ -2034,9 +2023,9 @@ export const AdminApp: React.FC = () => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-              <span style={{ fontSize: '12.5px', color: '#64748B', fontWeight: 600 }}>Trung tâm Điều hành</span>
+              <span style={{ fontSize: '13px', color: 'var(--up-color-slate-500, #64748B)', fontWeight: 600 }}>Admin</span>
               <ChevronRight size={14} color="#94A3B8" />
-              <h1 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <h1 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--up-admin-navy, #0F172A)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {currentNavMeta.label}
               </h1>
             </div>

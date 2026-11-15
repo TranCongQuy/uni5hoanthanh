@@ -17,13 +17,13 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { getHollandName } from '../../data/MockData';
-import { getStatusMeta } from '../../types';
 import type { ApplicationRecord } from '../../types';
 import { canStudentCancelApplication, computeHollandAssessment } from '../../services/ApplicationWorkflow';
 import { formatTuitionRange } from '../../utils/validation';
-import { Button, UniversityAvatar, AppFooter } from '../common/UI';
+import { Button, UniversityAvatar, AppFooter, StatusChip, EmptyState } from '../common/UI';
 import { AccountRoleMenu } from '../common/AccountRoleMenu';
 import { LineChart } from '../charts/LineChart';
+import { ApplicationTimeline } from '../common/ApplicationTimeline';
 
 export const ProfileTab: React.FC = () => {
   const {
@@ -348,33 +348,20 @@ export const ProfileTab: React.FC = () => {
           </div>
 
           {myApplications.length === 0 ? (
-            <div
-              style={{
-                padding: '24px',
-                backgroundColor: '#FFFFFF',
-                borderRadius: '20px',
-                textAlign: 'center',
-                border: '1px dashed #CBD5E1',
-              }}
-            >
-              <FileText size={28} color="#CBD5E1" style={{ margin: '0 auto 8px' }} />
-              <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#64748B' }}>
-                {!isLoggedIn || isGuest
+            <EmptyState
+              icon={<FileText size={26} strokeWidth={1.75} />}
+              title={!isLoggedIn || isGuest ? 'Chưa đăng nhập tài khoản thí sinh' : 'Chưa có hồ sơ xét tuyển nào'}
+              description={
+                !isLoggedIn || isGuest
                   ? 'Đăng nhập tài khoản thí sinh để nộp và theo dõi hồ sơ xét tuyển đại học trực tuyến.'
-                  : 'Bạn chưa nộp hồ sơ xét tuyển nào. Hãy chọn trường và nộp hồ sơ trực tuyến ngay!'}
-              </p>
-              <Button
-                variant="tonal"
-                size="M"
-                onClick={() => (!isLoggedIn || isGuest ? openAuthModal() : setActiveTab(0))}
-              >
-                {!isLoggedIn || isGuest ? 'Đăng nhập ngay' : 'Khám phá trường ngay'}
-              </Button>
-            </div>
+                  : 'Bạn chưa nộp hồ sơ xét tuyển nào. Hãy chọn trường và nộp hồ sơ trực tuyến ngay!'
+              }
+              actionText={!isLoggedIn || isGuest ? 'Đăng nhập ngay' : 'Khám phá trường ngay'}
+              onAction={() => (!isLoggedIn || isGuest ? openAuthModal() : setActiveTab(0))}
+            />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {myApplications.map((app) => {
-                const meta = getStatusMeta(app.status);
                 return (
                   <div
                     key={app.id}
@@ -382,46 +369,58 @@ export const ProfileTab: React.FC = () => {
                     style={{
                       backgroundColor: '#FFFFFF',
                       borderRadius: '20px',
-                      border: '1.5px solid #E2E8F0',
+                      border: '1px solid var(--up-color-slate-200, #E2E8F0)',
                       padding: '16px',
                       cursor: 'pointer',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-                      transition: 'all 0.2s ease',
+                      boxShadow: 'var(--up-shadow-card, 0 4px 16px -2px rgba(15,23,42,0.06))',
+                      transition: 'all var(--up-transition-fast, 150ms ease)',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', gap: '8px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 800, color: '#2563EB', backgroundColor: '#EFF6FF', padding: '3px 8px', borderRadius: '8px' }}>
-                        {app.code}
-                      </span>
                       <span
+                        className="tabular-nums"
                         style={{
-                          fontSize: '11px',
+                          fontSize: '12px',
                           fontWeight: 800,
-                          color: meta.color,
-                          backgroundColor: meta.bg,
-                          border: `1px solid ${meta.border}`,
+                          color: 'var(--up-student-primary, #4F46E5)',
+                          backgroundColor: 'var(--up-student-primary-light, #EEF2FF)',
                           padding: '3px 8px',
                           borderRadius: '8px',
+                          border: '1px solid var(--up-student-primary-border, #C7D2FE)',
                         }}
                       >
-                        {meta.label}
+                        {app.code}
                       </span>
+                      <StatusChip status={app.status} size="sm" />
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-                      <UniversityAvatar code={app.uniCode} size={38} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                      <UniversityAvatar code={app.uniCode} size={42} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: '14.5px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {app.uniName}
                         </div>
-                        <div style={{ fontSize: '12px', color: '#64748B' }}>
-                          {app.major}
+                        <div style={{ fontSize: '12px', color: '#64748B', marginTop: '1px' }}>
+                          Ngành: <span style={{ fontWeight: 700, color: '#1E293B' }}>{app.major}</span>
                         </div>
                       </div>
                     </div>
 
+                    {/* Vertical Status Timeline */}
+                    <div
+                      style={{
+                        backgroundColor: 'var(--up-color-slate-50, #F8FAFC)',
+                        borderRadius: '14px',
+                        padding: '12px',
+                        marginBottom: '10px',
+                        border: '1px solid var(--up-color-slate-200, #E2E8F0)',
+                      }}
+                    >
+                      <ApplicationTimeline application={app} />
+                    </div>
+
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #F1F5F9', paddingTop: '10px', fontSize: '12px', gap: '8px' }}>
-                      <span style={{ color: '#94A3B8' }}>
+                      <span className="tabular-nums" style={{ color: '#94A3B8', fontSize: '11.5px' }}>
                         Nộp lúc: {app.submittedAt}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -446,7 +445,7 @@ export const ProfileTab: React.FC = () => {
                             Rút hồ sơ
                           </button>
                         )}
-                        <span style={{ color: '#2563EB', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ color: 'var(--up-student-primary, #4F46E5)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
                           {app.status === 'Thiếu hồ sơ' ? 'Bổ sung ngay' : 'Chi tiết'} <ChevronRight size={14} />
                         </span>
                       </div>
@@ -488,23 +487,13 @@ export const ProfileTab: React.FC = () => {
           </div>
 
           {myBookings.length === 0 ? (
-            <div
-              style={{
-                padding: '20px',
-                backgroundColor: '#FFFFFF',
-                borderRadius: '20px',
-                textAlign: 'center',
-                border: '1px dashed #CBD5E1',
-              }}
-            >
-              <Calendar size={26} color="#CBD5E1" style={{ margin: '0 auto 8px' }} />
-              <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#64748B' }}>
-                Đặt lịch gặp gỡ trực tiếp 1-1 cùng giảng viên và ban tuyển sinh các trường đại học.
-              </p>
-              <Button variant="tonal" size="M" onClick={() => openBookConsultation()}>
-                Đặt lịch tư vấn 1-1 ngay
-              </Button>
-            </div>
+            <EmptyState
+              icon={<Calendar size={26} strokeWidth={1.75} />}
+              title="Chưa có lịch hẹn tư vấn nào"
+              description="Đặt lịch gặp gỡ trực tiếp 1-1 cùng giảng viên và ban tuyển sinh các trường đại học."
+              actionText="Đặt lịch tư vấn 1-1 ngay"
+              onAction={() => openBookConsultation()}
+            />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {myBookings.map((bk) => {
@@ -572,20 +561,13 @@ export const ProfileTab: React.FC = () => {
             </div>
 
             {favoriteUnis.length === 0 ? (
-              <div
-                style={{
-                  padding: '22px',
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '20px',
-                  textAlign: 'center',
-                  border: '1px dashed #CBD5E1',
-                }}
-              >
-                <Heart size={26} color="#CBD5E1" style={{ margin: '0 auto 8px' }} />
-                <p style={{ margin: 0, fontSize: '13px', color: '#64748B' }}>
-                  Chưa có trường nào được lưu. Bấm biểu tượng trái tim để lưu trường bạn yêu thích!
-                </p>
-              </div>
+              <EmptyState
+                icon={<Heart size={26} strokeWidth={1.75} />}
+                title="Chưa có trường nào được lưu"
+                description="Bấm biểu tượng trái tim tại trang chủ để lưu các trường đại học bạn quan tâm."
+                actionText="Khám phá trường ngay"
+                onAction={() => setActiveTab(0)}
+              />
             ) : (
               <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '6px' }}>
                 {favoriteUnis.map((uni) => (

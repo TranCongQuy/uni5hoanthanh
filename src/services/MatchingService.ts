@@ -205,3 +205,82 @@ export function evaluateMatching(
 
   return result;
 }
+
+/**
+ * Resolves admission score prioritizing the temporary input from AI Matching slider,
+ * without corrupting the student's profile expected score.
+ */
+export function resolveAdmissionScore(
+  profileExpectedScore: number | undefined,
+  matchingInputScore: number | null | undefined
+): { score: number; source: 'matching' | 'profile'; sourceLabel: string } {
+  if (typeof matchingInputScore === 'number' && !Number.isNaN(matchingInputScore) && matchingInputScore > 0) {
+    return {
+      score: matchingInputScore,
+      source: 'matching',
+      sourceLabel: `Tính theo điểm bạn vừa nhập ${matchingInputScore.toFixed(1)} điểm tại AI Matching`,
+    };
+  }
+  const defaultScore = profileExpectedScore || 24.5;
+  return {
+    score: defaultScore,
+    source: 'profile',
+    sourceLabel: `Tính theo điểm dự kiến trong hồ sơ (${defaultScore.toFixed(1)} điểm)`,
+  };
+}
+
+export interface MatchExplanation {
+  matchedMajor: string;
+  majorCutoff: number;
+  userScore: number;
+  diffScore: number;
+  diffScoreLabel: string;
+  basePercent: number;
+  hollandBonus: number;
+  hollandExplanation: string | null;
+  matchingPercent: number;
+  isBudgetMatched: boolean;
+  budgetExplanation: string;
+}
+
+/**
+ * Deconstructs the match result into an explainable breakdown:
+ * reference major, cutoff delta, base %, Holland bonus and budget fit.
+ */
+export function explainMatchResult(
+  match: MatchResult,
+  userScore: number,
+  maxBudget?: number
+): MatchExplanation {
+  const diff = match.diffScore;
+  const diffLabel = diff >= 0 ? `+${diff.toFixed(1)}đ` : `${diff.toFixed(1)}đ`;
+  const hollandExplanation =
+    match.hollandBonus > 0
+      ? `+${match.hollandBonus}% vì ngành "${match.matchedMajor}" tương thích nhóm tính cách Holland của bạn`
+      : null;
+
+  let budgetExplanation: string;
+  if (typeof maxBudget === 'number' && maxBudget < 999) {
+    if (match.isBudgetMatched) {
+      budgetExplanation = `Học phí (${match.university.tuitionMin}–${match.university.tuitionMax} tr/năm) nằm trong ngân sách ${maxBudget} tr/năm`;
+    } else {
+      budgetExplanation = `Học phí tối thiểu (${match.university.tuitionMin} tr/năm) vượt ngân sách ${maxBudget} tr/năm`;
+    }
+  } else {
+    budgetExplanation = `Học phí ước tính ${match.university.tuitionMin}–${match.university.tuitionMax} triệu/năm`;
+  }
+
+  return {
+    matchedMajor: match.matchedMajor,
+    majorCutoff: match.majorCutoff,
+    userScore,
+    diffScore: match.diffScore,
+    diffScoreLabel: diffLabel,
+    basePercent: match.basePercent,
+    hollandBonus: match.hollandBonus,
+    hollandExplanation,
+    matchingPercent: match.matchingPercent,
+    isBudgetMatched: match.isBudgetMatched,
+    budgetExplanation,
+  };
+}

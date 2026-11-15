@@ -42,7 +42,7 @@ import {
   sanitizeCsvCell,
 } from '../../utils/validation';
 import { getCutoffRangeText } from '../../data/MockData';
-import { UniversityAvatar } from '../common/UI';
+import { UniversityAvatar, StatusChip } from '../common/UI';
 import { AccountRoleMenu } from '../common/AccountRoleMenu';
 
 type UniSection = 'dashboard' | 'apps' | 'bookings' | 'programs' | 'account';
@@ -66,29 +66,8 @@ const PXU_QUICK_NOTES = [
   'Vui lòng bổ sung ảnh chụp CCCD 2 mặt để hoàn tất hồ sơ xét tuyển.',
 ];
 
-const StatusBadge: React.FC<{ status: ApplicationStatus }> = ({ status }) => {
-  const m = getStatusMeta(status);
-  return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '4px 10px',
-        borderRadius: '999px',
-        fontSize: '11.5px',
-        fontWeight: 800,
-        color: m.color,
-        backgroundColor: m.bg,
-        border: `1px solid ${m.border}`,
-        whiteSpace: 'nowrap',
-        flexShrink: 0,
-      }}
-    >
-      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: m.dot, flexShrink: 0 }} />
-      {m.label}
-    </span>
-  );
+const StatusBadge: React.FC<{ status: ApplicationStatus; size?: 'sm' | 'md' }> = ({ status, size = 'md' }) => {
+  return <StatusChip status={status} size={size} />;
 };
 
 const exportAppsCsv = (rows: ApplicationRecord[], filename: string) => {
@@ -384,8 +363,19 @@ export const UniversityApp: React.FC = () => {
               </span>
             </div>
             <div>
-              <div style={{ fontSize: isDesktop ? '28px' : '24px', fontWeight: 900, color: '#0F172A', lineHeight: 1.1 }}>{kpi.value}</div>
-              <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '5px' }}>{kpi.sub}</div>
+              <div
+                className="tabular-nums"
+                style={{
+                  fontSize: isDesktop ? '28px' : '24px',
+                  fontWeight: 900,
+                  color: 'var(--up-color-slate-900, #0F172A)',
+                  lineHeight: 1.1,
+                  fontFamily: 'var(--up-font-family)',
+                }}
+              >
+                {kpi.value}
+              </div>
+              <div style={{ fontSize: '11.5px', color: 'var(--up-color-slate-500, #64748B)', marginTop: '5px' }}>{kpi.sub}</div>
             </div>
           </button>
         ))}
@@ -489,16 +479,31 @@ export const UniversityApp: React.FC = () => {
                   <div
                     key={major}
                     onClick={() => jumpToMajorApps(major)}
-                    style={{ cursor: 'pointer', padding: '6px 8px', borderRadius: '10px', backgroundColor: '#F8FAFC' }}
+                    style={{
+                      cursor: 'pointer',
+                      padding: '8px 10px',
+                      borderRadius: '10px',
+                      backgroundColor: 'var(--up-color-slate-50, #F8FAFC)',
+                      border: '1px solid var(--up-color-slate-100, #F1F5F9)',
+                      transition: 'background-color var(--up-transition-fast, 150ms ease)',
+                    }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', marginBottom: '4px', gap: '8px' }}>
-                      <span style={{ fontWeight: 700, color: '#0F172A' }}>{major}</span>
-                      <span style={{ fontSize: '11.5px', color: '#64748B', whiteSpace: 'nowrap' }}>
-                        Chuẩn <strong>{cutoff}đ</strong> · <strong style={{ color: EMERALD }}>{count} HS</strong>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', marginBottom: '5px', gap: '8px' }}>
+                      <span style={{ fontWeight: 700, color: 'var(--up-color-slate-900, #0F172A)' }}>{major}</span>
+                      <span className="tabular-nums" style={{ fontSize: '11.5px', color: 'var(--up-color-slate-500, #64748B)', whiteSpace: 'nowrap' }}>
+                        Chuẩn <strong>{cutoff}đ</strong> · <strong style={{ color: 'var(--up-pxu-primary, #059669)' }}>{count} HS ({pct}%)</strong>
                       </span>
                     </div>
-                    <div style={{ height: '6px', borderRadius: '999px', backgroundColor: '#E2E8F0', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${pct}%`, backgroundColor: EMERALD, borderRadius: '999px' }} />
+                    <div style={{ height: '6px', borderRadius: '999px', backgroundColor: 'var(--up-color-slate-200, #E2E8F0)', overflow: 'hidden' }}>
+                      <div
+                        style={{
+                          height: '100%',
+                          width: `${pct}%`,
+                          backgroundColor: 'var(--up-pxu-primary, #059669)',
+                          borderRadius: '999px',
+                          transition: 'width var(--up-transition-base, 200ms ease)',
+                        }}
+                      />
                     </div>
                   </div>
                 );
@@ -1310,17 +1315,18 @@ export const UniversityApp: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '10px',
-                    padding: '10px 12px',
-                    borderRadius: '11px',
+                    padding: '10px 12px 10px 10px',
+                    borderRadius: '0 10px 10px 0',
                     border: 'none',
-                    backgroundColor: active ? EMERALD : 'transparent',
+                    borderLeft: active ? '3px solid var(--up-color-emerald-300, #6EE7B7)' : '3px solid transparent',
+                    backgroundColor: active ? 'rgba(5, 150, 105, 0.45)' : 'transparent',
                     color: active ? '#FFFFFF' : '#D1FAE5',
                     fontSize: '13.5px',
                     fontWeight: active ? 800 : 600,
                     cursor: 'pointer',
                     textAlign: 'left',
                     width: '100%',
-                    transition: 'background-color 0.15s ease',
+                    transition: 'all var(--up-transition-fast, 150ms ease)',
                   }}
                 >
                   {item.icon}
@@ -1363,9 +1369,9 @@ export const UniversityApp: React.FC = () => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-              <span style={{ fontSize: '12.5px', color: EMERALD, fontWeight: 700 }}>Cổng Tuyển sinh PXU</span>
+              <span style={{ fontSize: '13px', color: 'var(--up-pxu-primary, #059669)', fontWeight: 700 }}>PXU</span>
               <ChevronRight size={14} color="#94A3B8" />
-              <h1 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <h1 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--up-color-slate-900, #0F172A)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {currentNavMeta.label}
               </h1>
             </div>

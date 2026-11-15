@@ -11,12 +11,13 @@ import {
   Calendar,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { calculateSingleMatch } from '../../services/MatchingService';
+import { calculateSingleMatch, resolveAdmissionScore } from '../../services/MatchingService';
 import { getMajorExamBlocks, getMajorQuota, getCutoffRangeText } from '../../data/MockData';
 import { formatCleanDecimal, formatTuitionRange } from '../../utils/validation';
 import { Button, UniversityAvatar, ImageSafe } from '../common/UI';
 import { BarChart } from '../charts/BarChart';
 import { DonutChart } from '../charts/DonutChart';
+import { MatchingBreakdownAccordion } from '../common/MatchingBreakdownAccordion';
 
 export const UniversityDetailModal: React.FC = () => {
   const {
@@ -30,6 +31,7 @@ export const UniversityDetailModal: React.FC = () => {
     openApplyDemo,
     openBookConsultation,
     profile,
+    matchingInputScore,
     viewMode,
     universitiesList,
     hollandResult,
@@ -46,8 +48,10 @@ export const UniversityDetailModal: React.FC = () => {
   const isComp = compareIds.includes(uni.id);
 
   // Thuật toán % trúng tuyển THỐNG NHẤT toàn hệ thống: cùng ngành tham chiếu và
-  // cùng bảng bậc % với AI Matching (MatchingService) — không còn 2 công thức lệch nhau.
-  const userScore = profile.expectedScore || 24.5;
+  // cùng bảng bậc % với AI Matching (MatchingService).
+  // Đọc điểm vừa nhập ở AI Matching nếu có, fallback về điểm hồ sơ.
+  const resolvedScore = resolveAdmissionScore(profile.expectedScore, matchingInputScore);
+  const userScore = resolvedScore.score;
   const match = calculateSingleMatch(uni, userScore, hollandResult?.primaryCode || undefined);
   const cutoff = match.majorCutoff;
   const diff = match.diffScore;
@@ -397,9 +401,27 @@ export const UniversityDetailModal: React.FC = () => {
                     <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px', lineHeight: 1.4 }}>
                       {matchDesc}
                     </div>
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: resolvedScore.source === 'matching' ? '#4F46E5' : '#475569',
+                        backgroundColor: resolvedScore.source === 'matching' ? '#EEF2FF' : '#F1F5F9',
+                        border: `1px solid ${resolvedScore.source === 'matching' ? '#C7D2FE' : '#E2E8F0'}`,
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        marginTop: '6px',
+                      }}
+                    >
+                      <span>🎯 {resolvedScore.sourceLabel}</span>
+                    </div>
                     <div style={{ fontSize: '11px', fontWeight: 700, color: '#2563EB', marginTop: '6px' }}>
                       Công thức thống nhất: {formulaTag}
                     </div>
+                    <MatchingBreakdownAccordion item={match} userScore={userScore} />
                   </div>
                 </div>
 
