@@ -713,6 +713,7 @@ export const DesktopView: React.FC = () => {
               return (
                 <button
                   key={tab.id}
+                  data-tab-id={tab.id}
                   onClick={() => {
                     setActiveTab(tab.id);
                     window.scrollTo({ top: 0, behavior: 'smooth' });

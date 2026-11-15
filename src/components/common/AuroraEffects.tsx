@@ -149,6 +149,7 @@ export const UniversityCard: React.FC<UniversityCardProps> = ({
   return (
     <div
       ref={ref}
+      data-uni-card={uni.id}
       style={{
         ...revealStyle,
         backgroundColor: '#FFFFFF',

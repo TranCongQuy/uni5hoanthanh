@@ -2027,6 +2027,7 @@ export const AdminApp: React.FC = () => {
                       <button
                         key={item.id}
                         type="button"
+                        data-section={item.id}
                         onClick={() => {
                           setSection(item.id);
                           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2132,6 +2133,7 @@ export const AdminApp: React.FC = () => {
               {/* Global Search Button Trigger (B3) */}
               <button
                 type="button"
+                data-testid="admin-global-search-trigger"
                 onClick={() => setIsGlobalSearchOpen(true)}
                 style={{
                   display: 'flex',
