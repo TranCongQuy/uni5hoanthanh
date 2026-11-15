@@ -71,7 +71,7 @@ const MainApp: React.FC = () => {
   };
 
   const isAnyModalOpen =
-    (isLoggedIn && showOnboarding) ||
+    (isLoggedIn && showOnboarding && user.role === 'student') ||
     isChatBotOpen ||
     isNotificationsOpen ||
     selectedUniIdForDetail !== null ||

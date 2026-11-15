@@ -1409,7 +1409,7 @@ export const UniversityApp: React.FC = () => {
         </aside>
 
         {/* Right Workspace */}
-        <div style={{ flex: 1, minWidth: 0, marginLeft: '256px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, minWidth: 0, marginLeft: '256px', display: 'flex', flexDirection: 'column', height: '100dvh', overflowY: 'auto' }}>
           <header
             style={{
               height: '64px',

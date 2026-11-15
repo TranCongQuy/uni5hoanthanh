@@ -2148,7 +2148,7 @@ export const AdminApp: React.FC = () => {
         </aside>
 
         {/* Right Content Area with Sticky Topbar */}
-        <div style={{ flex: 1, minWidth: 0, marginLeft: '260px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, minWidth: 0, marginLeft: '260px', display: 'flex', flexDirection: 'column', height: '100dvh', overflowY: 'auto' }}>
           <header
             style={{
               height: '64px',
