@@ -57,6 +57,7 @@ import { AccountRoleMenu } from '../common/AccountRoleMenu';
 import { SoundFX } from '../../utils/sound';
 import { RadarChart } from '../charts/RadarChart';
 import { DonutChart } from '../charts/DonutChart';
+import { MatchingBreakdownAccordion } from '../common/MatchingBreakdownAccordion';
 import { evaluateMatching } from '../../services/MatchingService';
 
 const EDUFAIR_DESKTOP_TARGET_TS = new Date('2026-12-20T08:00:00+07:00').getTime();
@@ -2705,30 +2706,37 @@ export const DesktopView: React.FC = () => {
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
                       {sortResults(lastMatchEvaluatedData.evaluation.safeList).map((res) => (
-                        <div key={res.university.id} style={{ padding: '14px', borderRadius: '14px', backgroundColor: '#F0FDF4', border: '1px solid #DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                            <DonutChart percent={res.matchingPercent} size={44} strokeWidth={4.5} />
-                            <div style={{ minWidth: 0 }}>
-                              <strong style={{ fontSize: '14px', color: '#14532D' }}>{res.university.code}</strong>
-                              <div style={{ fontSize: '12px', color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '210px' }}>
-                                {res.university.name}
-                              </div>
-                              <div style={{ fontSize: '11px', color: '#047857', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '210px' }}>
-                                {res.matchedMajor} ({formatCleanDecimal(res.majorCutoff, 2)}đ) • {formatTuitionRange(res.university.tuitionMin, res.university.tuitionMax, false)}
+                        <div key={res.university.id} style={{ padding: '14px', borderRadius: '14px', backgroundColor: '#F0FDF4', border: '1px solid #DCFCE7', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                              <DonutChart percent={res.matchingPercent} size={44} strokeWidth={4.5} />
+                              <div style={{ minWidth: 0 }}>
+                                <strong style={{ fontSize: '14px', color: '#14532D' }}>{res.university.code}</strong>
+                                <div style={{ fontSize: '12px', color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '210px' }}>
+                                  {res.university.name}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#047857', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '210px' }}>
+                                  {res.matchedMajor} ({formatCleanDecimal(res.majorCutoff, 2)}đ) • {formatTuitionRange(res.university.tuitionMin, res.university.tuitionMax, false)}
+                                </div>
                               </div>
                             </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                              <button
+                                onClick={() => openBookConsultation(res.university)}
+                                style={{ padding: '6px 9px', borderRadius: '8px', border: '1px solid #A7F3D0', backgroundColor: '#FFFFFF', color: '#059669', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                              >
+                                Tư vấn 1-1
+                              </button>
+                              <Button variant="primary" size="S" onClick={() => openUniDetail(res.university.id)}>
+                                Chi tiết
+                              </Button>
+                            </div>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                            <button
-                              onClick={() => openBookConsultation(res.university)}
-                              style={{ padding: '6px 9px', borderRadius: '8px', border: '1px solid #A7F3D0', backgroundColor: '#FFFFFF', color: '#059669', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
-                            >
-                              Tư vấn 1-1
-                            </button>
-                            <Button variant="primary" size="S" onClick={() => openUniDetail(res.university.id)}>
-                              Chi tiết
-                            </Button>
-                          </div>
+                          <MatchingBreakdownAccordion
+                            item={res}
+                            userScore={lastMatchEvaluatedData.score}
+                            maxBudget={lastMatchEvaluatedData.budget}
+                          />
                         </div>
                       ))}
                     </div>
@@ -2750,30 +2758,37 @@ export const DesktopView: React.FC = () => {
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
                       {sortResults(lastMatchEvaluatedData.evaluation.moderateList).map((res) => (
-                        <div key={res.university.id} style={{ padding: '14px', borderRadius: '14px', backgroundColor: '#FFFBEB', border: '1px solid #FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                            <DonutChart percent={res.matchingPercent} size={44} strokeWidth={4.5} />
-                            <div style={{ minWidth: 0 }}>
-                              <strong style={{ fontSize: '14px', color: '#78350F' }}>{res.university.code}</strong>
-                              <div style={{ fontSize: '12px', color: '#92400E', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '210px' }}>
-                                {res.university.name}
-                              </div>
-                              <div style={{ fontSize: '11px', color: '#B45309', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '210px' }}>
-                                {res.matchedMajor} ({formatCleanDecimal(res.majorCutoff, 2)}đ) • {formatTuitionRange(res.university.tuitionMin, res.university.tuitionMax, false)}
+                        <div key={res.university.id} style={{ padding: '14px', borderRadius: '14px', backgroundColor: '#FFFBEB', border: '1px solid #FEF3C7', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                              <DonutChart percent={res.matchingPercent} size={44} strokeWidth={4.5} />
+                              <div style={{ minWidth: 0 }}>
+                                <strong style={{ fontSize: '14px', color: '#78350F' }}>{res.university.code}</strong>
+                                <div style={{ fontSize: '12px', color: '#92400E', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '210px' }}>
+                                  {res.university.name}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#B45309', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '210px' }}>
+                                  {res.matchedMajor} ({formatCleanDecimal(res.majorCutoff, 2)}đ) • {formatTuitionRange(res.university.tuitionMin, res.university.tuitionMax, false)}
+                                </div>
                               </div>
                             </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                              <button
+                                onClick={() => openBookConsultation(res.university)}
+                                style={{ padding: '6px 9px', borderRadius: '8px', border: '1px solid #FDE68A', backgroundColor: '#FFFFFF', color: '#B45309', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                              >
+                                Tư vấn 1-1
+                              </button>
+                              <Button variant="primary" size="S" onClick={() => openUniDetail(res.university.id)}>
+                                Chi tiết
+                              </Button>
+                            </div>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                            <button
-                              onClick={() => openBookConsultation(res.university)}
-                              style={{ padding: '6px 9px', borderRadius: '8px', border: '1px solid #FDE68A', backgroundColor: '#FFFFFF', color: '#B45309', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
-                            >
-                              Tư vấn 1-1
-                            </button>
-                            <Button variant="primary" size="S" onClick={() => openUniDetail(res.university.id)}>
-                              Chi tiết
-                            </Button>
-                          </div>
+                          <MatchingBreakdownAccordion
+                            item={res}
+                            userScore={lastMatchEvaluatedData.score}
+                            maxBudget={lastMatchEvaluatedData.budget}
+                          />
                         </div>
                       ))}
                     </div>
@@ -2795,30 +2810,37 @@ export const DesktopView: React.FC = () => {
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
                       {sortResults(lastMatchEvaluatedData.evaluation.challengingList).map((res) => (
-                        <div key={res.university.id} style={{ padding: '14px', borderRadius: '14px', backgroundColor: '#FEF2F2', border: '1px solid #FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                            <DonutChart percent={res.matchingPercent} size={44} strokeWidth={4.5} />
-                            <div style={{ minWidth: 0 }}>
-                              <strong style={{ fontSize: '14px', color: '#7F1D1D' }}>{res.university.code}</strong>
-                              <div style={{ fontSize: '12px', color: '#991B1B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '210px' }}>
-                                {res.university.name}
-                              </div>
-                              <div style={{ fontSize: '11px', color: '#B91C1C', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '210px' }}>
-                                {res.matchedMajor} ({formatCleanDecimal(res.majorCutoff, 2)}đ) • {formatTuitionRange(res.university.tuitionMin, res.university.tuitionMax, false)}
+                        <div key={res.university.id} style={{ padding: '14px', borderRadius: '14px', backgroundColor: '#FEF2F2', border: '1px solid #FEE2E2', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                              <DonutChart percent={res.matchingPercent} size={44} strokeWidth={4.5} />
+                              <div style={{ minWidth: 0 }}>
+                                <strong style={{ fontSize: '14px', color: '#7F1D1D' }}>{res.university.code}</strong>
+                                <div style={{ fontSize: '12px', color: '#991B1B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '210px' }}>
+                                  {res.university.name}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#B91C1C', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '210px' }}>
+                                  {res.matchedMajor} ({formatCleanDecimal(res.majorCutoff, 2)}đ) • {formatTuitionRange(res.university.tuitionMin, res.university.tuitionMax, false)}
+                                </div>
                               </div>
                             </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                              <button
+                                onClick={() => openBookConsultation(res.university)}
+                                style={{ padding: '6px 9px', borderRadius: '8px', border: '1px solid #FECACA', backgroundColor: '#FFFFFF', color: '#DC2626', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                              >
+                                Tư vấn 1-1
+                              </button>
+                              <Button variant="primary" size="S" onClick={() => openUniDetail(res.university.id)}>
+                                Chi tiết
+                              </Button>
+                            </div>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                            <button
-                              onClick={() => openBookConsultation(res.university)}
-                              style={{ padding: '6px 9px', borderRadius: '8px', border: '1px solid #FECACA', backgroundColor: '#FFFFFF', color: '#DC2626', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
-                            >
-                              Tư vấn 1-1
-                            </button>
-                            <Button variant="primary" size="S" onClick={() => openUniDetail(res.university.id)}>
-                              Chi tiết
-                            </Button>
-                          </div>
+                          <MatchingBreakdownAccordion
+                            item={res}
+                            userScore={lastMatchEvaluatedData.score}
+                            maxBudget={lastMatchEvaluatedData.budget}
+                          />
                         </div>
                       ))}
                     </div>

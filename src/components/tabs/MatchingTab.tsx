@@ -16,6 +16,7 @@ import { formatCleanDecimal, formatTuitionRange } from '../../utils/validation';
 import type { EvaluationGroup, GroupType, MatchResult } from '../../types';
 import { Button, UniversityAvatar, AppFooter, EmptyState, Skeleton } from '../common/UI';
 import { DonutChart } from '../charts/DonutChart';
+import { MatchingBreakdownAccordion } from '../common/MatchingBreakdownAccordion';
 
 export const MatchingTab: React.FC = () => {
   const {
@@ -825,72 +826,77 @@ export const MatchingTab: React.FC = () => {
                           borderLeft: `5px solid ${meta.color}`,
                           boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
                           display: 'flex',
-                          alignItems: 'center',
-                          gap: '12px',
+                          flexDirection: 'column',
+                          gap: '6px',
                           cursor: 'pointer',
                         }}
                       >
-                        <UniversityAvatar code={item.university.code} size={50} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <UniversityAvatar code={item.university.code} size={50} />
 
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div
-                            style={{
-                              fontSize: '15px',
-                              fontWeight: 700,
-                              color: '#0F172A',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              lineHeight: 1.25,
-                            }}
-                          >
-                            {item.university.name}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div
+                              style={{
+                                fontSize: '15px',
+                                fontWeight: 700,
+                                color: '#0F172A',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                lineHeight: 1.25,
+                              }}
+                            >
+                              {item.university.name}
+                            </div>
+
+                            <div
+                              style={{
+                                fontSize: '12px',
+                                color: '#2563EB',
+                                fontWeight: 600,
+                                marginTop: '3px',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                            >
+                              {item.matchedMajor} (Chuẩn ngành: {formatCleanDecimal(item.majorCutoff, 2)}đ)
+                            </div>
+
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                flexWrap: 'wrap',
+                                fontSize: '11px',
+                                color: '#64748B',
+                                marginTop: '3px',
+                              }}
+                            >
+                              <span>{item.university.loc.split(',')[0]}</span>
+                              <span>•</span>
+                              <span>{formatTuitionRange(item.university.tuitionMin, item.university.tuitionMax, true)}</span>
+                            </div>
                           </div>
 
-                          <div
-                            style={{
-                              fontSize: '12px',
-                              color: '#2563EB',
-                              fontWeight: 600,
-                              marginTop: '3px',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                            }}
-                          >
-                            {item.matchedMajor} (Chuẩn ngành: {formatCleanDecimal(item.majorCutoff, 2)}đ)
-                          </div>
-
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              flexWrap: 'wrap',
-                              fontSize: '11px',
-                              color: '#64748B',
-                              marginTop: '3px',
-                            }}
-                          >
-                            <span>{item.university.loc.split(',')[0]}</span>
-                            <span>•</span>
-                            <span>{formatTuitionRange(item.university.tuitionMin, item.university.tuitionMax, true)}</span>
-                            <span>•</span>
-                            <span style={{ color: '#0F766E', fontWeight: 700 }}>
-                              Cơ bản {item.basePercent}%{item.hollandBonus ? ` +${item.hollandBonus}% Holland` : ''}
-                            </span>
+                          {/* Donut Chart with matching percentage */}
+                          <div style={{ flexShrink: 0 }}>
+                            <DonutChart
+                              percent={item.matchingPercent}
+                              color={meta.color}
+                              size={56}
+                              strokeWidth={5}
+                            />
                           </div>
                         </div>
 
-                        {/* Donut Chart with matching percentage */}
-                        <div style={{ flexShrink: 0 }}>
-                          <DonutChart
-                            percent={item.matchingPercent}
-                            color={meta.color}
-                            size={56}
-                            strokeWidth={5}
-                          />
-                        </div>
+                        {/* Explainable Matching Breakdown: Vì sao X%? */}
+                        <MatchingBreakdownAccordion
+                          item={item}
+                          userScore={evaluatedData.score}
+                          maxBudget={evaluatedData.budget}
+                        />
                       </div>
                     ))}
                   </div>

@@ -17,6 +17,7 @@ import { formatCleanDecimal, formatTuitionRange } from '../../utils/validation';
 import { Button, UniversityAvatar, ImageSafe } from '../common/UI';
 import { BarChart } from '../charts/BarChart';
 import { DonutChart } from '../charts/DonutChart';
+import { MatchingBreakdownAccordion } from '../common/MatchingBreakdownAccordion';
 
 export const UniversityDetailModal: React.FC = () => {
   const {
@@ -420,6 +421,7 @@ export const UniversityDetailModal: React.FC = () => {
                     <div style={{ fontSize: '11px', fontWeight: 700, color: '#2563EB', marginTop: '6px' }}>
                       Công thức thống nhất: {formulaTag}
                     </div>
+                    <MatchingBreakdownAccordion item={match} userScore={userScore} />
                   </div>
                 </div>
 
