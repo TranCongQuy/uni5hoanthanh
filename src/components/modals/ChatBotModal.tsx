@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Bot, Send, Trash2 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { sendChatMessageToAssistant } from '../../services/AiChatService';
 import type { ChatMessage } from '../../types';
 
 const INITIAL_MESSAGES: ChatMessage[] = [
@@ -31,6 +32,7 @@ export const ChatBotModal: React.FC = () => {
     isGuest,
     viewMode,
     incrementAiQueryCount,
+    universitiesList,
   } = useApp();
   const isDesktop = viewMode === 'desktop';
   const chatKey =
@@ -119,35 +121,56 @@ export const ChatBotModal: React.FC = () => {
     }
   }, [profile.expectedScore]);
 
-  const handleSendMessage = useCallback((textToSend?: string) => {
-    const content = textToSend || inputText;
-    if (!content.trim()) return;
+  const handleSendMessage = useCallback(
+    async (textToSend?: string) => {
+      const content = textToSend || inputText;
+      if (!content.trim()) return;
 
-    incrementAiQueryCount();
+      incrementAiQueryCount();
 
-    const userMsg: ChatMessage = {
-      id: `u-${Date.now()}`,
-      sender: 'user',
-      text: content.trim(),
-      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    setInputText('');
-    setIsTyping(true);
-
-    setTimeout(() => {
-      setIsTyping(false);
-      const reply = generateBotAnswer(content);
-      const botMsg: ChatMessage = {
-        id: `b-${Date.now()}`,
-        sender: 'bot',
-        text: reply,
+      const userMsg: ChatMessage = {
+        id: `u-${Date.now()}`,
+        sender: 'user',
+        text: content.trim(),
         timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
       };
-      setMessages((prev) => [...prev, botMsg]);
-    }, 700);
-  }, [inputText, generateBotAnswer, incrementAiQueryCount]);
+
+      setMessages((prev) => [...prev, userMsg]);
+      setInputText('');
+      setIsTyping(true);
+
+      try {
+        const aiResult = await sendChatMessageToAssistant(
+          content.trim(),
+          universitiesList,
+          profile.expectedScore,
+          generateBotAnswer
+        );
+
+        const botMsg: ChatMessage = {
+          id: `b-${Date.now()}`,
+          sender: 'bot',
+          text: aiResult.reply,
+          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          isOfflineFallback: aiResult.isOfflineFallback,
+          suggestedUniversities: aiResult.suggestedUniversities,
+        };
+        setMessages((prev) => [...prev, botMsg]);
+      } catch {
+        const botMsg: ChatMessage = {
+          id: `b-${Date.now()}`,
+          sender: 'bot',
+          text: generateBotAnswer(content),
+          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          isOfflineFallback: true,
+        };
+        setMessages((prev) => [...prev, botMsg]);
+      } finally {
+        setIsTyping(false);
+      }
+    },
+    [inputText, generateBotAnswer, incrementAiQueryCount, universitiesList, profile.expectedScore]
+  );
 
   const handleClearHistory = () => {
     setMessages(INITIAL_MESSAGES);
@@ -356,7 +379,56 @@ export const ChatBotModal: React.FC = () => {
                     whiteSpace: 'pre-wrap',
                   }}
                 >
-                  {msg.text}
+                  <div>{msg.text}</div>
+
+                  {!isUser && msg.isOfflineFallback && (
+                    <div
+                      style={{
+                        marginTop: '6px',
+                        fontSize: '11px',
+                        color: '#94A3B8',
+                        fontStyle: 'italic',
+                      }}
+                    >
+                      (chế độ ngoại tuyến)
+                    </div>
+                  )}
+
+                  {!isUser && msg.suggestedUniversities && msg.suggestedUniversities.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: '8px',
+                        paddingTop: '6px',
+                        borderTop: '1px dashed #E2E8F0',
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '6px',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B' }}>
+                        Trường liên quan:
+                      </span>
+                      {msg.suggestedUniversities.map((code) => (
+                        <span
+                          key={code}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            padding: '2px 8px',
+                            borderRadius: '8px',
+                            backgroundColor: '#EFF6FF',
+                            color: '#1D4ED8',
+                            fontSize: '11.5px',
+                            fontWeight: 700,
+                            border: '1px solid #BFDBFE',
+                          }}
+                        >
+                          🏫 {code}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             );

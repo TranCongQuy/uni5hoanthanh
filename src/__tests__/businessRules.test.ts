@@ -10,6 +10,7 @@ import {
   validateReviewerStatusChange,
 } from '../services/ApplicationWorkflow';
 import { calculateSingleMatch, evaluateMatching } from '../services/MatchingService';
+import { sendChatMessageToAssistant } from '../services/AiChatService';
 import type { ApplicationRecord } from '../types';
 import {
   SYSTEM_RESERVED_EMAILS,
@@ -286,5 +287,15 @@ describe('Hạng mục 6 — Khóa lỗ hổng Demo Sandbox (RBAC + Environment 
     const res = canActivateDemoSandbox(true, true, 'admin');
     expect(res.allowed).toBe(true);
     expect(res.reason).toBeUndefined();
+  });
+});
+
+describe('Hạng mục 7 — AI Thật Qua Backend & Offline Fallback', () => {
+  it('tự động fallback về chế độ ngoại tuyến khi không có URL/Key Supabase mà không gây crash', async () => {
+    const fallbackFn = (q: string) => `Trả lời mẫu cho: ${q}`;
+    const res = await sendChatMessageToAssistant('Học phí Bách Khoa thế nào?', UNIVERSITIES, 25.0, fallbackFn);
+    expect(res.isOfflineFallback).toBe(true);
+    expect(res.reply).toBe('Trả lời mẫu cho: Học phí Bách Khoa thế nào?');
+    expect(Array.isArray(res.suggestedUniversities)).toBe(true);
   });
 });
