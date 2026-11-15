@@ -338,6 +338,12 @@ body.modal-open, html.modal-open {
   color: var(--up-color-text-primary, #0F172A);
   vertical-align: middle;
 }
+.up-table tbody tr:nth-child(even) {
+  background-color: #F8FAFC;
+}
+.up-table tbody tr:hover {
+  background-color: #F1F5F9;
+}
 .up-table tr:last-child td {
   border-bottom: none;
 }
