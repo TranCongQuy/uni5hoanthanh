@@ -16,7 +16,16 @@ interface BenchmarkSectionProps {
   isDesktop: boolean;
 }
 
-type SortField = 'code' | 'name' | 'region' | 'cutoffMin' | 'tuitionMin' | 'applicationCount' | 'approvalRate';
+type SortField =
+  | 'code'
+  | 'name'
+  | 'region'
+  | 'cutoffMin'
+  | 'tuitionMin'
+  | 'applicationCount'
+  | 'approvalRate'
+  | 'avgScore'
+  | 'qualifiedRate';
 
 export const BenchmarkSection: React.FC<BenchmarkSectionProps> = ({
   universities,
@@ -72,7 +81,8 @@ export const BenchmarkSection: React.FC<BenchmarkSectionProps> = ({
   };
 
   const exportCsv = () => {
-    const headers = 'Mã trường,Tên trường,Miền,Điểm chuẩn Min,Điểm chuẩn Max,Học phí Min (tr),Học phí Max (tr),Số hồ sơ,Số trúng tuyển,Tỷ lệ duyệt (%)';
+    const headers =
+      'Mã trường,Tên trường,Miền,Điểm chuẩn Min,Điểm chuẩn Max,Học phí Min (tr),Học phí Max (tr),Số hồ sơ,Số trúng tuyển,Tỷ lệ duyệt (%),Điểm TB thí sinh,% Đạt chuẩn ngành,Ngành nộp nhiều nhất';
     const lines = filteredAndSortedRows.map((r) =>
       [
         r.code,
@@ -85,6 +95,9 @@ export const BenchmarkSection: React.FC<BenchmarkSectionProps> = ({
         r.applicationCount,
         r.approvedCount,
         r.approvalRate,
+        r.avgScore !== null ? r.avgScore.toFixed(1) : '—',
+        r.qualifiedRate !== null ? `${r.qualifiedRate}%` : '—',
+        r.topMajor ? `"${r.topMajor.replace(/"/g, '""')}"` : '—',
       ].join(',')
     );
     const blob = new Blob(['\uFEFF' + headers + '\n' + lines.join('\n')], {
@@ -237,7 +250,7 @@ export const BenchmarkSection: React.FC<BenchmarkSectionProps> = ({
           <table
             style={{
               width: '100%',
-              minWidth: '820px',
+              minWidth: '1080px',
               borderCollapse: 'collapse',
               fontSize: '13px',
               textAlign: 'left',
@@ -308,6 +321,27 @@ export const BenchmarkSection: React.FC<BenchmarkSectionProps> = ({
                     <span>TỶ LỆ DUYỆT</span>
                     <ArrowUpDown size={12} />
                   </div>
+                </th>
+                <th
+                  onClick={() => handleSort('avgScore')}
+                  style={{ padding: '12px 16px', cursor: 'pointer', userSelect: 'none' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span>ĐIỂM TB</span>
+                    <ArrowUpDown size={12} />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('qualifiedRate')}
+                  style={{ padding: '12px 16px', cursor: 'pointer', userSelect: 'none' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span>% ĐẠT CHUẨN</span>
+                    <ArrowUpDown size={12} />
+                  </div>
+                </th>
+                <th style={{ padding: '12px 16px' }}>
+                  <span>NGÀNH NỘP NHIỀU</span>
                 </th>
               </tr>
             </thead>
@@ -408,6 +442,17 @@ export const BenchmarkSection: React.FC<BenchmarkSectionProps> = ({
                       ) : (
                         <span style={{ color: '#94A3B8' }}>—</span>
                       )}
+                    </td>
+
+                    {/* 3 Mandatory B2 Indicators */}
+                    <td style={{ padding: '12px 16px', fontWeight: 700, color: row.avgScore ? '#0284C7' : '#94A3B8' }} className="tabular-nums">
+                      {row.avgScore !== null ? row.avgScore.toFixed(1) : '—'}
+                    </td>
+                    <td style={{ padding: '12px 16px', fontWeight: 700, color: row.qualifiedRate !== null ? (row.qualifiedRate >= 50 ? '#059669' : '#D97706') : '#94A3B8' }} className="tabular-nums">
+                      {row.qualifiedRate !== null ? `${row.qualifiedRate}%` : '—'}
+                    </td>
+                    <td style={{ padding: '12px 16px', color: row.topMajor ? '#334155' : '#94A3B8', fontSize: '12.5px', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={row.topMajor || ''}>
+                      {row.topMajor || '—'}
                     </td>
                   </tr>
                 );

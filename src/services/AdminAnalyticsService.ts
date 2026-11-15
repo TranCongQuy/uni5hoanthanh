@@ -46,6 +46,10 @@ export interface UniversityBenchmarkRow {
   approvedCount: number;
   approvalRate: number; // %
   hasApplications: boolean;
+  // B2 3 mandatory indicators:
+  avgScore: number | null; // e.g. 24.7 for PXU, null if 0 apps
+  qualifiedRate: number | null; // % (0-100) meeting cutoff for target major, null if 0 apps
+  topMajor: string | null; // Most applied major, null if 0 apps
 }
 
 /**
@@ -145,22 +149,34 @@ export function getAdmissionFunnel(applications: ApplicationRecord[]): FunnelSta
 /**
  * 3. Candidate Score Histogram
  * Buckets candidate expected/submitted scores into standard Vietnamese university entrance ranges.
+ * 6 Standard intervals: < 20, 20 – 22, 22 – 24, 24 – 26, 26 – 28, ≥ 28.
+ * Convention: lower bound included [min, max), upper bound excluded, except final bucket [28, +inf).
  */
 export function getScoreHistogram(applications: ApplicationRecord[]): ScoreBucket[] {
   const buckets: { range: string; min: number; max: number }[] = [
-    { range: '< 18đ', min: 0, max: 17.99 },
-    { range: '18 – 21đ', min: 18, max: 20.99 },
-    { range: '21 – 24đ', min: 21, max: 23.99 },
-    { range: '24 – 27đ', min: 24, max: 26.99 },
-    { range: '≥ 27đ', min: 27, max: 30 },
+    { range: '< 20đ', min: 0, max: 20 },
+    { range: '20 – 22đ', min: 20, max: 22 },
+    { range: '22 – 24đ', min: 22, max: 24 },
+    { range: '24 – 26đ', min: 24, max: 26 },
+    { range: '26 – 28đ', min: 26, max: 28 },
+    { range: '≥ 28đ', min: 28, max: 30 },
   ];
 
   const total = applications.length;
 
-  return buckets.map((b) => {
+  return buckets.map((b, idx) => {
+    const isFirst = idx === 0;
+    const isLast = idx === buckets.length - 1;
+
     const count = applications.filter((a) => {
       const s = typeof a.score === 'number' ? a.score : 0;
-      return s >= b.min && s <= b.max;
+      if (isFirst) {
+        return s < 20;
+      }
+      if (isLast) {
+        return s >= 28;
+      }
+      return s >= b.min && s < b.max;
     }).length;
 
     return {
@@ -229,16 +245,13 @@ export function getUniversityBenchmarkTable(
   universities: University[],
   applications: ApplicationRecord[]
 ): UniversityBenchmarkRow[] {
-  // Count apps per university code
-  const appMap = new Map<string, { total: number; approved: number }>();
+  // Group applications by university code
+  const appMap = new Map<string, ApplicationRecord[]>();
 
   for (const app of applications) {
-    const entry = appMap.get(app.uniCode) || { total: 0, approved: 0 };
-    entry.total += 1;
-    if (app.status === 'Đã trúng tuyển') {
-      entry.approved += 1;
-    }
-    appMap.set(app.uniCode, entry);
+    const list = appMap.get(app.uniCode) || [];
+    list.push(app);
+    appMap.set(app.uniCode, list);
   }
 
   return universities.map((u) => {
@@ -246,8 +259,51 @@ export function getUniversityBenchmarkTable(
     const cutoffMin = cutoffs.length > 0 ? Math.min(...cutoffs) : u.score2024;
     const cutoffMax = cutoffs.length > 0 ? Math.max(...cutoffs) : u.score2024;
 
-    const stats = appMap.get(u.code) || { total: 0, approved: 0 };
-    const approvalRate = stats.total > 0 ? Math.round((stats.approved / stats.total) * 100) : 0;
+    const uniApps = appMap.get(u.code) || [];
+    const total = uniApps.length;
+    const approvedCount = uniApps.filter((a) => a.status === 'Đã trúng tuyển').length;
+    const approvalRate = total > 0 ? Math.round((approvedCount / total) * 100) : 0;
+
+    let avgScore: number | null = null;
+    let qualifiedRate: number | null = null;
+    let topMajor: string | null = null;
+
+    if (total > 0) {
+      // 1. Điểm TB thí sinh (1 chữ số thập phân, e.g. PXU = 24.7)
+      const totalScore = uniApps.reduce((acc, a) => acc + (typeof a.score === 'number' ? a.score : 0), 0);
+      avgScore = Math.round((totalScore / total) * 10) / 10;
+
+      // 2. % đạt chuẩn ngành (điểm >= điểm chuẩn của CHÍNH ngành thí sinh đăng ký)
+      let qualifiedCount = 0;
+      for (const app of uniApps) {
+        let majorCutoff = u.cutoffScores?.[app.major];
+        if (typeof majorCutoff !== 'number') {
+          const found = Object.entries(u.cutoffScores || {}).find(
+            ([m]) => m.toLowerCase().trim() === (app.major || '').toLowerCase().trim()
+          );
+          majorCutoff = found ? found[1] : u.score2024;
+        }
+        if (typeof app.score === 'number' && app.score >= majorCutoff) {
+          qualifiedCount += 1;
+        }
+      }
+      qualifiedRate = Math.round((qualifiedCount / total) * 100);
+
+      // 3. Ngành được nộp nhiều nhất vào trường
+      const majorCounts = new Map<string, number>();
+      for (const app of uniApps) {
+        if (app.major) {
+          majorCounts.set(app.major, (majorCounts.get(app.major) || 0) + 1);
+        }
+      }
+      let maxCnt = 0;
+      for (const [major, cnt] of majorCounts.entries()) {
+        if (cnt > maxCnt) {
+          maxCnt = cnt;
+          topMajor = major;
+        }
+      }
+    }
 
     return {
       id: u.id,
@@ -258,10 +314,13 @@ export function getUniversityBenchmarkTable(
       cutoffMax,
       tuitionMin: u.tuitionMin,
       tuitionMax: u.tuitionMax,
-      applicationCount: stats.total,
-      approvedCount: stats.approved,
+      applicationCount: total,
+      approvedCount,
       approvalRate,
-      hasApplications: stats.total > 0,
+      hasApplications: total > 0,
+      avgScore,
+      qualifiedRate,
+      topMajor,
     };
   });
 }

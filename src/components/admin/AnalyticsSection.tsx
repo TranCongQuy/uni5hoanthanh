@@ -243,7 +243,14 @@ export const AnalyticsSection: React.FC<AnalyticsSectionProps> = ({
                       style={{
                         width: '70%',
                         height: `${heightPct}%`,
-                        backgroundColor: h.range === '≥ 27đ' ? '#8B5CF6' : h.range === '24 – 27đ' ? '#3B82F6' : '#94A3B8',
+                        backgroundColor:
+                          h.range === '≥ 28đ'
+                            ? '#8B5CF6'
+                            : h.range === '26 – 28đ'
+                            ? '#6366F1'
+                            : h.range === '24 – 26đ'
+                            ? '#3B82F6'
+                            : '#94A3B8',
                         borderRadius: '6px 6px 0 0',
                         transition: 'height 0.5s ease',
                       }}
