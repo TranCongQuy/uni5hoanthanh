@@ -145,6 +145,7 @@ export const DesktopView: React.FC = () => {
     bookingStates,
     aiMatchState,
     saveAIMatchState,
+    setMatchingInputScore,
     showToast,
     logout,
   } = useApp();
@@ -315,6 +316,7 @@ export const DesktopView: React.FC = () => {
   // Handlers that reset evaluation when sliders/parameters change
   const handleScoreChange = (val: number) => {
     setMatchScore(val);
+    setMatchingInputScore(val);
     if (hasMatchEvaluated) {
       setHasMatchEvaluated(false);
       setLastMatchEvaluatedData(null);

@@ -217,6 +217,8 @@ interface AppContextType {
   // AI Match persistence
   aiMatchState: AIMatchState;
   saveAIMatchState: (state: Partial<AIMatchState>) => void;
+  matchingInputScore: number | null;
+  setMatchingInputScore: (score: number | null) => void;
 
   // Automatic View mode (Mobile < 1024px vs Desktop >= 1024px)
   viewMode: ViewMode;
@@ -721,6 +723,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     initialPersonal.hollandResult
   );
   const [aiMatchState, setAIMatchState] = useState<AIMatchState>(initialPersonal.aiMatchState);
+  const [matchingInputScore, setMatchingInputScore] = useState<number | null>(null);
 
   // --- Shared Institutional State ---
   const [universitiesList, setUniversitiesList] = useState<University[]>(() =>
@@ -2290,6 +2293,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSearchKeyword,
         aiMatchState,
         saveAIMatchState,
+        matchingInputScore,
+        setMatchingInputScore,
         viewMode,
       }}
     >

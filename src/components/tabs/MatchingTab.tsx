@@ -27,6 +27,7 @@ export const MatchingTab: React.FC = () => {
     aiMatchState,
     universitiesList,
     saveAIMatchState,
+    setMatchingInputScore,
   } = useApp();
 
   interface EvaluatedData {
@@ -104,6 +105,7 @@ export const MatchingTab: React.FC = () => {
   // Handlers that reset evaluation when sliders/parameters change
   const handleScoreChange = (val: number) => {
     setScore(val);
+    setMatchingInputScore(val);
     if (hasEvaluated) {
       setHasEvaluated(false);
       setEvaluatedData(null);
