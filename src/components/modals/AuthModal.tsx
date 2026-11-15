@@ -17,7 +17,6 @@ export const AuthModal: React.FC = () => {
     demoQuickSwitch,
     login,
     register,
-    loginAsGuest,
   } = useApp();
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -563,16 +562,6 @@ export const AuthModal: React.FC = () => {
                     {isDemoMode ? '🧪 [DEMO] PXU' : '🔒 Cổng ĐH Phú Xuân'}
                   </Button>
                 </div>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="S"
-                  fullWidth
-                  onClick={loginAsGuest}
-                >
-                  Tiếp tục khám phá với tư cách Khách
-                </Button>
               </div>
             </div>
           </div>

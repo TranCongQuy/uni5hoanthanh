@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   Bell,
-  Bot,
   Search,
   Sparkles,
   Compass,
@@ -31,8 +30,6 @@ const badgePercent = (uni: University, score: number, hollandCode?: string): num
 
 export const HomeTab: React.FC = () => {
   const {
-    isLoggedIn,
-    isGuest,
     user,
     profile,
     favoriteIds,
@@ -43,7 +40,6 @@ export const HomeTab: React.FC = () => {
     setActiveTab,
     openUniDetail,
     openCompareModal,
-    openChatBot,
     openCareerPath,
     openNotifications,
     unreadNotificationCount,
@@ -234,7 +230,7 @@ export const HomeTab: React.FC = () => {
                 textOverflow: 'ellipsis',
               }}
             >
-              {isLoggedIn && !isGuest ? (user.name || 'Học sinh UniPath') : 'Khách trải nghiệm'}
+              {user.name || 'Học sinh UniPath'}
             </div>
           </div>
         </div>
@@ -283,28 +279,6 @@ export const HomeTab: React.FC = () => {
                 {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
               </span>
             )}
-          </button>
-
-          {/* Chatbot button */}
-          <button
-            onClick={openChatBot}
-            aria-label="Trợ lý AI"
-            style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '11px',
-              backgroundColor: '#2563EB',
-              border: 'none',
-              boxShadow: '0 4px 10px rgba(37,99,235,0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: '#FFFFFF',
-              flexShrink: 0,
-            }}
-          >
-            <Bot size={19} />
           </button>
 
           {/* Account & 1-Click Role Switcher */}

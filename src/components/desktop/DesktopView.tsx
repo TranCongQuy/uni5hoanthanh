@@ -7,7 +7,6 @@ import {
   User,
   Search,
   Bell,
-  Bot,
   Scale,
   GraduationCap,
   ArrowRight,
@@ -29,14 +28,10 @@ import {
   Clock,
   Crown,
   Trash2,
-  LogIn,
   Award,
   AlertCircle,
   FileText,
   Filter,
-  Lock,
-  Building2,
-  ShieldCheck,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useApp } from '../../context/AppContext';
@@ -112,20 +107,14 @@ export const DesktopView: React.FC = () => {
     setActiveTab,
     user,
     profile,
-    isLoggedIn,
-    isGuest,
-    isDemoMode,
-    demoQuickSwitch,
     universitiesList,
     openNotifications,
     unreadNotificationCount,
-    openChatBot,
     openUniDetail,
     openCompareModal,
     openCareerPath,
     openEditProfile,
     openSettings,
-    openAuthModal,
     openBookConsultation,
     openApplicationDetail,
     openAllApplications,
@@ -515,7 +504,7 @@ export const DesktopView: React.FC = () => {
     if (!liveChatInput.trim()) return;
     const userMsg: LiveMessage = {
       id: `m-usr-${Date.now()}`,
-      author: isLoggedIn && !isGuest ? (user.name || 'Thí sinh UniPath') : 'Bạn (Khách tham dự)',
+      author: user.name || 'Thí sinh UniPath',
       avatar: '/images/avatar_user.png',
       time: 'Vừa xong',
       text: liveChatInput.trim(),
@@ -845,35 +834,6 @@ export const DesktopView: React.FC = () => {
                   {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
                 </span>
               )}
-            </button>
-
-            {/* AI Assistant Chatbot */}
-            <button
-              onClick={openChatBot}
-              aria-label="Trợ lý AI UniPath"
-              style={{
-                width: '34px',
-                height: '34px',
-                borderRadius: '9px',
-                backgroundColor: '#EFF6FF',
-                border: '1px solid #BFDBFE',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                color: '#2563EB',
-                flexShrink: 0,
-                transition: 'all 0.15s ease',
-              }}
-              title="Mở Trợ lý AI Tuyển sinh 24/7"
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#DBEAFE';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#EFF6FF';
-              }}
-            >
-              <Bot size={16} />
             </button>
 
             {/* Account & 1-Click Role Switcher Popover */}
@@ -3155,123 +3115,8 @@ export const DesktopView: React.FC = () => {
         {/* TAB 4: HỒ SƠ XÉT TUYỂN & CÁ NHÂN DESKTOP                            */}
         {/* =================================================================== */}
         {activeTab === 4 && (
-          !isLoggedIn || isGuest ? (
-            <div
-              style={{
-                maxWidth: '720px',
-                margin: '36px auto',
-                backgroundColor: '#FFFFFF',
-                borderRadius: '24px',
-                border: '1.5px solid #E2E8F0',
-                padding: '44px 36px',
-                textAlign: 'center',
-                boxShadow: '0 8px 30px rgba(0,0,0,0.04)',
-              }}
-            >
-              <div
-                style={{
-                  width: '72px',
-                  height: '72px',
-                  borderRadius: '20px',
-                  backgroundColor: '#EFF6FF',
-                  color: '#2563EB',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 20px',
-                  boxShadow: '0 4px 14px rgba(37,99,235,0.15)',
-                }}
-              >
-                <User size={36} />
-              </div>
-              <h2 style={{ fontSize: '24px', fontWeight: 900, color: '#0F172A', marginBottom: '10px' }}>
-                Cổng Hồ Sơ & Phân Quyền Hệ Sinh Thái UniPath 2.0
-              </h2>
-              <p style={{ fontSize: '14.5px', color: '#64748B', maxWidth: '540px', margin: '0 auto 24px', lineHeight: 1.6 }}>
-                Đăng nhập tài khoản cá nhân để nộp hồ sơ xét tuyển trực tuyến, đặt lịch tư vấn 1-1 và theo dõi kết quả trúng tuyển — hoặc chuyển nhanh sang 3 vai trò Demo bên dưới:
-              </p>
-
-              <div style={{ marginBottom: '20px' }}>
-                <Button variant="primary" size="L" icon={<LogIn size={18} />} onClick={openAuthModal}>
-                  Đăng nhập / Tạo tài khoản mới
-                </Button>
-              </div>
-
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                <Lock size={13} />
-                <span>
-                  {isDemoMode
-                    ? 'Chế độ Kiểm thử Hội đồng đang BẬT — chuyển nhanh vai trò'
-                    : 'Chọn cổng đăng nhập theo vai trò (Yêu cầu xác thực mật khẩu)'}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                <button
-                  onClick={() => (isDemoMode ? demoQuickSwitch('student') : openAuthModal('quy@unipath.vn'))}
-                  style={{
-                    padding: '11px 18px',
-                    borderRadius: '12px',
-                    backgroundColor: 'var(--up-color-primary, #0284C7)',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    boxShadow: 'var(--up-shadow-sm)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '7px',
-                  }}
-                >
-                  {isDemoMode ? <Sparkles size={16} /> : <GraduationCap size={16} />}
-                  <span>{isDemoMode ? 'Thí sinh (Demo)' : 'Cổng Thí sinh'}</span>
-                </button>
-                <button
-                  onClick={() => (isDemoMode ? demoQuickSwitch('pxu') : openAuthModal('tuyensinh@pxu.edu.vn'))}
-                  style={{
-                    padding: '11px 18px',
-                    borderRadius: '12px',
-                    backgroundColor: 'var(--up-color-success, #059669)',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    boxShadow: 'var(--up-shadow-sm)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '7px',
-                  }}
-                >
-                  <Building2 size={16} />
-                  <span>Cổng ĐH Phú Xuân (PXU)</span>
-                </button>
-                <button
-                  onClick={() => (isDemoMode ? demoQuickSwitch('admin') : openAuthModal('admin@unipath.vn'))}
-                  style={{
-                    padding: '11px 18px',
-                    borderRadius: '12px',
-                    backgroundColor: 'var(--up-color-info, #2563EB)',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    boxShadow: 'var(--up-shadow-sm)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '7px',
-                  }}
-                >
-                  <ShieldCheck size={16} />
-                  <span>Cổng Admin Hệ Thống</span>
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '28px', alignItems: 'start' }}>
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '28px', alignItems: 'start' }}>
                 {/* Left Column: Candidate Card, VIP & Holland Career Path */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   <div
@@ -3782,7 +3627,7 @@ export const DesktopView: React.FC = () => {
                                     {app.status === 'Thiếu hồ sơ' ? 'Bổ sung hồ sơ' : 'Chi tiết'}
                                   </Button>
 
-                                  {canStudentCancelApplication(app, user.email, isGuest || !isLoggedIn).ok && (
+                                  {canStudentCancelApplication(app, user.email, false).ok && (
                                     <button
                                       type="button"
                                       onClick={() => setPendingCancelApp(app)}
@@ -3981,7 +3826,6 @@ export const DesktopView: React.FC = () => {
                 </div>
               </div>
             </div>
-          )
         )}
       </main>
 

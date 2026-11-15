@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   ChevronDown,
   LogOut,
-  LogIn,
   Settings,
   ShieldCheck,
   School,
@@ -25,7 +24,6 @@ export const AccountRoleMenu: React.FC<AccountRoleMenuProps> = ({
 }) => {
   const {
     isLoggedIn,
-    isGuest,
     user,
     isDemoFeatureEnabled,
     isDemoMode,
@@ -60,9 +58,7 @@ export const AccountRoleMenu: React.FC<AccountRoleMenuProps> = ({
   }, [open]);
 
   const roleMeta =
-    !isLoggedIn || isGuest
-      ? { label: 'Khách trải nghiệm', badgeBg: '#F1F5F9', badgeColor: '#475569', accent: '#2563EB' }
-      : user.role === 'admin'
+    user.role === 'admin'
       ? { label: 'Admin Hệ thống', badgeBg: '#EEF2FF', badgeColor: '#4338CA', accent: '#4F46E5' }
       : user.role === 'university_pxu'
       ? { label: 'Tuyển sinh PXU', badgeBg: '#ECFDF5', badgeColor: '#047857', accent: '#059669' }
@@ -70,7 +66,7 @@ export const AccountRoleMenu: React.FC<AccountRoleMenuProps> = ({
 
   const handleRoleSelect = (email: string, target: 'student' | 'pxu' | 'admin') => {
     setOpen(false);
-    if (isLoggedIn && !isGuest && user.email.trim().toLowerCase() === email.toLowerCase()) {
+    if (user.email.trim().toLowerCase() === email.toLowerCase()) {
       return;
     }
     if (isDemoMode) {
@@ -81,7 +77,7 @@ export const AccountRoleMenu: React.FC<AccountRoleMenuProps> = ({
   };
 
   const isCurrentEmail = (email: string) =>
-    isLoggedIn && !isGuest && user.email.trim().toLowerCase() === email.toLowerCase();
+    user.email.trim().toLowerCase() === email.toLowerCase();
 
   const isDark = variant === 'dark';
 
@@ -121,7 +117,7 @@ export const AccountRoleMenu: React.FC<AccountRoleMenuProps> = ({
             flexShrink: 0,
           }}
         >
-          {!isLoggedIn || isGuest ? 'K' : (user.name || 'U').charAt(0).toUpperCase()}
+          {(user.name || 'U').charAt(0).toUpperCase()}
         </span>
 
         {!compact && (
@@ -145,7 +141,7 @@ export const AccountRoleMenu: React.FC<AccountRoleMenuProps> = ({
                 textOverflow: 'ellipsis',
               }}
             >
-              {!isLoggedIn || isGuest ? 'Tài khoản' : user.name}
+              {user.name || 'Tài khoản'}
             </span>
             <span
               style={{
@@ -221,7 +217,7 @@ export const AccountRoleMenu: React.FC<AccountRoleMenuProps> = ({
                   textOverflow: 'ellipsis',
                 }}
               >
-                {!isLoggedIn || isGuest ? 'Khách trải nghiệm' : user.name}
+                {user.name || 'Tài khoản'}
               </span>
               <span
                 style={{
@@ -247,7 +243,7 @@ export const AccountRoleMenu: React.FC<AccountRoleMenuProps> = ({
                 textOverflow: 'ellipsis',
               }}
             >
-              {!isLoggedIn || isGuest ? 'Chưa đăng nhập tài khoản định danh' : user.email}
+              {user.email}
             </div>
           </div>
 
@@ -474,60 +470,31 @@ export const AccountRoleMenu: React.FC<AccountRoleMenuProps> = ({
               </span>
             </button>
 
-            {!isLoggedIn || isGuest ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  openAuthModal();
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  width: '100%',
-                  marginTop: '4px',
-                  padding: '9px 12px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  backgroundColor: '#2563EB',
-                  color: '#FFFFFF',
-                  fontSize: '12.5px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                }}
-              >
-                <LogIn size={15} />
-                <span>Đăng nhập / Đăng ký tài khoản</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  logout();
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '9px',
-                  width: '100%',
-                  padding: '8px 10px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  backgroundColor: '#FEF2F2',
-                  color: '#DC2626',
-                  fontSize: '12.5px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                logout();
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '9px',
+                width: '100%',
+                padding: '8px 10px',
+                borderRadius: '10px',
+                border: 'none',
+                backgroundColor: '#FEF2F2',
+                color: '#DC2626',
+                fontSize: '12.5px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
               >
                 <LogOut size={15} color="#DC2626" />
                 <span>Đăng xuất tài khoản ngay</span>
               </button>
-            )}
           </div>
         </div>
       )}

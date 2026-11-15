@@ -30,19 +30,18 @@ export const ChatBotModal: React.FC = () => {
     profile,
     user,
     isLoggedIn,
-    isGuest,
     viewMode,
     incrementAiQueryCount,
     universitiesList,
   } = useApp();
   const isDesktop = viewMode === 'desktop';
   const chatKey =
-    isLoggedIn && !isGuest && user?.email
+    isLoggedIn && user?.email
       ? `unipath_chat_history_${user.email.trim().toLowerCase()}`
       : null;
 
-  // On desktop: open by default (not minimized)
-  const [isDesktopMinimized, setIsDesktopMinimized] = useState(false);
+  // On desktop: panel is minimized by default (only floating circular button shown)
+  const [isDesktopMinimized, setIsDesktopMinimized] = useState(true);
 
   // If user clicks the header bot icon on desktop, ensure panel is un-minimized
   useEffect(() => {
