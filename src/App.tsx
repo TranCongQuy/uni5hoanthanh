@@ -15,6 +15,8 @@ import { AuthModal } from './components/modals/AuthModal';
 import { OnboardingModal } from './components/modals/OnboardingModal';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { Toast } from './components/common/UI';
+import { AppLoadingScreen } from './components/common/AppLoadingScreen';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import './App.css';
 
 const MobileView = lazy(() =>
@@ -187,10 +189,12 @@ const MainApp: React.FC = () => {
 
 export default function App() {
   return (
-    <AppProvider>
-      <Suspense fallback={null}>
-        <MainApp />
-      </Suspense>
-    </AppProvider>
+    <ErrorBoundary>
+      <AppProvider>
+        <Suspense fallback={<AppLoadingScreen />}>
+          <MainApp />
+        </Suspense>
+      </AppProvider>
+    </ErrorBoundary>
   );
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Home, Compass, Sparkles, Radio, User } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { getEventPhase } from '../../utils/edufair';
 
 interface NavItem {
   id: number;
@@ -8,16 +9,17 @@ interface NavItem {
   icon: React.ReactNode;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { id: 0, label: 'Trang chủ', icon: <Home size={22} /> },
-  { id: 1, label: 'Khảo sát', icon: <Compass size={22} /> },
-  { id: 2, label: 'AI Match', icon: <Sparkles size={22} /> },
-  { id: 3, label: 'EduFair LIVE', icon: <Radio size={22} /> },
-  { id: 4, label: 'Hồ sơ', icon: <User size={22} /> },
-];
-
 export const BottomNavigation: React.FC = () => {
   const { activeTab, setActiveTab } = useApp();
+  const isEduFairLive = getEventPhase() === 'live';
+
+  const navItems: NavItem[] = [
+    { id: 0, label: 'Trang chủ', icon: <Home size={22} /> },
+    { id: 1, label: 'Khảo sát', icon: <Compass size={22} /> },
+    { id: 2, label: 'AI Match', icon: <Sparkles size={22} /> },
+    { id: 3, label: isEduFairLive ? 'EduFair LIVE' : 'EduFair', icon: <Radio size={22} /> },
+    { id: 4, label: 'Hồ sơ', icon: <User size={22} /> },
+  ];
 
   return (
     <nav
@@ -43,7 +45,7 @@ export const BottomNavigation: React.FC = () => {
         boxSizing: 'border-box',
       }}
     >
-      {NAV_ITEMS.map((item) => {
+      {navItems.map((item) => {
         const isActive = activeTab === item.id;
 
         return (
