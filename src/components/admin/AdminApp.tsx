@@ -1967,21 +1967,23 @@ export const AdminApp: React.FC = () => {
   if (isDesktop) {
     return (
       <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', width: '100%' }}>
-        {/* Sticky Left Aurora Admin Sidebar */}
+        {/* Fixed Left Aurora Admin Sidebar */}
         <aside
           style={{
             width: '260px',
-            flexShrink: 0,
+            height: '100vh',
+            maxHeight: '100dvh',
+            position: 'fixed',
+            left: 0,
+            top: 0,
+            bottom: 0,
             background: 'var(--up-gradient-aurora-admin, linear-gradient(180deg, #050B14 0%, #0B132B 45%, #1C2541 100%))',
             color: '#FFFFFF',
             display: 'flex',
             flexDirection: 'column',
-            padding: '20px 14px',
-            position: 'sticky',
-            top: 0,
-            height: '100vh',
             boxSizing: 'border-box',
-            overflowY: 'auto',
+            zIndex: 70,
+            boxShadow: '4px 0 24px rgba(0, 0, 0, 0.15)',
           }}
         >
           {/* Subtle Geometric SVG Pattern */}
@@ -1997,7 +1999,19 @@ export const AdminApp: React.FC = () => {
             }}
           />
 
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 8px 18px', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '14px' }}>
+          {/* Pinned Top Brand Header */}
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '20px 16px 16px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              flexShrink: 0,
+            }}
+          >
             <div style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'linear-gradient(135deg, #0284C7 0%, #38BDF8 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(2, 132, 199, 0.35)' }}>
               <ShieldCheck size={21} color="#FFFFFF" />
             </div>
@@ -2007,8 +2021,23 @@ export const AdminApp: React.FC = () => {
             </div>
           </div>
 
-          {/* 2-Tier Navigation Groups (B5) */}
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {/* Scrollable Navigation Groups in Middle */}
+          <div
+            className="up-sidebar-scroll"
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              overscrollBehavior: 'contain',
+              padding: '16px 12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+            }}
+          >
             {NAV_GROUPS.map((group) => (
               <div key={group.title}>
                 <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.6px', padding: '0 10px 6px' }}>
@@ -2074,7 +2103,21 @@ export const AdminApp: React.FC = () => {
             ))}
           </div>
 
-          <div style={{ position: 'relative', zIndex: 1, marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {/* Pinned Bottom Sync Status & Reset Button */}
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              flexShrink: 0,
+              padding: '14px 14px 18px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              backgroundColor: 'rgba(5, 11, 20, 0.75)',
+              backdropFilter: 'blur(8px)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+            }}
+          >
             <div style={{ padding: '10px 12px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.05)', fontSize: '11.5px', color: '#94A3B8', lineHeight: 1.5 }}>
               <div style={{ color: '#E2E8F0', fontWeight: 700, marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <Sparkles size={13} color="#60A5FA" /> Đồng bộ trực tiếp
@@ -2105,7 +2148,7 @@ export const AdminApp: React.FC = () => {
         </aside>
 
         {/* Right Content Area with Sticky Topbar */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, minWidth: 0, marginLeft: '260px', display: 'flex', flexDirection: 'column' }}>
           <header
             style={{
               height: '64px',
