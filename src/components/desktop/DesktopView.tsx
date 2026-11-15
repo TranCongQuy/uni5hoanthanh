@@ -2353,6 +2353,8 @@ export const DesktopView: React.FC = () => {
 
               {/* Submit analyze button */}
               <button
+                type="button"
+                data-testid="btn-evaluate-matching"
                 disabled={isMatchLoading}
                 onClick={handleEvaluateMatching}
                 style={{
