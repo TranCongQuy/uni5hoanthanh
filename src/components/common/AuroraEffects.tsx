@@ -9,6 +9,9 @@ export interface AuroraHeroMeshProps {
   children: React.ReactNode;
   variant?: 'student' | 'admin' | 'pxu';
   minHeight?: string;
+  padding?: string;
+  borderRadius?: string;
+  style?: React.CSSProperties;
   className?: string;
 }
 
@@ -16,6 +19,9 @@ export const AuroraHeroMesh: React.FC<AuroraHeroMeshProps> = ({
   children,
   variant = 'student',
   minHeight = '480px',
+  padding = '40px 48px',
+  borderRadius = '24px',
+  style,
   className = '',
 }) => {
   // Brand color configurations for the 3 slow organic floating orbs
@@ -43,18 +49,29 @@ export const AuroraHeroMesh: React.FC<AuroraHeroMeshProps> = ({
 
   return (
     <div
-      className={`relative overflow-hidden text-white ${className}`}
+      className={className}
       style={{
+        position: 'relative',
+        overflow: 'hidden',
+        color: '#FFFFFF',
         background: orbColors.bg,
         minHeight,
+        padding,
+        borderRadius,
+        border: '1px solid rgba(255, 255, 255, 0.12)',
+        boxShadow: '0 20px 45px -15px rgba(15, 23, 42, 0.25)',
+        boxSizing: 'border-box',
         isolation: 'isolate',
+        ...style,
       }}
     >
       {/* 3 Slow floating organic orbs (pure CSS, will-change: transform) */}
       <div
         aria-hidden="true"
-        className="aurora-orb-1 absolute pointer-events-none"
+        className="aurora-orb-1"
         style={{
+          position: 'absolute',
+          pointerEvents: 'none',
           width: '560px',
           height: '560px',
           borderRadius: '50%',
@@ -67,8 +84,10 @@ export const AuroraHeroMesh: React.FC<AuroraHeroMeshProps> = ({
       />
       <div
         aria-hidden="true"
-        className="aurora-orb-2 absolute pointer-events-none"
+        className="aurora-orb-2"
         style={{
+          position: 'absolute',
+          pointerEvents: 'none',
           width: '520px',
           height: '520px',
           borderRadius: '50%',
@@ -81,8 +100,10 @@ export const AuroraHeroMesh: React.FC<AuroraHeroMeshProps> = ({
       />
       <div
         aria-hidden="true"
-        className="aurora-orb-3 absolute pointer-events-none"
+        className="aurora-orb-3"
         style={{
+          position: 'absolute',
+          pointerEvents: 'none',
           width: '420px',
           height: '420px',
           borderRadius: '50%',
@@ -97,8 +118,11 @@ export const AuroraHeroMesh: React.FC<AuroraHeroMeshProps> = ({
       {/* Geometric micro-mesh overlay (pure SVG data-uri pattern) */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 pointer-events-none opacity-[0.08]"
         style={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          opacity: 0.08,
           backgroundImage: `radial-gradient(rgba(255, 255, 255, 0.6) 1px, transparent 1px)`,
           backgroundSize: '24px 24px',
           zIndex: 1,
@@ -106,7 +130,7 @@ export const AuroraHeroMesh: React.FC<AuroraHeroMeshProps> = ({
       />
 
       {/* Content slot */}
-      <div className="relative z-10 w-full">{children}</div>
+      <div style={{ position: 'relative', zIndex: 10, width: '100%' }}>{children}</div>
     </div>
   );
 };

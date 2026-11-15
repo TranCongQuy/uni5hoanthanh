@@ -903,8 +903,10 @@ export const DesktopView: React.FC = () => {
             {/* 1. SINGLE-MESSAGE SAAS HERO (AURORA PREMIUM WIDESCREEN) */}
             <AuroraHeroMesh
               variant="student"
-              minHeight="340px"
-              className="rounded-[24px] mb-[28px] border border-white/10 shadow-2xl p-[38px_48px]"
+              minHeight="480px"
+              padding="44px 48px"
+              borderRadius="24px"
+              style={{ marginBottom: '28px' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '32px' }}>
                 <div style={{ maxWidth: '680px' }}>
@@ -922,7 +924,7 @@ export const DesktopView: React.FC = () => {
                       fontSize: '11.5px',
                       fontWeight: 700,
                       letterSpacing: '0.4px',
-                      marginBottom: '12px',
+                      marginBottom: '14px',
                     }}
                   >
                     <Sparkles size={14} />
@@ -931,12 +933,12 @@ export const DesktopView: React.FC = () => {
 
                   <h1
                     style={{
-                      fontSize: '30px',
+                      fontSize: 'clamp(40px, 3.6vw, 54px)',
                       fontWeight: 900,
                       color: '#FFFFFF',
-                      lineHeight: 1.25,
-                      margin: '0 0 10px',
-                      letterSpacing: '-0.5px',
+                      lineHeight: 1.15,
+                      margin: '0 0 14px',
+                      letterSpacing: '-0.025em',
                       fontFamily: 'var(--up-font-family)',
                     }}
                   >
@@ -945,8 +947,8 @@ export const DesktopView: React.FC = () => {
 
                   <p
                     style={{
-                      margin: '0 0 22px',
-                      fontSize: '14.5px',
+                      margin: '0 0 24px',
+                      fontSize: '15px',
                       color: '#C7D2FE',
                       lineHeight: 1.5,
                       fontWeight: 400,

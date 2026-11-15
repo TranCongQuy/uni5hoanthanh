@@ -317,7 +317,8 @@ export const HomeTab: React.FC = () => {
         <AuroraHeroMesh
           variant="student"
           minHeight="220px"
-          className="rounded-[24px] p-[24px_20px] shadow-lg border border-white/10"
+          padding="24px 20px"
+          borderRadius="20px"
         >
           <div style={{ position: 'relative', zIndex: 2 }}>
             <div
