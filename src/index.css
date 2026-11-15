@@ -15,11 +15,11 @@
   --border: var(--up-color-border-subtle, #E2E8F0);
   --bg-app: var(--up-color-bg-page, #F8FAFC);
 
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  font-family: var(--up-font-family, 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif);
+  line-height: var(--up-line-height-normal, 1.5);
   font-weight: 400;
   color: var(--text-main);
-  background-color: #EEF2F6;
+  background-color: var(--up-color-bg-page, #F8FAFC);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -121,6 +121,33 @@ dialog:modal,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Tabular Numerals for Cutoffs & Currency */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* Skeleton Shimmer Loading */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--up-color-slate-100, #F1F5F9) 25%,
+    var(--up-color-slate-200, #E2E8F0) 37%,
+    var(--up-color-slate-100, #F1F5F9) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
 }
 
 /* Hallmark Floor 7: Reduced Motion Respect */

@@ -1,15 +1,90 @@
 /**
  * UniPath 2.0 Design Tokens
- * Hallmark & Impeccable Design System - Single Source of Truth
+ * Premium Education SaaS Design System — Single Source of Truth
  */
 
 :root {
-  /* Brand Primary */
-  --up-color-primary: #0284C7;
-  --up-color-primary-hover: #0369A1;
-  --up-color-primary-active: #075985;
-  --up-color-primary-light: #F0F9FF;
-  --up-color-primary-subtle: #E0F2FE;
+  /* Typography */
+  --up-font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --up-font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --up-font-size-display: 32px;
+  --up-font-size-h1: 24px;
+  --up-font-size-h2: 20px;
+  --up-font-size-h3: 16px;
+  --up-font-size-body: 14px;
+  --up-font-size-caption: 12px;
+  --up-font-size-tiny: 11px;
+
+  --up-line-height-tight: 1.25;
+  --up-line-height-normal: 1.5;
+  --up-line-height-relaxed: 1.625;
+
+  --up-font-weight-regular: 400;
+  --up-font-weight-medium: 500;
+  --up-font-weight-semibold: 600;
+  --up-font-weight-bold: 700;
+  --up-font-weight-extrabold: 800;
+
+  /* Neutral Scale (Slate) */
+  --up-color-slate-50: #F8FAFC;
+  --up-color-slate-100: #F1F5F9;
+  --up-color-slate-200: #E2E8F0;
+  --up-color-slate-300: #CBD5E1;
+  --up-color-slate-400: #94A3B8;
+  --up-color-slate-500: #64748B;
+  --up-color-slate-600: #475569;
+  --up-color-slate-700: #334155;
+  --up-color-slate-800: #1E293B;
+  --up-color-slate-900: #0F172A;
+
+  /* Surfaces & Backgrounds */
+  --up-color-bg-page: #F8FAFC;
+  --up-color-surface: #FFFFFF;
+  --up-color-surface-subtle: #F1F5F9;
+  --up-color-surface-hover: #F8FAFC;
+  --up-color-surface-tinted: #F0F4F8;
+
+  /* Text Colors */
+  --up-color-text-primary: #0F172A;
+  --up-color-text-secondary: #475569;
+  --up-color-text-tertiary: #64748B;
+  --up-color-text-muted: #94A3B8;
+  --up-color-text-inverse: #FFFFFF;
+
+  /* Borders & Dividers */
+  --up-color-border-subtle: #E2E8F0;
+  --up-color-border-strong: #CBD5E1;
+
+  /* Portal Brand Identities */
+  /* 1. Student Portal (Indigo / Blue Trust) */
+  --up-student-primary: #4F46E5;
+  --up-student-primary-hover: #4338CA;
+  --up-student-primary-light: #EEF2FF;
+  --up-student-primary-subtle: #E0E7FF;
+  --up-student-primary-border: #C7D2FE;
+
+  /* 2. PXU Admission Portal (Emerald) */
+  --up-pxu-primary: #059669;
+  --up-pxu-primary-hover: #047857;
+  --up-pxu-primary-light: #ECFDF5;
+  --up-pxu-primary-subtle: #D1FAE5;
+  --up-pxu-primary-border: #A7F3D0;
+
+  /* 3. System Admin Portal (Navy / Slate) */
+  --up-admin-navy: #0F172A;
+  --up-admin-navy-surface: #1E293B;
+  --up-admin-navy-hover: #334155;
+  --up-admin-navy-border: #334155;
+  --up-admin-accent: #38BDF8;
+  --up-admin-accent-subtle: #0284C7;
+
+  /* Brand Primary (Default) */
+  --up-color-primary: #4F46E5;
+  --up-color-primary-hover: #4338CA;
+  --up-color-primary-active: #3730A3;
+  --up-color-primary-light: #EEF2FF;
+  --up-color-primary-subtle: #E0E7FF;
 
   /* Semantic Feedback */
   --up-color-success: #059669;
@@ -32,24 +107,31 @@
   --up-color-info-light: #EFF6FF;
   --up-color-info-border: #BFDBFE;
 
-  /* Surfaces & Backgrounds */
-  --up-color-bg-page: #F8FAFC;
-  --up-color-surface: #FFFFFF;
-  --up-color-surface-subtle: #F1F5F9;
-  --up-color-surface-hover: #F8FAFC;
+  /* Unified Application Status Tokens (Across all 3 portals) */
+  --up-status-pending-bg: #FFFBEB;
+  --up-status-pending-text: #B45309;
+  --up-status-pending-border: #FDE68A;
 
-  /* Typography Colors */
-  --up-color-text-primary: #0F172A;
-  --up-color-text-secondary: #475569;
-  --up-color-text-tertiary: #64748B;
-  --up-color-text-inverse: #FFFFFF;
+  --up-status-valid-bg: #F0F9FF;
+  --up-status-valid-text: #0369A1;
+  --up-status-valid-border: #BAE6FD;
 
-  /* Borders & Dividers */
-  --up-color-border-subtle: #E2E8F0;
-  --up-color-border-strong: #CBD5E1;
+  --up-status-incomplete-bg: #FFF7ED;
+  --up-status-incomplete-text: #C2410C;
+  --up-status-incomplete-border: #FFEDD5;
+
+  --up-status-admitted-bg: #ECFDF5;
+  --up-status-admitted-text: #047857;
+  --up-status-admitted-border: #A7F3D0;
+
+  --up-status-cancelled-bg: #F1F5F9;
+  --up-status-cancelled-text: #64748B;
+  --up-status-cancelled-border: #E2E8F0;
 
   /* Spacing Scale (4px base) */
+  --up-space-0-5: 2px;
   --up-space-1: 4px;
+  --up-space-1-5: 6px;
   --up-space-2: 8px;
   --up-space-3: 12px;
   --up-space-4: 16px;
@@ -58,22 +140,44 @@
   --up-space-8: 32px;
   --up-space-10: 40px;
   --up-space-12: 48px;
+  --up-space-16: 64px;
+
+  /* Section Rhythm */
+  --up-section-gap: 24px;
 
   /* Radii */
-  --up-radius-sm: 6px;
-  --up-radius-md: 10px;
+  --up-radius-xs: 4px;
+  --up-radius-sm: 8px;
+  --up-radius-md: 12px;
   --up-radius-lg: 16px;
   --up-radius-xl: 20px;
+  --up-radius-2xl: 24px;
   --up-radius-full: 9999px;
 
-  /* Shadows */
-  --up-shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  /* Shadows (Soft multi-layer SaaS) */
+  --up-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --up-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.03);
+  --up-shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
   --up-shadow-card: 0 4px 16px -2px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
-  --up-shadow-lg: 0 12px 32px -4px rgba(15, 23, 42, 0.12);
+  --up-shadow-lg: 0 12px 28px -4px rgba(15, 23, 42, 0.1), 0 4px 10px -2px rgba(15, 23, 42, 0.05);
+  --up-shadow-modal: 0 20px 48px -8px rgba(15, 23, 42, 0.2), 0 8px 16px -4px rgba(15, 23, 42, 0.06);
 
-  /* Modern Web Standards */
+  /* Transitions */
+  --up-transition-fast: 150ms ease;
+  --up-transition-normal: 200ms ease;
+  --up-transition-smooth: 250ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Z-Index */
+  --up-z-base: 1;
+  --up-z-dropdown: 50;
+  --up-z-sticky: 100;
+  --up-z-modal-backdrop: 900;
+  --up-z-modal: 1000;
+  --up-z-toast: 2000;
+
+  /* Standards */
   --scrollbar-thumb: #CBD5E1;
   --scrollbar-track: transparent;
-  accent-color: var(--up-color-primary);
+  accent-color: var(--up-student-primary);
   color-scheme: light;
 }
