@@ -10,9 +10,9 @@ import {
 import { isTerminalStatus } from '../../types';
 import {
   formatCleanDecimal,
-  validateStudentScore,
-  validateVietnamPhone,
+  parseDecimalInput,
 } from '../../utils/validation';
+import { applicationSubmissionSchema } from '../../utils/schemas';
 
 const ADMISSION_METHODS = [
   'Xét điểm thi tốt nghiệp THPT năm 2026',
@@ -100,20 +100,18 @@ export const ApplyDemoModal: React.FC = () => {
     }
 
     if (step === 2) {
-      if (candidateName.trim().length < 2) {
-        setErrorMsg('Vui lòng nhập họ và tên thí sinh hợp lệ (tối thiểu 2 ký tự).');
+      const parsedScore = parseDecimalInput(scoreText);
+      const validation = applicationSubmissionSchema.safeParse({
+        candidateName,
+        phone,
+        score: parsedScore,
+      });
+
+      if (!validation.success) {
+        setErrorMsg(validation.error.issues[0]?.message || 'Thông tin nộp hồ sơ không hợp lệ.');
         return;
       }
-      const phoneCheck = validateVietnamPhone(phone);
-      if (!phoneCheck.ok) {
-        setErrorMsg(phoneCheck.error || 'Số điện thoại không hợp lệ.');
-        return;
-      }
-      const scoreCheck = validateStudentScore(scoreText);
-      if (!scoreCheck.ok || scoreCheck.value === undefined) {
-        setErrorMsg(scoreCheck.error || 'Điểm xét tuyển không hợp lệ.');
-        return;
-      }
+
       if (!precheck.ok) {
         setErrorMsg(precheck.error || 'Không thể nộp trùng nguyện vọng.');
         return;
@@ -124,10 +122,10 @@ export const ApplyDemoModal: React.FC = () => {
         uniName: applyDemoTargetUni.name,
         uniCode: applyDemoTargetUni.code,
         major: currentMajor,
-        candidateName: candidateName.trim(),
-        phone: phone.trim(),
+        candidateName: validation.data.candidateName,
+        phone: validation.data.phone,
         email: user.email,
-        score: scoreCheck.value,
+        score: validation.data.score,
         notes: `Phương thức: ${admissionMethod}. Đăng ký xét tuyển trực tuyến qua UniPath.`,
       });
 

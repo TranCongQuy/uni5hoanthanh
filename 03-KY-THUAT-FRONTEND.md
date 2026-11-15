@@ -117,3 +117,42 @@ Một điểm nhấn kỹ thuật quan trọng trong `src/context/AppContext.tsx
 - **Chất lượng đóng gói kiểm chứng thực tế:**
   - `npm run lint`: **0 errors, 0 warnings** trên toàn bộ dự án.
   - `npm run build` (`tsc -b && vite build`): Biên dịch thành công 100% dưới 1 giây, tối ưu hóa tài nguyên CSS & JS nén gzip siêu nhẹ sẵn sàng triển khai trên Vercel Edge.
+
+---
+
+## 6. PHÂN TÍCH NGUYÊN TẮC THIẾT KẾ SOLID & DESIGN PATTERNS TRONG MÃ NGUỒN
+
+### 6.1. Áp dụng Nguyên tắc Đơn Trách Nhiệm (Single Responsibility Principle - SRP)
+Kiến trúc mã nguồn của UniPath 2.0 phân tách rõ ràng trách nhiệm của từng tầng module, đảm bảo mỗi tệp mã nguồn chỉ có một lý do duy nhất để thay đổi:
+
+1. **Quản lý Trạng thái Nghiệp vụ (`src/context/AppContext.tsx`):**
+   - Đảm nhận duy nhất việc điều phối trạng thái toàn cục (State Orchestration), lưu trữ bền vững (Persistence Engine) và phân quyền vai trò người dùng (RBAC).
+   - Tuyệt đối không chứa logic tính toán xác suất trúng tuyển hay quy tắc chuyển đổi trạng thái hồ sơ chuyên sâu.
+2. **Thuần toán học & Dự báo Tuyển sinh (`src/services/MatchingService.ts`):**
+   - Đóng gói toàn bộ thuật toán khớp nguyện vọng AI Matching dưới dạng các hàm thuần túy (**Pure Functions**): `calculateSingleMatch`, `evaluateMatching`, `pickReferenceCutoff`.
+   - Đầu vào là điểm số và thông số trường; đầu ra là kết quả đối soát. Module này hoàn toàn độc lập với React DOM, không gọi `useState` hay phụ thuộc UI.
+3. **Máy Trạng Thái Hồ Sơ Tuyển Sinh (`src/services/ApplicationWorkflow.ts`):**
+   - Chịu trách nhiệm duy nhất về máy trạng thái hữu hạn (**FSM - Finite State Machine**) cho hội đồng thẩm định: xác thực bước chuyển hợp lệ, bắt buộc giải trình khi điểm dưới chuẩn ngành, ngăn chặn hồi sinh hồ sơ đã kết thúc.
+4. **Tầng Giao diện Người dùng (Presentation Layer - `src/components/`):**
+   - Các components như `AdminApp.tsx`, `UniversityApp.tsx`, `DesktopView.tsx` chỉ tập trung vào việc hiển thị dữ liệu, bắt cử chỉ người dùng và ánh xạ giao diện theo các Design Tokens chuẩn hóa.
+5. **Bộ Chuyển Đổi Tích Hợp Đám Mây (`src/lib/supabase.ts`):**
+   - Đóng vai trò lớp đồng bộ dữ liệu (Sync Adapter), bảo bọc các lệnh gọi REST API tới Supabase Backend và tự động fallback về bộ nhớ cục bộ khi mất kết nối mạng.
+
+### 6.2. Các Mẫu Thiết Kế Thực Tế Đã Sử Dụng (Real-World Design Patterns)
+- **Context / Provider Pattern (`React.createContext` & `AppProvider`):**  
+  Giải quyết triệt để vấn đề *Prop Drilling*, cho phép mọi thành phần trong cây DOM (từ Tab Thí sinh đến Cổng Quản trị Admin) đều có thể truy xuất dữ liệu dùng chung và các hàm cập nhật trạng thái một cách đồng bộ, phản ứng (Reactive).
+- **Service Layer Pattern:**  
+  Toàn bộ logic nghiệp vụ cốt lõi không nằm rải rác trong các nút bấm (button `onClick`), mà được tập trung tại thư mục `src/services/`. Nhờ đó, logic tính điểm và xét duyệt hồ sơ có thể được kiểm thử độc lập 100% bằng Unit Tests mà không cần dựng môi trường trình duyệt ảo (Headless DOM).
+- **Adapter Pattern (`src/lib/supabase.ts`):**  
+  Cung cấp giao diện đồng nhất (`SupabaseDataService`) bao bọc phía trên Supabase PostgREST API. Lớp này chuyển đổi kiểu dữ liệu giữa database snake_case và frontend camelCase, đồng thời hoạt động như một *Graceful Degradation Adapter*: nếu máy chủ chưa cấu hình biến môi trường, hệ thống vẫn vận hành bình thường thông qua Mock Store.
+- **Strategy Pattern (Thuật toán Chọn Ngành Tham Chiếu Tuyển Sinh):**  
+  Hàm `pickReferenceCutoff` trong `MatchingService.ts` linh hoạt thay đổi chiến lược chọn ngành tham chiếu tùy theo ngữ cảnh của thí sinh:
+  - *Chiến lược 1:* Khớp theo tổ hợp Khối thi được chọn (A00, A01, D01, B00, C00).
+  - *Chiến lược 2:* Khớp theo nhóm tính cách tâm lý nghề nghiệp Holland (RIASEC).
+  - *Chiến lược 3:* Khớp theo độ lệch điểm số tiệm cận gần nhất (`minDiff`).
+
+### 6.3. Đánh Giá Trung Thực Về Giới Hạn Kiến Trúc (Honest Limits Analysis)
+- **Đặc thù Functional Programming (FP):**  
+  UniPath 2.0 được phát triển trên hệ sinh thái hiện đại của **React 19** và **TypeScript**, ưu tiên triết lý hàm thuần túy, immutability và Custom Hooks hơn là lập trình hướng đối tượng cổ điển (Classical OOP).
+- **Áp dụng SOLID ở mức độ Triết lý Thiết kế:**  
+  Các nguyên tắc như *Open/Closed Principle (OCP)* hay *Interface Segregation (ISP)* được áp dụng thông qua việc chia nhỏ TypeScript Interfaces (`src/types/index.ts`) và cơ chế mở rộng hàm (Function Composition), thay vì ép buộc tạo các Class trừu tượng (`abstract class`) hay kế thừa đa tầng vốn làm tăng độ phức tạp không đáng có trong ứng dụng React frontend.

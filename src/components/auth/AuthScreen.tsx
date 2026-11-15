@@ -15,9 +15,20 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../common/UI';
+import { authLoginSchema, authRegisterSchema } from '../../utils/schemas';
 
 export const AuthScreen: React.FC = () => {
-  const { login, register, loginAsGuest, isDemoMode, toggleDemoMode, demoQuickSwitch } = useApp();
+  const {
+    login,
+    register,
+    loginAsGuest,
+    isLoggedIn,
+    user,
+    isDemoFeatureEnabled,
+    isDemoMode,
+    toggleDemoMode,
+    demoQuickSwitch,
+  } = useApp();
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [showPassword, setShowPassword] = useState(false);
@@ -34,11 +45,18 @@ export const AuthScreen: React.FC = () => {
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+
+    const validation = authLoginSchema.safeParse({ email, password });
+    if (!validation.success) {
+      setErrorMsg(validation.error.issues[0]?.message || 'Thông tin đăng nhập không hợp lệ.');
+      return;
+    }
+
     setLoading(true);
 
     setTimeout(() => {
       setLoading(false);
-      const success = login(email, password);
+      const success = login(validation.data.email, validation.data.password);
       if (!success) {
         setErrorMsg('Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại thông tin xác thực!');
       }
@@ -49,25 +67,26 @@ export const AuthScreen: React.FC = () => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (password.length < 6) {
-      setErrorMsg('Mật khẩu phải chứa ít nhất 6 ký tự!');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setErrorMsg('Mật khẩu nhập lại không khớp!');
-      return;
-    }
-
-    if (!agreedTerms) {
-      setErrorMsg('Vui lòng tích chọn đồng ý với Điều khoản sử dụng UniPath!');
+    const validation = authRegisterSchema.safeParse({
+      fullName,
+      email,
+      password,
+      confirmPassword,
+      agreedTerms,
+    });
+    if (!validation.success) {
+      setErrorMsg(validation.error.issues[0]?.message || 'Thông tin đăng ký không hợp lệ.');
       return;
     }
 
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      const res = register(fullName, email, password);
+      const res = register(
+        validation.data.fullName,
+        validation.data.email,
+        validation.data.password
+      );
       if (!res.ok) {
         setErrorMsg(res.error || 'Không thể đăng ký tài khoản với thông tin này!');
       }
@@ -461,39 +480,42 @@ export const AuthScreen: React.FC = () => {
             </span>
           </div>
 
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '8px',
-              padding: '10px 12px',
-              borderRadius: '14px',
-              backgroundColor: isDemoMode ? '#FFFBEB' : '#F8FAFC',
-              border: isDemoMode ? '1.5px solid #F59E0B' : '1px solid #E2E8F0',
-              marginBottom: '12px',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <FlaskConical size={16} color={isDemoMode ? '#D97706' : '#64748B'} />
-              <div>
-                <div style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A' }}>
-                  Chế độ Kiểm thử Hội đồng (Demo Sandbox)
-                </div>
-                <div style={{ fontSize: '11px', color: '#64748B' }}>
-                  {isDemoMode
-                    ? 'Đang bật: Cho phép vào thẳng vai trò Sandbox'
-                    : 'Đang tắt: Mọi vai trò đều bắt buộc nhập mật khẩu'}
+          {/* Demo Sandbox Switch (Admin Only when env flag active) */}
+          {isDemoFeatureEnabled && isLoggedIn && user.role === 'admin' && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px',
+                padding: '10px 12px',
+                borderRadius: '14px',
+                backgroundColor: isDemoMode ? '#FFFBEB' : '#F8FAFC',
+                border: isDemoMode ? '1.5px solid #F59E0B' : '1px solid #E2E8F0',
+                marginBottom: '12px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FlaskConical size={16} color={isDemoMode ? '#D97706' : '#64748B'} />
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A' }}>
+                    Chế độ Kiểm thử Hội đồng (Demo Sandbox)
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#64748B' }}>
+                    {isDemoMode
+                      ? 'Đang bật: Cho phép vào thẳng vai trò Sandbox'
+                      : 'Đang tắt: Mọi vai trò đều bắt buộc nhập mật khẩu'}
+                  </div>
                 </div>
               </div>
+              <input
+                type="checkbox"
+                checked={isDemoMode}
+                onChange={toggleDemoMode}
+                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#D97706' }}
+              />
             </div>
-            <input
-              type="checkbox"
-              checked={isDemoMode}
-              onChange={toggleDemoMode}
-              style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#D97706' }}
-            />
-          </div>
+          )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {/* 1. Candidate Role */}

@@ -170,3 +170,28 @@ export function nextUniqueId(prefix = 'id'): string {
   monotonicSeq = (monotonicSeq + 1) % 1_000_000;
   return `${prefix}-${Date.now()}-${String(monotonicSeq).padStart(4, '0')}`;
 }
+
+/**
+ * Evaluates whether Demo Sandbox can be activated or operated:
+ * 1. Must be enabled via environment variable VITE_ENABLE_DEMO_MODE === 'true'.
+ * 2. User must be currently authenticated with role 'admin'.
+ */
+export function canActivateDemoSandbox(
+  isEnvEnabled: boolean,
+  isLoggedIn: boolean,
+  userRole?: string
+): { allowed: boolean; reason?: string } {
+  if (!isEnvEnabled) {
+    return {
+      allowed: false,
+      reason: 'Chế độ Demo Sandbox đã bị vô hiệu hóa trên môi trường hiện tại.',
+    };
+  }
+  if (!isLoggedIn || userRole !== 'admin') {
+    return {
+      allowed: false,
+      reason: 'Chỉ Quản trị viên (Admin) đã xác thực mới có quyền bật/tắt hoặc kích hoạt Chế độ Demo Sandbox.',
+    };
+  }
+  return { allowed: true };
+}

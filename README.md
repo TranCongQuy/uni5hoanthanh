@@ -100,9 +100,74 @@ npm run dev
 # 4. Kiểm tra chất lượng mã nguồn (ESLint - 0 lỗi, 0 cảnh báo)
 npm run lint
 
-# 5. Kiểm tra kiểu tĩnh TypeScript & Đóng gói bản Production
+# 5. Chạy bộ kiểm thử tự động 20 ca nghiệp vụ (Vitest)
+npm test
+
+# 6. Kiểm tra kiểu tĩnh TypeScript & Đóng gói bản Production
 npm run build
 ```
+
+---
+
+## ⚙️ CẤU HÌNH BIẾN MÔI TRƯỜNG (ENVIRONMENT VARIABLES)
+
+Hệ thống hỗ trợ cấu hình linh hoạt thông qua tệp `.env` (máy cục bộ) hoặc cấu hình Environment Variables trên Vercel:
+
+| Tên biến môi trường | Giá trị mặc định | Bắt buộc | Ý nghĩa kỹ thuật & Ranh giới bảo mật |
+| :--- | :---: | :---: | :--- |
+| `VITE_SUPABASE_URL` | `""` | Tùy chọn | URL endpoint của dự án Supabase (VD: `https://xyzcompany.supabase.co`). Dùng để gọi Edge Function và đồng bộ dữ liệu đám mây. Nếu để trống, hệ thống tự động chạy chế độ Mock/Offline an toàn. |
+| `VITE_SUPABASE_ANON_KEY` | `""` | Tùy chọn | Khóa Public/Anon Key của Supabase để xác thực yêu cầu từ trình duyệt. |
+| `VITE_ENABLE_DEMO_MODE` | `"false"` | **Khuyến nghị** | Cờ kiểm soát cơ chế Demo Sandbox: <br>• Khi là `"false"` (mặc định trên Production): Toàn bộ cơ chế chuyển nhanh Demo bị vô hiệu hóa cứng, ẩn 100% công tắc trên giao diện, bắt buộc đăng nhập bằng mật khẩu.<br>• Khi là `"true"`: Chỉ người dùng **đã đăng nhập quyền Admin** mới có thể bật/tắt công tắc kiểm thử hội đồng. |
+
+---
+
+## 🗄️ HƯỚNG DẪN KHỞI TẠO CƠ SỞ DỮ LIỆU (SUPABASE DATABASE INIT)
+
+Dự án cung cấp sẵn kịch bản SQL toàn diện tại [supabase/schema.sql](supabase/schema.sql) để triển khai CSDL quan hệ PostgreSQL kèm bảo mật hàng dữ liệu (Row Level Security - RLS):
+
+1. **Đăng nhập vào Supabase Dashboard:** Tạo một project mới tại [supabase.com](https://supabase.com).
+2. **Mở Trình biên tập SQL (SQL Editor):** Nhấn vào biểu tượng **SQL Editor** ở thanh điều hướng bên trái -> Chọn **New query**.
+3. **Thực thi kịch bản:**
+   - Mở tệp `supabase/schema.sql` trong mã nguồn.
+   - Sao chép toàn bộ nội dung và dán vào cửa sổ truy vấn của Supabase.
+   - Nhấn **Run** để khởi tạo các bảng:
+     - `public.users`: Lưu trữ thông tin tài khoản và phân quyền vai trò.
+     - `public.applications`: Lưu trữ hồ sơ xét tuyển trực tuyến, mã hồ sơ, điểm số và trạng thái FSM.
+     - `public.consultation_bookings`: Quản lý lịch hẹn tư vấn tuyển sinh 1-1.
+     - Kèm theo các chính sách bảo mật RLS đảm bảo thí sinh chỉ đọc/ghi dữ liệu của chính mình, Admin có quyền xem toàn bộ và PXU chỉ truy cập hồ sơ trường mình.
+
+---
+
+## 🚀 QUY TRÌNH TRIỂN KHAI LÊN VERCEL & SUPABASE EDGE FUNCTIONS
+
+### 1. Triển khai Ứng dụng Frontend lên Vercel
+1. Truy cập [vercel.com](https://vercel.com) và kết nối với kho mã nguồn GitHub `TranCongQuy/uni5hoanthanh`.
+2. Trong phần cấu hình **Build & Development Settings**:
+   - Framework Preset: `Vite`
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+3. Trong phần **Environment Variables**, khai báo các biến:
+   - `VITE_SUPABASE_URL`: Điền URL Supabase của bạn.
+   - `VITE_SUPABASE_ANON_KEY`: Điền Anon Key Supabase của bạn.
+   - `VITE_ENABLE_DEMO_MODE`: Đặt là `false` để bảo vệ an toàn cho bản Production.
+4. Bấm **Deploy**. Vercel sẽ tự động kích hoạt CI/CD đóng gói và phân phối toàn cầu.
+
+### 2. Triển khai AI Edge Function (Supabase CLI)
+Để kích hoạt tính năng Cố vấn AI Gọi trực tiếp Gemini qua Backend bảo mật:
+```bash
+# 1. Cài đặt và đăng nhập Supabase CLI
+npx supabase login
+
+# 2. Liên kết với project Supabase của bạn
+npx supabase link --project-ref <your-project-id>
+
+# 3. Cấu hình khóa bí mật Server-Side (TUYỆT ĐỐI không đưa key vào frontend)
+npx supabase secrets set GEMINI_API_KEY="AIzaSy..." GEMINI_MODEL="gemini-2.5-flash-lite"
+
+# 4. Triển khai hàm chat
+npx supabase functions deploy chat --no-verify-jwt
+```
+> **Lưu ý bảo mật:** Khóa `GEMINI_API_KEY` chỉ được lưu trữ an toàn trong vault bí mật của Supabase Edge Function và gọi trực tiếp từ backend serverless, tuyệt đối không bị lộ ra ngoài mã nguồn frontend hay commit lên GitHub.
 
 ---
 

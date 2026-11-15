@@ -27,6 +27,7 @@ export const AccountRoleMenu: React.FC<AccountRoleMenuProps> = ({
     isLoggedIn,
     isGuest,
     user,
+    isDemoFeatureEnabled,
     isDemoMode,
     toggleDemoMode,
     demoQuickSwitch,
@@ -250,39 +251,41 @@ export const AccountRoleMenu: React.FC<AccountRoleMenuProps> = ({
             </div>
           </div>
 
-          {/* Demo Sandbox Toggle (OFF by default -> requires password!) */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '8px',
-              padding: '8px 10px',
-              borderRadius: '11px',
-              backgroundColor: isDemoMode ? '#FFFBEB' : '#F8FAFC',
-              border: isDemoMode ? '1px solid #FCD34D' : '1px solid #E2E8F0',
-              marginBottom: '10px',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
-              <FlaskConical size={14} color={isDemoMode ? '#D97706' : '#64748B'} style={{ flexShrink: 0 }} />
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#0F172A' }}>
-                  Chế độ Kiểm thử Demo
-                </div>
-                <div style={{ fontSize: '10px', color: '#64748B' }}>
-                  {isDemoMode ? 'Đang bật chuyển nhanh Sandbox' : 'Đang tắt — Bắt buộc mật khẩu'}
+          {/* Demo Sandbox Toggle (ONLY visible & togglable for authenticated Admin when env enabled) */}
+          {isDemoFeatureEnabled && isLoggedIn && user.role === 'admin' && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px',
+                padding: '8px 10px',
+                borderRadius: '11px',
+                backgroundColor: isDemoMode ? '#FFFBEB' : '#F8FAFC',
+                border: isDemoMode ? '1px solid #FCD34D' : '1px solid #E2E8F0',
+                marginBottom: '10px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
+                <FlaskConical size={14} color={isDemoMode ? '#D97706' : '#64748B'} style={{ flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#0F172A' }}>
+                    Chế độ Kiểm thử Demo
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#64748B' }}>
+                    {isDemoMode ? 'Đang bật chuyển nhanh Sandbox' : 'Đang tắt — Bắt buộc mật khẩu'}
+                  </div>
                 </div>
               </div>
+              <input
+                type="checkbox"
+                checked={isDemoMode}
+                onChange={toggleDemoMode}
+                aria-label="Bật chế độ kiểm thử Demo"
+                style={{ width: '17px', height: '17px', cursor: 'pointer', accentColor: '#D97706', flexShrink: 0 }}
+              />
             </div>
-            <input
-              type="checkbox"
-              checked={isDemoMode}
-              onChange={toggleDemoMode}
-              aria-label="Bật chế độ kiểm thử Demo"
-              style={{ width: '17px', height: '17px', cursor: 'pointer', accentColor: '#D97706', flexShrink: 0 }}
-            />
-          </div>
+          )}
 
           <div
             style={{
