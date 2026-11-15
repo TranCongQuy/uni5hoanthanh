@@ -43,7 +43,7 @@ import {
   validateNewApplicationSubmission,
   validateReviewerStatusChange,
 } from '../services/ApplicationWorkflow';
-import { syncApplicationToCloud, syncBookingToCloud } from '../lib/supabase';
+import { syncApplicationToCloud, syncBookingToCloud, syncQuizResultToCloud } from '../lib/supabase';
 
 export interface HollandResult {
   primaryCode: HollandCode;
@@ -1599,6 +1599,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       completedAt: computed.completedAt,
     };
     setHollandResult(newResult);
+    const candidateEmail = (user?.email || profile?.email || '').trim();
+    if (candidateEmail) {
+      void syncQuizResultToCloud(candidateEmail, newResult);
+    }
     if (isLoggedIn && !isGuest && user.role === 'student') {
       const tieNote =
         computed.tiedTopCodes.length >= 2

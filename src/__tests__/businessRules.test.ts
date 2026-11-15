@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { UNIVERSITIES } from '../data/MockData';
+import { syncQuizResultToCloud } from '../lib/supabase';
 import {
   MAX_ACTIVE_APPLICATIONS,
   canStudentCancelApplication,
@@ -440,5 +441,90 @@ describe('Hạng mục 7 — Giải thích % trúng tuyển Vì sao X%? (Explain
 
     expect(exp.isBudgetMatched).toBe(false);
     expect(exp.budgetExplanation).toContain('vượt ngân sách');
+  });
+});
+
+describe('Hạng mục 2 — Lưu kết quả trắc nghiệm Holland lên Supabase (quiz_results)', () => {
+  it('gửi đúng payload và bảng quiz_results khi có Supabase env', async () => {
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://mock-project.supabase.co');
+    vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'mock-anon-key');
+
+    let calledUrl = '';
+    let calledOptions: RequestInit | undefined;
+
+    const mockFetch = vi.fn().mockImplementation((url: string, options?: RequestInit) => {
+      calledUrl = url;
+      calledOptions = options;
+      return Promise.resolve({ ok: true, status: 201 });
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const testScores = { R: 10, I: 20, A: 15, S: 12, E: 25, C: 18 };
+    const res = await syncQuizResultToCloud('ThaoVy.Le@gmail.com', {
+      scores: testScores,
+      primaryCode: 'E',
+      topCodes: ['E', 'I', 'C'],
+    });
+
+    expect(res).toBe(true);
+    expect(calledUrl).toBe('https://mock-project.supabase.co/rest/v1/quiz_results');
+    expect(calledOptions?.method).toBe('POST');
+    const headers = calledOptions?.headers as Record<string, string>;
+    expect(headers.apikey).toBe('mock-anon-key');
+    expect(headers.Authorization).toBe('Bearer mock-anon-key');
+
+    const body = JSON.parse(calledOptions?.body as string);
+    expect(body.profile_email).toBe('thaovy.le@gmail.com');
+    expect(body.scores).toEqual(testScores);
+    expect(body.primary_code).toBe('E');
+    expect(body.secondary_code).toBe('I');
+
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it('không ném lỗi khi fetch reject hoặc trả về lỗi HTTP 500', async () => {
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://mock-project.supabase.co');
+    vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'mock-anon-key');
+
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network offline')));
+
+    const testScores = { R: 10, I: 20, A: 15, S: 12, E: 25, C: 18 };
+    // Phải nuốt lỗi an toàn, không được crash
+    await expect(
+      syncQuizResultToCloud('user@example.com', {
+        scores: testScores,
+        primaryCode: 'R',
+      })
+    ).resolves.toBe(false);
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }));
+    await expect(
+      syncQuizResultToCloud('user@example.com', {
+        scores: testScores,
+        primaryCode: 'R',
+      })
+    ).resolves.toBe(false);
+
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it('no-op và trả false khi thiếu env hoặc email trống', async () => {
+    vi.stubEnv('VITE_SUPABASE_URL', '');
+    vi.stubEnv('VITE_SUPABASE_ANON_KEY', '');
+    const mockFetch = vi.fn();
+    vi.stubGlobal('fetch', mockFetch);
+
+    const res = await syncQuizResultToCloud('user@example.com', {
+      scores: { R: 10 },
+      primaryCode: 'R',
+    });
+
+    expect(res).toBe(false);
+    expect(mockFetch).not.toHaveBeenCalled();
+
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 });
