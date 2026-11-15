@@ -55,9 +55,9 @@ const MainApp: React.FC = () => {
   const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
     try {
       const tourDone = localStorage.getItem('unipath_tour_completed') === 'true';
-      return !tourDone && !isLoggedIn;
+      return !tourDone;
     } catch {
-      return !isLoggedIn;
+      return false;
     }
   });
 
@@ -71,7 +71,7 @@ const MainApp: React.FC = () => {
   };
 
   const isAnyModalOpen =
-    (viewMode === 'mobile' && !isLoggedIn && showOnboarding) ||
+    (isLoggedIn && showOnboarding) ||
     isChatBotOpen ||
     isNotificationsOpen ||
     selectedUniIdForDetail !== null ||
@@ -108,8 +108,18 @@ const MainApp: React.FC = () => {
     };
   }, [isAnyModalOpen]);
 
-  // 0. DEDICATED ROLE PORTALS (Admin & ĐH Phú Xuân)
-  if (isLoggedIn && user.role === 'admin') {
+  // 0. AUTH GATEWAY: Unauthenticated users ONLY see AuthScreen (no background portal content)
+  if (!isLoggedIn) {
+    return (
+      <>
+        <AuthScreen />
+        <Toast message={toastMessage} />
+      </>
+    );
+  }
+
+  // 1. DEDICATED ROLE PORTALS (Admin & ĐH Phú Xuân)
+  if (user.role === 'admin') {
     return (
       <>
         <AdminApp />
@@ -121,7 +131,7 @@ const MainApp: React.FC = () => {
     );
   }
 
-  if (isLoggedIn && user.role === 'university_pxu') {
+  if (user.role === 'university_pxu') {
     return (
       <>
         <UniversityApp />
@@ -133,11 +143,12 @@ const MainApp: React.FC = () => {
     );
   }
 
-  // 1. AUTOMATIC DESKTOP INTERFACE (Viewport >= 1024px)
+  // 2. AUTHENTICATED STUDENT PORTAL (Desktop Viewport >= 1024px)
   if (viewMode === 'desktop') {
     return (
       <>
         <DesktopView />
+        <OnboardingModal isOpen={showOnboarding} onFinish={handleFinishOnboarding} />
         <UniversityDetailModal />
         <CompareModal />
         <ChatBotModal />
@@ -155,21 +166,11 @@ const MainApp: React.FC = () => {
     );
   }
 
-  // 2. AUTOMATIC MOBILE INTERFACE (< 1024px): Auth Gateway when not logged in
-  if (!isLoggedIn) {
-    return (
-      <>
-        <OnboardingModal isOpen={showOnboarding} onFinish={handleFinishOnboarding} />
-        <AuthScreen />
-        <Toast message={toastMessage} />
-      </>
-    );
-  }
-
-  // 3. AUTOMATIC MOBILE INTERFACE (< 1024px): Main Student App
+  // 3. AUTHENTICATED STUDENT PORTAL (Mobile Viewport < 1024px)
   return (
     <>
       <MobileView />
+      <OnboardingModal isOpen={showOnboarding} onFinish={handleFinishOnboarding} />
       <UniversityDetailModal />
       <CompareModal />
       <ChatBotModal />

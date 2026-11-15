@@ -11,7 +11,6 @@ import {
   Compass,
   FileText,
   Calendar,
-  LogIn,
   AlertCircle,
   Award,
 } from 'lucide-react';
@@ -27,8 +26,6 @@ import { ApplicationTimeline } from '../common/ApplicationTimeline';
 
 export const ProfileTab: React.FC = () => {
   const {
-    isLoggedIn,
-    isGuest,
     user,
     profile,
     favoriteIds,
@@ -40,7 +37,6 @@ export const ProfileTab: React.FC = () => {
     openEditProfile,
     openSettings,
     openCareerPath,
-    openAuthModal,
     openBookConsultation,
     myApplications,
     myBookings,
@@ -116,9 +112,9 @@ export const ProfileTab: React.FC = () => {
                   textOverflow: 'ellipsis',
                 }}
               >
-                {isLoggedIn && !isGuest ? (user.name || 'Học sinh UniPath') : 'Khách trải nghiệm'}
+                {user.name || 'Học sinh UniPath'}
               </h3>
-              {profile.isPremium && isLoggedIn && !isGuest && (
+              {profile.isPremium && (
                 <span
                   style={{
                     backgroundColor: '#FEF3C7',
@@ -139,7 +135,7 @@ export const ProfileTab: React.FC = () => {
             </div>
 
             <div style={{ fontSize: '12.5px', color: '#64748B', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {!isLoggedIn || isGuest ? 'Tài khoản khách trải nghiệm' : `${profile.grade} • ${profile.school}`}
+              {`${profile.grade} • ${profile.school}`}
             </div>
             <div style={{ fontSize: '11.5px', color: '#94A3B8', marginTop: '1px' }}>
               {profile.province}
@@ -165,20 +161,14 @@ export const ProfileTab: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          {!isLoggedIn || isGuest ? (
-            <Button variant="primary" size="M" fullWidth onClick={openAuthModal}>
-              Đăng nhập / Đăng ký tài khoản
-            </Button>
-          ) : (
-            <Button variant="tonal" size="M" fullWidth icon={<Edit3 size={16} />} onClick={openEditProfile}>
-              Chỉnh sửa thông tin hồ sơ
-            </Button>
-          )}
+          <Button variant="tonal" size="M" fullWidth icon={<Edit3 size={16} />} onClick={openEditProfile}>
+            Chỉnh sửa thông tin hồ sơ
+          </Button>
         </div>
       </div>
 
       {/* 2. Priority Action Alerts (Early Admission Certificate / Supplement Required) */}
-      {isLoggedIn && !isGuest && admittedApp && (
+      {admittedApp && (
         <div
           style={{
             background: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)',
@@ -225,7 +215,7 @@ export const ProfileTab: React.FC = () => {
         </div>
       )}
 
-      {isLoggedIn && !isGuest && missingDocApp && (
+      {missingDocApp && (
         <div
           style={{
             backgroundColor: '#FFFBEB',
@@ -350,14 +340,10 @@ export const ProfileTab: React.FC = () => {
           {myApplications.length === 0 ? (
             <EmptyState
               icon={<FileText size={26} strokeWidth={1.75} />}
-              title={!isLoggedIn || isGuest ? 'Chưa đăng nhập tài khoản thí sinh' : 'Chưa có hồ sơ xét tuyển nào'}
-              description={
-                !isLoggedIn || isGuest
-                  ? 'Đăng nhập tài khoản thí sinh để nộp và theo dõi hồ sơ xét tuyển đại học trực tuyến.'
-                  : 'Bạn chưa nộp hồ sơ xét tuyển nào. Hãy chọn trường và nộp hồ sơ trực tuyến ngay!'
-              }
-              actionText={!isLoggedIn || isGuest ? 'Đăng nhập ngay' : 'Khám phá trường ngay'}
-              onAction={() => (!isLoggedIn || isGuest ? openAuthModal() : setActiveTab(0))}
+              title="Chưa có hồ sơ xét tuyển nào"
+              description="Bạn chưa nộp hồ sơ xét tuyển nào. Hãy chọn trường và nộp hồ sơ trực tuyến ngay!"
+              actionText="Khám phá trường ngay"
+              onAction={() => setActiveTab(0)}
             />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -424,7 +410,7 @@ export const ProfileTab: React.FC = () => {
                         Nộp lúc: {app.submittedAt}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        {canStudentCancelApplication(app, user.email, isGuest || !isLoggedIn).ok && (
+                        {canStudentCancelApplication(app, user.email, false).ok && (
                           <button
                             type="button"
                             onClick={(e) => {
@@ -815,29 +801,17 @@ export const ProfileTab: React.FC = () => {
         ))}
       </div>
 
-      {/* Logout or Login button */}
-      {!isLoggedIn || isGuest ? (
-        <Button
-          variant="primary"
-          size="L"
-          fullWidth
-          icon={<LogIn size={18} />}
-          onClick={openAuthModal}
-        >
-          Đăng nhập / Tạo tài khoản thí sinh
-        </Button>
-      ) : (
-        <Button
-          variant="outline"
-          size="L"
-          fullWidth
-          style={{ borderColor: '#EF4444', color: '#EF4444' }}
-          icon={<LogOut size={18} />}
-          onClick={() => setShowLogoutConfirm(true)}
-        >
-          Đăng xuất tài khoản
-        </Button>
-      )}
+      {/* Logout button */}
+      <Button
+        variant="outline"
+        size="L"
+        fullWidth
+        style={{ borderColor: '#EF4444', color: '#EF4444' }}
+        icon={<LogOut size={18} />}
+        onClick={() => setShowLogoutConfirm(true)}
+      >
+        Đăng xuất tài khoản
+      </Button>
 
       {/* Upgrade Modal */}
       {showUpgradeModal && (

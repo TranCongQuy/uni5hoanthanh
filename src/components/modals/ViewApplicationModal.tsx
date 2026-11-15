@@ -38,7 +38,6 @@ export const ViewApplicationModal: React.FC = () => {
     updateApplicationStatus,
     universitiesList,
     isLoggedIn,
-    isGuest,
     user,
     viewMode,
   } = useApp();
@@ -67,7 +66,6 @@ export const ViewApplicationModal: React.FC = () => {
 
   const isStudentOwner =
     isLoggedIn &&
-    !isGuest &&
     user.role === 'student' &&
     app.email.trim().toLowerCase() === user.email.trim().toLowerCase();
 

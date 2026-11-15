@@ -51,6 +51,11 @@ import {
   fetchUniversitiesFromCloud,
   mergeUniversitiesWithCloud,
 } from '../lib/supabase';
+import {
+  EMPTY_USER,
+  recoverInitialSession,
+  type StoredSession,
+} from '../utils/authSession';
 
 export interface HollandResult {
   primaryCode: HollandCode;
@@ -89,12 +94,6 @@ interface PerUserPersonalStore {
   aiMatchState: AIMatchState;
 }
 
-interface StoredSession {
-  isLoggedIn: boolean;
-  isGuest: boolean;
-  user: CurrentUser;
-}
-
 interface AppContextType {
   // Auth, RBAC & Demo Sandbox Guard
   isLoggedIn: boolean;
@@ -107,7 +106,6 @@ interface AppContextType {
   authPrefillEmail: string;
   registeredUsers: RegisteredUserSummary[];
   login: (email: string, pass: string) => boolean;
-  loginAsGuest: () => void;
   register: (fullName: string, email: string, pass: string) => { ok: boolean; error?: string };
   logout: () => void;
 
@@ -253,15 +251,6 @@ const STORAGE_KEYS = {
   USER_PREFIX: 'unipath_v2_user_',
 };
 
-const GUEST_USER: CurrentUser = {
-  email: 'guest@unipath.vn',
-  name: 'Khách trải nghiệm',
-  role: 'student',
-  title: 'Khách vãng lai (Chưa đăng nhập)',
-  organization: 'Trải nghiệm tự do',
-  avatar: '/images/avatar_user.png',
-};
-
 const DEFAULT_AI_MATCH: AIMatchState = {
   hasEvaluated: false,
   score: 24.0,
@@ -304,11 +293,6 @@ const createCleanStudentProfile = (name: string, email: string): UserProfile => 
   premiumPlan: 'Gói Tiêu Chuẩn',
   avatarPath: '/images/avatar_user.png',
 });
-
-const GUEST_PROFILE: UserProfile = {
-  ...createCleanStudentProfile('Khách trải nghiệm', 'guest@unipath.vn'),
-  school: 'Khách khám phá hệ thống',
-};
 
 function buildInitialBookings(): ConsultationBooking[] {
   const d1 = getLocalOffsetDateISO(2);
@@ -519,28 +503,18 @@ function loadPersonalStore(email: string, name: string): PerUserPersonalStore {
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // --- Initial Session Recovery ---
-  const initialSession = useMemo<StoredSession>(() => {
-    const saved = readJsonStorage<StoredSession | null>(STORAGE_KEYS.SESSION, null);
-    if (saved && saved.isLoggedIn && saved.user) {
-      return saved;
-    }
-    return {
-      isLoggedIn: false,
-      isGuest: false,
-      user: GUEST_USER,
-    };
-  }, []);
+  const [initialSession] = useState<StoredSession>(recoverInitialSession);
 
   const initialPersonal = useMemo<PerUserPersonalStore>(() => {
     if (
       initialSession.isLoggedIn &&
-      !initialSession.isGuest &&
-      initialSession.user.role === 'student'
+      initialSession.user.role === 'student' &&
+      initialSession.user.email
     ) {
       return loadPersonalStore(initialSession.user.email, initialSession.user.name);
     }
     return {
-      profile: { ...GUEST_PROFILE },
+      profile: createCleanStudentProfile('', ''),
       favoriteIds: [],
       compareIds: [],
       hollandResult: null,
@@ -1030,21 +1004,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return false;
   };
 
-  const loginAsGuest = () => {
-    setIsLoggedIn(true);
-    setIsGuest(true);
-    setUser(GUEST_USER);
-    setProfile({ ...GUEST_PROFILE });
-    setFavoriteIds([]);
-    setCompareIds([]);
-    setHollandResult(null);
-    setAIMatchState({ ...DEFAULT_AI_MATCH });
-    setActiveTab(0);
-    setIsAuthModalOpen(false);
-    setAuthPrefillEmail('');
-    showToast('Đang khám phá với chế độ Khách trải nghiệm (Dữ liệu cá nhân tách biệt)');
-  };
-
   const register = (
     fullName: string,
     email: string,
@@ -1131,8 +1090,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsDemoMode(false);
     setIsLoggedIn(false);
     setIsGuest(false);
-    setUser(GUEST_USER);
-    setProfile({ ...GUEST_PROFILE });
+    setUser(EMPTY_USER);
+    setProfile(createCleanStudentProfile('', ''));
     setFavoriteIds([]);
     setCompareIds([]);
     setHollandResult(null);
@@ -2086,7 +2045,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         authPrefillEmail,
         registeredUsers,
         login,
-        loginAsGuest,
         register,
         logout,
         profile,

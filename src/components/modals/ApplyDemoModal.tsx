@@ -27,7 +27,6 @@ export const ApplyDemoModal: React.FC = () => {
     applyDemoTargetUni,
     user,
     isLoggedIn,
-    isGuest,
     profile,
     myApplications,
     addApplication,
@@ -80,7 +79,7 @@ export const ApplyDemoModal: React.FC = () => {
   const handleNext = () => {
     setErrorMsg('');
 
-    if (!isLoggedIn || isGuest || user.role !== 'student') {
+    if (!isLoggedIn || user.role !== 'student') {
       closeApplyDemo();
       openAuthModal();
       return;

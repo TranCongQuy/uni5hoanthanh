@@ -21,7 +21,6 @@ export const AuthScreen: React.FC = () => {
   const {
     login,
     register,
-    loginAsGuest,
     isLoggedIn,
     user,
     isDemoFeatureEnabled,
@@ -464,13 +463,6 @@ export const AuthScreen: React.FC = () => {
               </Button>
             </form>
           )}
-
-          {/* Guest Exploration CTA */}
-          <div style={{ marginTop: '12px' }}>
-            <Button type="button" variant="ghost" size="S" fullWidth onClick={loginAsGuest}>
-              Tiếp tục khám phá ở chế độ Khách →
-            </Button>
-          </div>
 
           {/* 3. Role Portals + Explicit Demo Mode Switch */}
           <div style={{ margin: '18px 0 12px', position: 'relative', textAlign: 'center' }}>
