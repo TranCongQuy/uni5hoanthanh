@@ -50,9 +50,21 @@ const MainApp: React.FC = () => {
     user,
   } = useApp();
 
-  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => !isLoggedIn);
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
+    try {
+      const tourDone = localStorage.getItem('unipath_tour_completed') === 'true';
+      return !tourDone && !isLoggedIn;
+    } catch {
+      return !isLoggedIn;
+    }
+  });
 
   const handleFinishOnboarding = () => {
+    try {
+      localStorage.setItem('unipath_tour_completed', 'true');
+    } catch {
+      // ignore
+    }
     setShowOnboarding(false);
   };
 

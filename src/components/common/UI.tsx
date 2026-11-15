@@ -337,8 +337,12 @@ export const StatusChip: React.FC<StatusChipProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 font-bold rounded-full whitespace-nowrap ${className}`}
+      className={`inline-flex items-center gap-1.5 font-bold rounded-full ${className}`}
       style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
         backgroundColor: bg,
         color: text,
         border: `1px solid ${border}`,
@@ -348,8 +352,8 @@ export const StatusChip: React.FC<StatusChipProps> = ({
         ...style,
       }}
     >
-      <Icon size={isSmall ? 12 : 13} className="shrink-0" />
-      <span>{normalized || 'Không xác định'}</span>
+      <Icon size={isSmall ? 12 : 13} className="shrink-0" style={{ flexShrink: 0 }} />
+      <span style={{ whiteSpace: 'nowrap' }}>{normalized || 'Không xác định'}</span>
     </span>
   );
 };

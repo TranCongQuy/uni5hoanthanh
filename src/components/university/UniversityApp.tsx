@@ -414,7 +414,7 @@ export const UniversityApp: React.FC = () => {
                     <th>Thí sinh</th>
                     <th>Ngành đăng ký tại PXU</th>
                     <th>Đối chiếu Chuẩn ngành</th>
-                    <th>Trạng thái</th>
+                    <th style={{ width: '145px', minWidth: '140px', whiteSpace: 'nowrap' }}>Trạng thái</th>
                     <th style={{ textAlign: 'right' }}>Xét duyệt</th>
                   </tr>
                 </thead>
@@ -440,7 +440,7 @@ export const UniversityApp: React.FC = () => {
                             {delta >= 4 ? `🌟 +${formatCleanDecimal(delta, 2)}đ (Đề xuất HB OJT)` : delta >= 0 ? `✓ +${formatCleanDecimal(delta, 2)}đ Đạt chuẩn` : `${formatCleanDecimal(delta, 2)}đ Dưới chuẩn`}
                           </span>
                         </td>
-                        <td>
+                        <td style={{ width: '145px', minWidth: '140px', whiteSpace: 'nowrap' }}>
                           <StatusBadge status={app.status} />
                         </td>
                         <td style={{ textAlign: 'right' }}>
@@ -646,7 +646,7 @@ export const UniversityApp: React.FC = () => {
                       <th>Thí sinh & Mã HS</th>
                       <th>Ngành đăng ký PXU</th>
                       <th>Điểm / Chuẩn PXU</th>
-                      <th>Trạng thái</th>
+                      <th style={{ width: '145px', minWidth: '140px', whiteSpace: 'nowrap' }}>Trạng thái</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -679,7 +679,7 @@ export const UniversityApp: React.FC = () => {
                               {delta >= 4 ? `🌟 +${delta}đ (HB OJT)` : delta >= 0 ? `+${delta}đ Đạt` : `${delta}đ`}
                             </span>
                           </td>
-                          <td>
+                          <td style={{ width: '145px', minWidth: '140px', whiteSpace: 'nowrap' }}>
                             <StatusBadge status={app.status} />
                           </td>
                         </tr>
