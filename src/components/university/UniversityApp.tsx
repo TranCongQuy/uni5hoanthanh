@@ -1266,26 +1266,21 @@ export const UniversityApp: React.FC = () => {
       <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', width: '100%' }}>
         {/* PXU Emerald Aurora Sidebar */}
         <aside
-          className="up-sidebar-scroll"
           style={{
             width: '256px',
-            flexShrink: 0,
-            background: 'var(--up-gradient-aurora-pxu, linear-gradient(180deg, #022C22 0%, #064E3B 45%, #0F766E 100%))',
-            color: '#FFFFFF',
-            display: 'flex',
-            flexDirection: 'column',
-            padding: '20px 14px 28px',
+            height: '100vh',
+            maxHeight: '100dvh',
             position: 'fixed',
             left: 0,
             top: 0,
             bottom: 0,
-            height: '100vh',
-            maxHeight: '100dvh',
+            background: 'var(--up-gradient-aurora-pxu, linear-gradient(180deg, #022C22 0%, #064E3B 45%, #0F766E 100%))',
+            color: '#FFFFFF',
+            display: 'flex',
+            flexDirection: 'column',
             boxSizing: 'border-box',
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            overscrollBehavior: 'contain',
             zIndex: 70,
+            boxShadow: '4px 0 24px rgba(0, 0, 0, 0.15)',
           }}
         >
           {/* Subtle Geometric SVG Pattern */}
@@ -1301,7 +1296,19 @@ export const UniversityApp: React.FC = () => {
             }}
           />
 
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 8px 20px', borderBottom: '1px solid rgba(255,255,255,0.12)', marginBottom: '16px' }}>
+          {/* Pinned Top Brand Header */}
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '20px 16px 16px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+              flexShrink: 0,
+            }}
+          >
             <div style={{ width: '40px', height: '40px', borderRadius: '11px', backgroundColor: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
               <img src="/images/logo_pxu.png" alt="PXU" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
             </div>
@@ -1311,58 +1318,87 @@ export const UniversityApp: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ position: 'relative', zIndex: 1, fontSize: '10.5px', fontWeight: 800, color: '#6EE7B7', textTransform: 'uppercase', letterSpacing: '0.6px', padding: '0 10px 8px', opacity: 0.9 }}>
-            Nghiệp vụ tuyển sinh PXU
+          {/* Scrollable Navigation in Middle */}
+          <div
+            className="up-sidebar-scroll"
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              overscrollBehavior: 'contain',
+              padding: '16px 12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+            }}
+          >
+            <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#6EE7B7', textTransform: 'uppercase', letterSpacing: '0.6px', padding: '0 8px 6px', opacity: 0.9 }}>
+              Nghiệp vụ tuyển sinh PXU
+            </div>
+
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              {NAV_ITEMS.map((item) => {
+                const active = section === item.id;
+                const badge =
+                  item.id === 'apps' && pendingApps.length > 0
+                    ? pendingApps.length
+                    : item.id === 'bookings' && pendingBookings.length > 0
+                    ? pendingBookings.length
+                    : null;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setSection(item.id);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '12px',
+                      border: active ? '1px solid rgba(110, 231, 183, 0.35)' : '1px solid transparent',
+                      backgroundColor: active ? 'rgba(5, 150, 105, 0.45)' : 'transparent',
+                      boxShadow: active ? 'var(--up-shadow-glow-emerald, 0 4px 18px rgba(5, 150, 105, 0.4))' : 'none',
+                      color: active ? '#FFFFFF' : '#D1FAE5',
+                      fontSize: '13.5px',
+                      fontWeight: active ? 800 : 600,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      width: '100%',
+                      transition: 'all var(--up-transition-fast, 150ms ease)',
+                    }}
+                  >
+                    {item.icon}
+                    <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
+                    {badge !== null && (
+                      <span style={{ padding: '1px 7px', borderRadius: '999px', backgroundColor: active ? '#FFFFFF' : '#F59E0B', color: active ? EMERALD_DARK : '#451A03', fontSize: '11px', fontWeight: 900 }}>
+                        {badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
           </div>
 
-          <nav style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            {NAV_ITEMS.map((item) => {
-              const active = section === item.id;
-              const badge =
-                item.id === 'apps' && pendingApps.length > 0
-                  ? pendingApps.length
-                  : item.id === 'bookings' && pendingBookings.length > 0
-                  ? pendingBookings.length
-                  : null;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setSection(item.id);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 14px',
-                    borderRadius: '12px',
-                    border: active ? '1px solid rgba(110, 231, 183, 0.35)' : '1px solid transparent',
-                    backgroundColor: active ? 'rgba(5, 150, 105, 0.45)' : 'transparent',
-                    boxShadow: active ? 'var(--up-shadow-glow-emerald, 0 4px 18px rgba(5, 150, 105, 0.4))' : 'none',
-                    color: active ? '#FFFFFF' : '#D1FAE5',
-                    fontSize: '13.5px',
-                    fontWeight: active ? 800 : 600,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    width: '100%',
-                    transition: 'all var(--up-transition-fast, 150ms ease)',
-                  }}
-                >
-                  {item.icon}
-                  <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
-                  {badge !== null && (
-                    <span style={{ padding: '1px 7px', borderRadius: '999px', backgroundColor: active ? '#FFFFFF' : '#F59E0B', color: active ? EMERALD_DARK : '#451A03', fontSize: '11px', fontWeight: 900 }}>
-                      {badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-
-          <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.12)' }}>
+          {/* Pinned Bottom PXU Info Card */}
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              flexShrink: 0,
+              padding: '14px 14px 18px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+              backgroundColor: 'rgba(2, 44, 34, 0.75)',
+              backdropFilter: 'blur(8px)',
+            }}
+          >
             <div style={{ padding: '12px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.08)', fontSize: '11.5px', color: '#D1FAE5', lineHeight: 1.5 }}>
               <div style={{ fontWeight: 800, color: '#FFFFFF', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <Lock size={12} color="#6EE7B7" /> Bảo mật Phân lập PXU
