@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MapPin, Star, Heart, Scale, Sparkles } from 'lucide-react';
 import type { University } from '../../types';
-import { UniversityAvatar } from './UI';
+import { UniversityAvatar, ImageSafe } from './UI';
 import { useReveal } from '../../hooks/useAurora';
 import { getUniCoverGradient } from '../../utils/auroraThemes';
 
@@ -176,6 +176,7 @@ export const UniversityCard: React.FC<UniversityCardProps> = ({
       data-uni-card={uni.id}
       style={{
         ...revealStyle,
+        position: 'relative',
         backgroundColor: '#FFFFFF',
         borderRadius: '22px',
         border: isHovered ? '1px solid #C7D2FE' : '1px solid #E2E8F0',
@@ -191,54 +192,47 @@ export const UniversityCard: React.FC<UniversityCardProps> = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* 118px Deterministic Cover with SVG Pattern + Monogram Watermark */}
+      {/* 140px Campus Cover Photo with Scrim Gradient */}
       <div
         style={{
           position: 'relative',
-          height: '118px',
+          height: '140px',
           background: `linear-gradient(135deg, ${gradient.from} 0%, ${gradient.to} 100%)`,
           overflow: 'hidden',
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          padding: '12px 14px',
         }}
       >
-        {/* Subtle SVG dot pattern */}
+        {/* Campus Cover Image */}
+        <ImageSafe
+          src={`/images/campus_${uni.code.toLowerCase()}.jpg`}
+          fallbackSrc="/images/campus_default.png"
+          altText={uni.name}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
+
+        {/* Linear Scrim Gradient Overlay */}
         <div
           aria-hidden="true"
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.18) 1.5px, transparent 1.5px)',
-            backgroundSize: '16px 16px',
+            background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.0) 0%, rgba(15, 23, 42, 0.38) 100%)',
             pointerEvents: 'none',
+            zIndex: 1,
           }}
         />
-
-        {/* Large Faint Watermark Text */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            right: '-10px',
-            bottom: '-12px',
-            fontSize: '54px',
-            fontWeight: 900,
-            color: 'rgba(255, 255, 255, 0.08)',
-            letterSpacing: '2px',
-            userSelect: 'none',
-            pointerEvents: 'none',
-            fontFamily: 'system-ui, sans-serif',
-          }}
-        >
-          {uni.code}
-        </div>
 
         {/* Code & Region Pill Top-Left */}
         <div
           style={{
-            position: 'relative',
+            position: 'absolute',
+            top: '12px',
+            left: '14px',
             zIndex: 2,
             display: 'inline-flex',
             alignItems: 'center',
@@ -266,6 +260,7 @@ export const UniversityCard: React.FC<UniversityCardProps> = ({
               position: 'absolute',
               top: '12px',
               right: onFavoriteToggle ? '50px' : '14px',
+              zIndex: 2,
               backgroundColor:
                 matchingScore >= 80 ? 'rgba(5, 150, 105, 0.9)' : matchingScore >= 60 ? 'rgba(37, 99, 235, 0.9)' : 'rgba(217, 119, 6, 0.9)',
               backdropFilter: 'blur(6px)',
@@ -294,6 +289,7 @@ export const UniversityCard: React.FC<UniversityCardProps> = ({
               position: 'absolute',
               top: '10px',
               right: '12px',
+              zIndex: 2,
               width: '32px',
               height: '32px',
               borderRadius: '50%',
@@ -314,21 +310,26 @@ export const UniversityCard: React.FC<UniversityCardProps> = ({
             <Heart size={15} fill={isFavorite ? '#EF4444' : 'none'} />
           </button>
         )}
+      </div>
 
-        {/* Floating Logo Badge Overlapping Cover and Body */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '-16px',
-            left: '16px',
-            zIndex: 3,
-            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
-            borderRadius: '16px',
-            border: '2px solid #FFFFFF',
-          }}
-        >
-          <UniversityAvatar code={uni.code} size={42} />
-        </div>
+      {/* Floating Logo Badge Overlapping Cover and Body (Child of Card Root) */}
+      <div
+        style={{
+          position: 'absolute',
+          left: '16px',
+          top: '119px',
+          zIndex: 5,
+          borderRadius: '16px',
+          border: '2px solid #FFFFFF',
+          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.12)',
+          backgroundColor: '#FFFFFF',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <UniversityAvatar code={uni.code} size={42} />
       </div>
 
       {/* Card Body */}
