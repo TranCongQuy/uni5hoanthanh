@@ -17,13 +17,13 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { getHollandName } from '../../data/MockData';
-import { getStatusMeta } from '../../types';
 import type { ApplicationRecord } from '../../types';
 import { canStudentCancelApplication, computeHollandAssessment } from '../../services/ApplicationWorkflow';
 import { formatTuitionRange } from '../../utils/validation';
-import { Button, UniversityAvatar, AppFooter } from '../common/UI';
+import { Button, UniversityAvatar, AppFooter, StatusChip } from '../common/UI';
 import { AccountRoleMenu } from '../common/AccountRoleMenu';
 import { LineChart } from '../charts/LineChart';
+import { ApplicationTimeline } from '../common/ApplicationTimeline';
 
 export const ProfileTab: React.FC = () => {
   const {
@@ -374,7 +374,6 @@ export const ProfileTab: React.FC = () => {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {myApplications.map((app) => {
-                const meta = getStatusMeta(app.status);
                 return (
                   <div
                     key={app.id}
@@ -382,46 +381,58 @@ export const ProfileTab: React.FC = () => {
                     style={{
                       backgroundColor: '#FFFFFF',
                       borderRadius: '20px',
-                      border: '1.5px solid #E2E8F0',
+                      border: '1px solid var(--up-color-slate-200, #E2E8F0)',
                       padding: '16px',
                       cursor: 'pointer',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-                      transition: 'all 0.2s ease',
+                      boxShadow: 'var(--up-shadow-card, 0 4px 16px -2px rgba(15,23,42,0.06))',
+                      transition: 'all var(--up-transition-fast, 150ms ease)',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', gap: '8px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 800, color: '#2563EB', backgroundColor: '#EFF6FF', padding: '3px 8px', borderRadius: '8px' }}>
-                        {app.code}
-                      </span>
                       <span
+                        className="tabular-nums"
                         style={{
-                          fontSize: '11px',
+                          fontSize: '12px',
                           fontWeight: 800,
-                          color: meta.color,
-                          backgroundColor: meta.bg,
-                          border: `1px solid ${meta.border}`,
+                          color: 'var(--up-student-primary, #4F46E5)',
+                          backgroundColor: 'var(--up-student-primary-light, #EEF2FF)',
                           padding: '3px 8px',
                           borderRadius: '8px',
+                          border: '1px solid var(--up-student-primary-border, #C7D2FE)',
                         }}
                       >
-                        {meta.label}
+                        {app.code}
                       </span>
+                      <StatusChip status={app.status} size="sm" />
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-                      <UniversityAvatar code={app.uniCode} size={38} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                      <UniversityAvatar code={app.uniCode} size={42} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: '14.5px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {app.uniName}
                         </div>
-                        <div style={{ fontSize: '12px', color: '#64748B' }}>
-                          {app.major}
+                        <div style={{ fontSize: '12px', color: '#64748B', marginTop: '1px' }}>
+                          Ngành: <span style={{ fontWeight: 700, color: '#1E293B' }}>{app.major}</span>
                         </div>
                       </div>
                     </div>
 
+                    {/* Vertical Status Timeline */}
+                    <div
+                      style={{
+                        backgroundColor: 'var(--up-color-slate-50, #F8FAFC)',
+                        borderRadius: '14px',
+                        padding: '12px',
+                        marginBottom: '10px',
+                        border: '1px solid var(--up-color-slate-200, #E2E8F0)',
+                      }}
+                    >
+                      <ApplicationTimeline application={app} />
+                    </div>
+
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #F1F5F9', paddingTop: '10px', fontSize: '12px', gap: '8px' }}>
-                      <span style={{ color: '#94A3B8' }}>
+                      <span className="tabular-nums" style={{ color: '#94A3B8', fontSize: '11.5px' }}>
                         Nộp lúc: {app.submittedAt}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -446,7 +457,7 @@ export const ProfileTab: React.FC = () => {
                             Rút hồ sơ
                           </button>
                         )}
-                        <span style={{ color: '#2563EB', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ color: 'var(--up-student-primary, #4F46E5)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
                           {app.status === 'Thiếu hồ sơ' ? 'Bổ sung ngay' : 'Chi tiết'} <ChevronRight size={14} />
                         </span>
                       </div>

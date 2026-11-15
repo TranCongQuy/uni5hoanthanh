@@ -57,7 +57,6 @@ export const HomeTab: React.FC = () => {
   } = useApp();
 
   const [selectedRegion, setSelectedRegion] = useState<string>('Tất cả');
-  const [currentSlide, setCurrentSlide] = useState(0);
   const [visibleCount, setVisibleCount] = useState<number>(10);
   const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
   const [isSearchDropdownDismissed, setIsSearchDropdownDismissed] = useState<boolean>(false);
@@ -312,407 +311,133 @@ export const HomeTab: React.FC = () => {
         </div>
       </header>
 
-      {/* 2. Hero Slider 200dp - Mobile-First Optimized */}
+      {/* 2. Single-Message SaaS Hero */}
       <div style={{ padding: '14px 20px 8px' }}>
         <div
           style={{
             position: 'relative',
-            height: '210px',
-            minHeight: '210px',
             borderRadius: '24px',
             overflow: 'hidden',
-            boxShadow: '0 8px 24px rgba(37,99,235,0.18)',
+            background: 'linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4F46E5 100%)',
+            padding: '24px 20px',
+            color: '#FFFFFF',
+            boxShadow: 'var(--up-shadow-lg, 0 10px 25px -5px rgba(30,27,75,0.25))',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
           }}
         >
-          {/* Slide 1: AI Test */}
-          <div
+          {/* Subtle Geometric SVG Pattern */}
+          <svg
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 55%, #06B6D4 100%)',
-              padding: '16px 18px 24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '12px',
-              opacity: currentSlide === 0 ? 1 : 0,
-              visibility: currentSlide === 0 ? 'visible' : 'hidden',
-              pointerEvents: currentSlide === 0 ? 'auto' : 'none',
-              transition: 'opacity 0.6s ease',
+              width: '100%',
+              height: '100%',
+              opacity: 0.14,
+              pointerEvents: 'none',
             }}
+            xmlns="http://www.w3.org/2000/svg"
           >
-            <div style={{ flex: 1, minWidth: 0, zIndex: 2 }}>
-              <div
-                style={{
-                  display: 'inline-block',
-                  backgroundColor: 'rgba(255,255,255,0.22)',
-                  backdropFilter: 'blur(4px)',
-                  color: '#FFFFFF',
-                  padding: '3px 8px',
-                  borderRadius: '10px',
-                  fontSize: '10.5px',
-                  fontWeight: 800,
-                  letterSpacing: '0.4px',
-                  marginBottom: '6px',
-                }}
-              >
-                ✨ AI HƯỚNG NGHIỆP 2026
-              </div>
-              <h2
-                style={{
-                  fontSize: '15.5px',
-                  fontWeight: 900,
-                  color: '#FFFFFF',
-                  lineHeight: 1.25,
-                  margin: '0 0 4px',
-                  textShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                  letterSpacing: '-0.2px',
-                }}
-              >
-                Khám phá Ngành học Chuẩn Tương lai cùng AI
-              </h2>
-              <p
-                style={{
-                  margin: '0 0 10px',
-                  fontSize: '11.5px',
-                  color: '#E0F2FE',
-                  lineHeight: 1.3,
-                  fontWeight: 500,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                Thuật toán Holland • 30 trường Đại học
-              </p>
-              <button
-                onClick={() => setActiveTab(1)}
-                style={{
-                  height: '34px',
-                  padding: '0 16px',
-                  borderRadius: '17px',
-                  backgroundColor: '#FFFFFF',
-                  color: '#1D4ED8',
-                  border: 'none',
-                  fontWeight: 800,
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
-                <span>Bắt đầu làm bài test</span>
-                <span>→</span>
-              </button>
-            </div>
+            <defs>
+              <pattern id="hero-pattern-mobile" width="28" height="28" patternUnits="userSpaceOnUse">
+                <path d="M0 28 L28 0 M0 0 L28 28" fill="none" stroke="#FFFFFF" strokeWidth="0.75" />
+                <circle cx="14" cy="14" r="1.2" fill="#FFFFFF" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#hero-pattern-mobile)" />
+          </svg>
 
-            {/* KHUNG ẢNH GỌN GÀNG CHO ĐIỆN THOẠI */}
+          <div style={{ position: 'relative', zIndex: 2 }}>
             <div
               style={{
-                width: '105px',
-                height: '98px',
-                borderRadius: '16px',
-                overflow: 'hidden',
-                boxShadow: '0 8px 20px rgba(0,0,0,0.25)',
-                border: '2px solid rgba(255,255,255,0.4)',
-                flexShrink: 0,
-                position: 'relative',
-                backgroundColor: 'rgba(255,255,255,0.12)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                backgroundColor: 'rgba(255, 255, 255, 0.14)',
+                border: '1px solid rgba(255, 255, 255, 0.22)',
+                backdropFilter: 'blur(8px)',
+                color: '#E0E7FF',
+                padding: '4px 10px',
+                borderRadius: '12px',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.3px',
+                marginBottom: '10px',
               }}
             >
-              <img
-                src="/images/home_hero_art.png"
-                alt="AI hướng nghiệp"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  display: 'block',
-                }}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/images/career_header.png';
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Slide 2: Virtual EduFair */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(135deg, #7C3AED 0%, #4F46E5 60%, #06B6D4 100%)',
-              padding: '16px 18px 24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '12px',
-              opacity: currentSlide === 1 ? 1 : 0,
-              visibility: currentSlide === 1 ? 'visible' : 'hidden',
-              pointerEvents: currentSlide === 1 ? 'auto' : 'none',
-              transition: 'opacity 0.6s ease',
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 0, zIndex: 2 }}>
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  backgroundColor: '#EF4444',
-                  color: '#FFFFFF',
-                  padding: '3px 8px',
-                  borderRadius: '10px',
-                  fontSize: '10.5px',
-                  fontWeight: 800,
-                  marginBottom: '6px',
-                  boxShadow: '0 2px 8px rgba(239,68,68,0.4)',
-                }}
-              >
-                <span
-                  style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    backgroundColor: '#FFFFFF',
-                    animation: 'pulse 1s infinite',
-                  }}
-                />
-                🔴 TRỰC TIẾP HÔM NAY
-              </div>
-              <h2
-                style={{
-                  fontSize: '15.5px',
-                  fontWeight: 900,
-                  color: '#FFFFFF',
-                  lineHeight: 1.25,
-                  margin: '0 0 4px',
-                  textShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                  letterSpacing: '-0.2px',
-                }}
-              >
-                Virtual EduFair: Giao lưu 30 Trường ĐH
-              </h2>
-              <p
-                style={{
-                  margin: '0 0 10px',
-                  fontSize: '11.5px',
-                  color: '#EDE9FE',
-                  lineHeight: 1.3,
-                  fontWeight: 500,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                Tư vấn trực tiếp • Học bổng 50%
-              </p>
-              <button
-                onClick={() => setActiveTab(3)}
-                style={{
-                  height: '34px',
-                  padding: '0 16px',
-                  borderRadius: '17px',
-                  backgroundColor: '#FFFFFF',
-                  color: '#6D28D9',
-                  border: 'none',
-                  fontWeight: 800,
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
-                <span>Tham gia Live ngay</span>
-                <span>→</span>
-              </button>
+              <span>✨ HỆ SINH THÁI TUYỂN SINH THÔNG MINH 2026</span>
             </div>
 
-            {/* KHUNG ẢNH GỌN GÀNG CHO ĐIỆN THOẠI */}
-            <div
+            <h1
               style={{
-                width: '105px',
-                height: '98px',
-                borderRadius: '16px',
-                overflow: 'hidden',
-                boxShadow: '0 8px 20px rgba(0,0,0,0.25)',
-                border: '2px solid rgba(255,255,255,0.4)',
-                flexShrink: 0,
-                position: 'relative',
-                backgroundColor: 'rgba(255,255,255,0.12)',
+                fontSize: '18px',
+                fontWeight: 800,
+                color: '#FFFFFF',
+                lineHeight: 1.3,
+                margin: '0 0 8px',
+                letterSpacing: '-0.3px',
+                fontFamily: 'var(--up-font-family)',
               }}
             >
-              <img
-                src="/images/advisor_live.png"
-                alt="Virtual EduFair Live"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  display: 'block',
-                }}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/images/banner_edufair.png';
-                }}
-              />
-            </div>
-          </div>
+              Khám phá Ngành học &amp; Dự báo Trúng tuyển cùng AI
+            </h1>
 
-          {/* Slide 3: Unipath Premium - Bốc lửa -50% & Hiệu ứng VIP */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(135deg, #78350F 0%, #B45309 40%, #D97706 75%, #F59E0B 100%)',
-              padding: '16px 18px 24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '12px',
-              opacity: currentSlide === 2 ? 1 : 0,
-              visibility: currentSlide === 2 ? 'visible' : 'hidden',
-              pointerEvents: currentSlide === 2 ? 'auto' : 'none',
-              transition: 'opacity 0.6s ease',
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 0, zIndex: 2 }}>
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  background: 'linear-gradient(90deg, #EF4444 0%, #F97316 50%, #EAB308 100%)',
-                  color: '#FFFFFF',
-                  padding: '3px 8px',
-                  borderRadius: '10px',
-                  fontSize: '10.5px',
-                  fontWeight: 900,
-                  letterSpacing: '0.4px',
-                  boxShadow: '0 0 14px rgba(249,115,22,0.7)',
-                  marginBottom: '6px',
-                  animation: 'pulse 1.5s infinite',
-                }}
-              >
-                <span>🔥</span>
-                <span>GIẢM -50% HÔM NAY</span>
-                <span>🔥</span>
-              </div>
-              <h2
-                style={{
-                  fontSize: '15.5px',
-                  fontWeight: 900,
-                  color: '#FFFFFF',
-                  lineHeight: 1.25,
-                  margin: '0 0 4px',
-                  textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                  letterSpacing: '-0.2px',
-                }}
-              >
-                Unipath VIP: Cố vấn AI & Lộ trình THPT
-              </h2>
-              <p
-                style={{
-                  margin: '0 0 10px',
-                  fontSize: '11.5px',
-                  color: '#FEF3C7',
-                  lineHeight: 1.3,
-                  fontWeight: 500,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                Đồng hành 3 năm • Cam kết NV1
-              </p>
-              <button
-                onClick={() => setActiveTab(4)}
-                style={{
-                  height: '34px',
-                  padding: '0 16px',
-                  borderRadius: '17px',
-                  backgroundColor: '#FFFFFF',
-                  color: '#B45309',
-                  border: 'none',
-                  fontWeight: 800,
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
-                <span>Kích hoạt Gói VIP</span>
-                <span>→</span>
-              </button>
-            </div>
-
-            {/* KHUNG ẢNH FULL VỪA KHÍT 100% CHO ĐIỆN THOẠI */}
-            <div
+            <p
               style={{
-                width: '105px',
-                height: '98px',
-                borderRadius: '16px',
-                overflow: 'hidden',
-                boxShadow: '0 8px 20px rgba(0,0,0,0.3), 0 0 10px rgba(245,158,11,0.4)',
-                border: '2px solid rgba(254,240,138,0.7)',
-                flexShrink: 0,
-                position: 'relative',
-                backgroundColor: 'rgba(255,255,255,0.15)',
+                margin: '0 0 16px',
+                fontSize: '12.5px',
+                color: '#C7D2FE',
+                lineHeight: 1.45,
+                fontWeight: 400,
+              }}
+            >
+              Khảo sát tính cách Holland RIASEC đối soát điểm chuẩn và học phí 30 trường đại học hàng đầu Việt Nam.
+            </p>
+
+            <button
+              onClick={() => setActiveTab(1)}
+              style={{
+                height: '40px',
+                padding: '0 20px',
+                borderRadius: '12px',
+                backgroundColor: '#FFFFFF',
+                color: 'var(--up-student-primary, #4F46E5)',
+                border: 'none',
+                fontWeight: 700,
+                fontSize: '13px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'transform var(--up-transition-fast, 150ms ease), box-shadow var(--up-transition-fast, 150ms ease)',
+                fontFamily: 'var(--up-font-family)',
+              }}
+            >
+              <span>Bắt đầu khảo sát RIASEC</span>
+              <span>→</span>
+            </button>
+
+            {/* Social Proof Metric Numbers */}
+            <div
+              className="tabular-nums"
+              style={{
+                marginTop: '16px',
+                paddingTop: '12px',
+                borderTop: '1px solid rgba(255, 255, 255, 0.15)',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                padding: '4px',
+                flexWrap: 'wrap',
+                gap: '8px',
+                fontSize: '11px',
+                color: '#E0E7FF',
               }}
             >
-              <img
-                src="/images/slide_premium.png"
-                alt="Premium"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                  display: 'block',
-                }}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/images/banner_edufair.png';
-                }}
-              />
+              <span style={{ fontWeight: 700 }}>30 Trường đại học</span>
+              <span style={{ opacity: 0.5 }}>•</span>
+              <span style={{ fontWeight: 700 }}>3 Miền Bắc - Trung - Nam</span>
+              <span style={{ opacity: 0.5 }}>•</span>
+              <span style={{ fontWeight: 700, color: '#A7F3D0' }}>92% Có việc làm</span>
             </div>
-          </div>
-
-          {/* Slide Indicator Dots - Positioned safely at bottom */}
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '7px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              display: 'flex',
-              gap: '6px',
-              zIndex: 10,
-            }}
-          >
-            {[0, 1, 2].map((idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentSlide(idx)}
-                style={{
-                  width: currentSlide === idx ? '18px' : '6px',
-                  height: '5px',
-                  borderRadius: '3px',
-                  backgroundColor: currentSlide === idx ? '#FFFFFF' : 'rgba(255,255,255,0.45)',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                }}
-              />
-            ))}
           </div>
         </div>
       </div>
@@ -1771,19 +1496,21 @@ export const HomeTab: React.FC = () => {
 
                   {/* Middle row: Stats pills */}
                   <div
+                    className="tabular-nums"
                     style={{
                       display: 'flex',
                       flexWrap: 'wrap',
                       gap: '8px',
                       padding: '8px 12px',
-                      backgroundColor: '#F8FAFC',
+                      backgroundColor: 'var(--up-color-slate-50, #F8FAFC)',
                       borderRadius: '12px',
                       fontSize: '12px',
+                      border: '1px solid var(--up-color-slate-100, #F1F5F9)',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#1E293B' }}>
                       <span style={{ color: '#64748B' }}>Học phí:</span>
-                      <strong style={{ color: '#2563EB' }}>{formatTuitionRange(uni.tuitionMin, uni.tuitionMax, true)}</strong>
+                      <strong style={{ color: 'var(--up-student-primary, #4F46E5)' }}>{formatTuitionRange(uni.tuitionMin, uni.tuitionMax, true)}</strong>
                     </div>
                     <span style={{ color: '#CBD5E1' }}>•</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#1E293B' }}>
@@ -1792,38 +1519,64 @@ export const HomeTab: React.FC = () => {
                     </div>
                     <span style={{ color: '#CBD5E1' }}>•</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#1E293B' }}>
-                      <Briefcase size={12} color="#10B981" />
-                      <strong style={{ color: '#10B981' }}>{uni.employmentRate}% việc làm</strong>
+                      <Briefcase size={12} color="var(--up-status-admitted-text, #059669)" />
+                      <strong style={{ color: 'var(--up-status-admitted-text, #059669)' }}>{uni.employmentRate}% việc làm</strong>
                     </div>
                   </div>
 
-                  {/* Bottom row: Compare action */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '4px' }}>
-                    <span style={{ fontSize: '11px', color: '#94A3B8' }}>
-                      {uni.majors.length} chuyên ngành đào tạo
+                  {/* Bottom row: Compare action and detail */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '6px', borderTop: '1px solid #F1F5F9' }}>
+                    <span style={{ fontSize: '11.5px', color: '#94A3B8' }}>
+                      {uni.majors.length} chuyên ngành
                     </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleCompare(uni.id);
-                      }}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '14px',
-                        backgroundColor: isComp ? '#EFF6FF' : '#FFFFFF',
-                        border: isComp ? '1px solid #2563EB' : '1px solid #CBD5E1',
-                        color: isComp ? '#2563EB' : '#475569',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <Scale size={14} />
-                      {isComp ? 'Đã thêm so sánh' : '+ Thêm so sánh'}
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleCompare(uni.id);
+                        }}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '10px',
+                          backgroundColor: isComp ? '#EEF2FF' : '#F8FAFC',
+                          border: isComp ? '1px solid var(--up-student-primary, #4F46E5)' : '1px solid #E2E8F0',
+                          color: isComp ? 'var(--up-student-primary, #4F46E5)' : '#475569',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          cursor: 'pointer',
+                          transition: 'all var(--up-transition-fast, 150ms ease)',
+                        }}
+                      >
+                        <Scale size={13} />
+                        {isComp ? 'Đã chọn' : 'So sánh'}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openUniDetail(uni.id);
+                        }}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '10px',
+                          backgroundColor: 'var(--up-student-primary, #4F46E5)',
+                          border: 'none',
+                          color: '#FFFFFF',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          cursor: 'pointer',
+                          transition: 'all var(--up-transition-fast, 150ms ease)',
+                        }}
+                      >
+                        <span>Chi tiết</span>
+                        <span>→</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               );

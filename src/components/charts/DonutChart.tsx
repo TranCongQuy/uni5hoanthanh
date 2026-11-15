@@ -22,9 +22,9 @@ export const DonutChart: React.FC<DonutChartProps> = ({
 
   let strokeColor = color;
   if (!strokeColor) {
-    if (safePercent >= 80) strokeColor = '#10B981';
-    else if (safePercent >= 45) strokeColor = '#F59E0B';
-    else strokeColor = '#EF4444';
+    if (safePercent >= 75) strokeColor = 'var(--up-status-admitted-text, #059669)';
+    else if (safePercent >= 45) strokeColor = 'var(--up-student-primary, #4F46E5)';
+    else strokeColor = 'var(--up-status-pending-text, #D97706)';
   }
 
   return (
@@ -37,7 +37,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="#E2E8F0"
+            stroke="var(--up-color-slate-200, #E2E8F0)"
             strokeWidth={strokeWidth}
           />
           {/* Progress circle */}
@@ -56,22 +56,24 @@ export const DonutChart: React.FC<DonutChartProps> = ({
           />
         </svg>
         <div
+          className="tabular-nums"
           style={{
             position: 'absolute',
             inset: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontWeight: 700,
+            fontWeight: 800,
             fontSize: size >= 60 ? '14px' : '12px',
-            color: '#0F172A',
+            color: 'var(--up-color-slate-900, #0F172A)',
+            fontFamily: 'var(--up-font-family)',
           }}
         >
           {safePercent}%
         </div>
       </div>
       {showSubtitle && (
-        <span style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+        <span style={{ fontSize: '11px', color: 'var(--up-color-slate-500, #64748B)', marginTop: '2px' }}>
           ước tính
         </span>
       )}

@@ -21,6 +21,7 @@ import { computeHollandAssessment } from '../../services/ApplicationWorkflow';
 import type { HollandCode } from '../../types';
 import { Button, AppFooter } from '../common/UI';
 import { RadarChart } from '../charts/RadarChart';
+import { RiasecBarChart } from '../charts/RiasecBarChart';
 
 const OPTIONS = [
   {
@@ -620,18 +621,22 @@ export const QuizTab: React.FC = () => {
         </button>
       </div>
 
-      {/* Radar Chart 260dp */}
+      {/* Visual Analytics: Radar & 6-Group RIASEC Bar Chart */}
       <div
         style={{
           backgroundColor: '#FFFFFF',
           borderRadius: '24px',
-          padding: '16px',
-          border: '1px solid #E2E8F0',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
+          padding: '18px',
+          border: '1px solid var(--up-color-slate-200, #E2E8F0)',
+          boxShadow: 'var(--up-shadow-card, 0 4px 16px -2px rgba(15,23,42,0.06))',
           marginBottom: '20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
         }}
       >
         <RadarChart scores={resultData.scores} maxScore={6} size={260} />
+        <RiasecBarChart scores={resultData.scores} maxScore={6} highlightCodes={displayTopCodes} />
       </div>
 
       {/* Group highlight banner */}

@@ -152,20 +152,9 @@ export const DesktopView: React.FC = () => {
   // =========================================================================
   // TAB 0: HOME DESKTOP STATE
   // =========================================================================
-  const [homeSlide, setHomeSlide] = useState(0);
-  const [isHomeSlideHovered, setIsHomeSlideHovered] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string>('Tất cả');
   const [desktopVisibleCount, setDesktopVisibleCount] = useState<number>(12);
   const [desktopSearch, setDesktopSearch] = useState<string>(searchKeyword);
-
-  // Auto rotate hero slides
-  useEffect(() => {
-    if (isHomeSlideHovered || activeTab !== 0) return;
-    const timer = setInterval(() => {
-      setHomeSlide((prev) => (prev + 1) % 3);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [isHomeSlideHovered, activeTab]);
 
   // Sync search input
   useEffect(() => {
@@ -901,444 +890,196 @@ export const DesktopView: React.FC = () => {
         {/* =================================================================== */}
         {activeTab === 0 && (
           <div>
-            {/* 1. HERO SLIDER BANNER (3 SLIDES - WIDESCREEN OPTIMIZED) */}
+            {/* 1. SINGLE-MESSAGE SAAS HERO (WIDESCREEN OPTIMIZED) */}
             <div
-              onMouseEnter={() => setIsHomeSlideHovered(true)}
-              onMouseLeave={() => setIsHomeSlideHovered(false)}
               style={{
                 position: 'relative',
-                height: '240px',
                 borderRadius: '24px',
                 overflow: 'hidden',
-                boxShadow: '0 10px 30px rgba(15, 23, 42, 0.12)',
+                background: 'linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4F46E5 100%)',
+                padding: '38px 48px',
+                color: '#FFFFFF',
+                boxShadow: 'var(--up-shadow-xl, 0 20px 25px -5px rgba(30,27,75,0.25))',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
                 marginBottom: '28px',
               }}
             >
-              {/* Slide 1: AI Test */}
-              <div
+              {/* Subtle Geometric SVG Pattern */}
+              <svg
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: 'linear-gradient(135deg, #0F2D59 0%, #1D4ED8 50%, #0284C7 100%)',
-                  padding: '28px 68px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '28px',
-                  opacity: homeSlide === 0 ? 1 : 0,
-                  visibility: homeSlide === 0 ? 'visible' : 'hidden',
-                  pointerEvents: homeSlide === 0 ? 'auto' : 'none',
-                  transition: 'opacity 0.5s ease',
+                  width: '100%',
+                  height: '100%',
+                  opacity: 0.12,
+                  pointerEvents: 'none',
                 }}
+                xmlns="http://www.w3.org/2000/svg"
               >
-                <div style={{ flex: 1, maxWidth: '680px', zIndex: 2 }}>
+                <defs>
+                  <pattern id="hero-pattern-desktop" width="36" height="36" patternUnits="userSpaceOnUse">
+                    <path d="M0 36 L36 0 M0 0 L36 36" fill="none" stroke="#FFFFFF" strokeWidth="0.8" />
+                    <circle cx="18" cy="18" r="1.5" fill="#FFFFFF" />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#hero-pattern-desktop)" />
+              </svg>
+
+              <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '32px' }}>
+                <div style={{ maxWidth: '680px' }}>
                   <div
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '6px',
-                      backgroundColor: 'rgba(255,255,255,0.2)',
-                      backdropFilter: 'blur(6px)',
-                      color: '#FFFFFF',
-                      padding: '4px 12px',
+                      gap: '8px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.14)',
+                      border: '1px solid rgba(255, 255, 255, 0.22)',
+                      backdropFilter: 'blur(8px)',
+                      color: '#E0E7FF',
+                      padding: '5px 12px',
                       borderRadius: '12px',
-                      fontSize: '11px',
-                      fontWeight: 800,
-                      marginBottom: '10px',
+                      fontSize: '11.5px',
+                      fontWeight: 700,
                       letterSpacing: '0.4px',
+                      marginBottom: '12px',
                     }}
                   >
-                    <Sparkles size={13} />
-                    <span>AI HƯỚNG NGHIỆP ĐỘT PHÁ 2026</span>
+                    <Sparkles size={14} />
+                    <span>✨ HỆ SINH THÁI TUYỂN SINH THÔNG MINH 2026</span>
                   </div>
-                  <h2
+
+                  <h1
                     style={{
-                      fontSize: '24px',
+                      fontSize: '30px',
                       fontWeight: 900,
                       color: '#FFFFFF',
                       lineHeight: 1.25,
-                      margin: '0 0 8px',
-                      letterSpacing: '-0.3px',
+                      margin: '0 0 10px',
+                      letterSpacing: '-0.5px',
+                      fontFamily: 'var(--up-font-family)',
                     }}
                   >
-                    Khám phá Tiềm năng & Nguyện vọng Đại học cùng AI
-                  </h2>
-                  <p style={{ margin: '0 0 16px', fontSize: '13.5px', color: '#E0F2FE', lineHeight: 1.5 }}>
-                    Hệ thống trắc nghiệm Holland RIASEC 12 câu tiêu chuẩn, đối soát điểm chuẩn và dự báo cơ hội trúng tuyển 30 trường đại học hàng đầu Việt Nam.
-                  </p>
-                  <button
-                    onClick={() => setActiveTab(1)}
+                    Khám phá Ngành học &amp; Dự báo Trúng tuyển cùng AI
+                  </h1>
+
+                  <p
                     style={{
-                      height: '40px',
-                      padding: '0 20px',
-                      borderRadius: '20px',
-                      backgroundColor: '#FFFFFF',
-                      color: '#1D4ED8',
-                      border: 'none',
-                      fontWeight: 800,
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
-                      transition: 'transform 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0px)';
+                      margin: '0 0 22px',
+                      fontSize: '14.5px',
+                      color: '#C7D2FE',
+                      lineHeight: 1.5,
+                      fontWeight: 400,
+                      maxWidth: '620px',
                     }}
                   >
-                    <span>Bắt đầu làm bài test RIASEC</span>
-                    <ArrowRight size={15} />
-                  </button>
+                    Khảo sát tính cách Holland RIASEC đối soát điểm chuẩn và học phí 30 trường đại học hàng đầu Việt Nam.
+                  </p>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <button
+                      onClick={() => setActiveTab(1)}
+                      style={{
+                        height: '44px',
+                        padding: '0 24px',
+                        borderRadius: '12px',
+                        backgroundColor: '#FFFFFF',
+                        color: 'var(--up-student-primary, #4F46E5)',
+                        border: 'none',
+                        fontWeight: 800,
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'transform var(--up-transition-fast, 150ms ease), box-shadow var(--up-transition-fast, 150ms ease)',
+                        fontFamily: 'var(--up-font-family)',
+                      }}
+                    >
+                      <span>Bắt đầu khảo sát RIASEC</span>
+                      <span>→</span>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTab(2)}
+                      style={{
+                        height: '44px',
+                        padding: '0 20px',
+                        borderRadius: '12px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                        border: '1px solid rgba(255, 255, 255, 0.25)',
+                        color: '#FFFFFF',
+                        fontWeight: 700,
+                        fontSize: '13.5px',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        backdropFilter: 'blur(8px)',
+                        transition: 'all var(--up-transition-fast, 150ms ease)',
+                        fontFamily: 'var(--up-font-family)',
+                      }}
+                    >
+                      <span>AI Đối soát nguyện vọng</span>
+                    </button>
+                  </div>
                 </div>
 
+                {/* Proof Metric Cards on Right */}
                 <div
+                  className="tabular-nums"
                   style={{
-                    width: '260px',
-                    height: '170px',
-                    borderRadius: '18px',
-                    overflow: 'hidden',
-                    border: '2px solid rgba(255,255,255,0.4)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-                    flexShrink: 0,
-                    backgroundColor: 'rgba(255,255,255,0.08)',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '6px',
+                    flexDirection: 'column',
+                    gap: '10px',
+                    minWidth: '220px',
                   }}
                 >
-                  <img
-                    src="/images/home_hero_art.png"
-                    alt="AI Hướng nghiệp"
-                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/images/quiz_intro_art.png';
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Slide 2: Virtual EduFair */}
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(135deg, #311042 0%, #6D28D9 50%, #9333EA 100%)',
-                  padding: '28px 68px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '28px',
-                  opacity: homeSlide === 1 ? 1 : 0,
-                  visibility: homeSlide === 1 ? 'visible' : 'hidden',
-                  pointerEvents: homeSlide === 1 ? 'auto' : 'none',
-                  transition: 'opacity 0.5s ease',
-                }}
-              >
-                <div style={{ flex: 1, maxWidth: '680px', zIndex: 2 }}>
                   <div
                     style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      backgroundColor: '#EF4444',
-                      color: '#FFFFFF',
-                      padding: '4px 12px',
-                      borderRadius: '12px',
-                      fontSize: '11px',
-                      fontWeight: 800,
-                      marginBottom: '10px',
-                      letterSpacing: '0.4px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.16)',
+                      backdropFilter: 'blur(8px)',
+                      borderRadius: '16px',
+                      padding: '12px 18px',
                     }}
                   >
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#FFFFFF' }} />
-                    <span>TRỰC TIẾP HÔM NAY</span>
+                    <div style={{ fontSize: '24px', fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.5px' }}>
+                      30
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#C7D2FE', fontWeight: 600 }}>Trường đại học đối tác</div>
                   </div>
-                  <h2
-                    style={{
-                      fontSize: '24px',
-                      fontWeight: 900,
-                      color: '#FFFFFF',
-                      lineHeight: 1.25,
-                      margin: '0 0 8px',
-                      letterSpacing: '-0.3px',
-                    }}
-                  >
-                    Virtual EduFair 2026: Trực tiếp Ngày hội Tuyển sinh Sớm
-                  </h2>
-                  <p style={{ margin: '0 0 16px', fontSize: '13.5px', color: '#F3E8FF', lineHeight: 1.5 }}>
-                    Giao lưu ban tuyển sinh trực tuyến, hỏi đáp tiêu chí xét tuyển học bạ đợt 1 và tiếp cận hàng ngàn suất học bổng đại học giá trị.
-                  </p>
-                  <button
-                    onClick={() => setActiveTab(3)}
-                    style={{
-                      height: '40px',
-                      padding: '0 20px',
-                      borderRadius: '20px',
-                      backgroundColor: '#FFFFFF',
-                      color: '#6D28D9',
-                      border: 'none',
-                      fontWeight: 800,
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
-                      transition: 'transform 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0px)';
-                    }}
-                  >
-                    <span>Tham gia phòng Live ngay</span>
-                    <ArrowRight size={15} />
-                  </button>
-                </div>
 
-                <div
-                  style={{
-                    width: '280px',
-                    height: '170px',
-                    borderRadius: '18px',
-                    overflow: 'hidden',
-                    border: '2px solid rgba(255,255,255,0.4)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-                    flexShrink: 0,
-                    backgroundColor: 'rgba(0,0,0,0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '6px',
-                  }}
-                >
-                  <img
-                    src="/images/slide_edufair.png"
-                    alt="Virtual EduFair"
-                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/images/banner_edufair.png';
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Slide 3: VIP AI Assistant */}
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(135deg, #0F172A 0%, #1E1B4B 50%, #312E81 100%)',
-                  padding: '28px 68px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '28px',
-                  opacity: homeSlide === 2 ? 1 : 0,
-                  visibility: homeSlide === 2 ? 'visible' : 'hidden',
-                  pointerEvents: homeSlide === 2 ? 'auto' : 'none',
-                  transition: 'opacity 0.5s ease',
-                }}
-              >
-                <div style={{ flex: 1, maxWidth: '680px', zIndex: 2 }}>
                   <div
                     style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      backgroundColor: 'rgba(245, 158, 11, 0.25)',
-                      border: '1px solid rgba(245, 158, 11, 0.4)',
-                      backdropFilter: 'blur(6px)',
-                      color: '#FDE68A',
-                      padding: '4px 12px',
-                      borderRadius: '12px',
-                      fontSize: '11px',
-                      fontWeight: 800,
-                      marginBottom: '10px',
-                      letterSpacing: '0.4px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.16)',
+                      backdropFilter: 'blur(8px)',
+                      borderRadius: '16px',
+                      padding: '12px 18px',
                     }}
                   >
-                    <span>⭐ TRỢ LÝ AI ĐỘC QUYỀN 24/7</span>
+                    <div style={{ fontSize: '24px', fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.5px' }}>
+                      3
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#C7D2FE', fontWeight: 600 }}>Miền Bắc • Trung • Nam</div>
                   </div>
-                  <h2
+
+                  <div
                     style={{
-                      fontSize: '24px',
-                      fontWeight: 900,
-                      color: '#FFFFFF',
-                      lineHeight: 1.25,
-                      margin: '0 0 8px',
-                      letterSpacing: '-0.3px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.16)',
+                      backdropFilter: 'blur(8px)',
+                      borderRadius: '16px',
+                      padding: '12px 18px',
                     }}
                   >
-                    Trợ lý Tuyển sinh AI UniPath: Đồng hành 24/7
-                  </h2>
-                  <p style={{ margin: '0 0 16px', fontSize: '13.5px', color: '#E2E8F0', lineHeight: 1.5 }}>
-                    Phân tích điểm chuẩn, đối soát học phí, giải đáp phương thức xét tuyển và gợi ý nguyện vọng tối ưu theo năng lực cá nhân.
-                  </p>
-                  <button
-                    onClick={openChatBot}
-                    style={{
-                      height: '40px',
-                      padding: '0 20px',
-                      borderRadius: '20px',
-                      backgroundColor: '#FFFFFF',
-                      color: '#1E1B4B',
-                      border: 'none',
-                      fontWeight: 800,
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
-                      transition: 'transform 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0px)';
-                    }}
-                  >
-                    <span>Trò chuyện với AI Tuyển sinh</span>
-                    <ArrowRight size={15} />
-                  </button>
+                    <div style={{ fontSize: '24px', fontWeight: 900, color: '#A7F3D0', letterSpacing: '-0.5px' }}>
+                      92%
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#C7D2FE', fontWeight: 600 }}>Có việc làm sau tốt nghiệp</div>
+                  </div>
                 </div>
-
-                <div
-                  style={{
-                    width: '280px',
-                    height: '170px',
-                    borderRadius: '18px',
-                    overflow: 'hidden',
-                    border: '2px solid rgba(255,255,255,0.3)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-                    flexShrink: 0,
-                    backgroundColor: 'rgba(0,0,0,0.25)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '6px',
-                  }}
-                >
-                  <img
-                    src="/images/slide_premium.png"
-                    alt="VIP AI"
-                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/images/quiz_intro_art.png';
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Slider Left & Right Navigation Arrows */}
-              <button
-                onClick={() => setHomeSlide((prev) => (prev - 1 + 3) % 3)}
-                aria-label="Slide trước"
-                style={{
-                  position: 'absolute',
-                  left: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                  backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255, 255, 255, 0.4)',
-                  color: '#FFFFFF',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  zIndex: 10,
-                  transition: 'all 0.15s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.45)';
-                  e.currentTarget.style.transform = 'translateY(-50%) scale(1.08)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.25)';
-                  e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
-                }}
-              >
-                <ChevronLeft size={20} />
-              </button>
-
-              <button
-                onClick={() => setHomeSlide((prev) => (prev + 1) % 3)}
-                aria-label="Slide tiếp theo"
-                style={{
-                  position: 'absolute',
-                  right: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                  backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255, 255, 255, 0.4)',
-                  color: '#FFFFFF',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  zIndex: 10,
-                  transition: 'all 0.15s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.45)';
-                  e.currentTarget.style.transform = 'translateY(-50%) scale(1.08)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.25)';
-                  e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
-                }}
-              >
-                <ChevronRight size={20} />
-              </button>
-
-              {/* Slider Dots */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '12px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  zIndex: 10,
-                }}
-              >
-                {[0, 1, 2].map((idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setHomeSlide(idx)}
-                    aria-label={"Slide " + (idx + 1)}
-                    style={{
-                      width: homeSlide === idx ? '22px' : '7px',
-                      height: '6px',
-                      borderRadius: '3px',
-                      backgroundColor: homeSlide === idx ? '#FFFFFF' : 'rgba(255,255,255,0.45)',
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                    }}
-                  />
-                ))}
               </div>
             </div>
 
