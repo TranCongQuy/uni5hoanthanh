@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Bot, Send, Trash2 } from 'lucide-react';
+import { X, Bot, Send, Trash2, Minus } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { sendChatMessageToAssistant } from '../../services/AiChatService';
+import { sendChatMessageToAssistant, type ChatHistoryItem } from '../../services/AiChatService';
 import type { ChatMessage } from '../../types';
 
 const INITIAL_MESSAGES: ChatMessage[] = [
@@ -25,6 +25,7 @@ const SUGGESTIONS = [
 export const ChatBotModal: React.FC = () => {
   const {
     isChatBotOpen,
+    openChatBot,
     closeChatBot,
     profile,
     user,
@@ -40,8 +41,17 @@ export const ChatBotModal: React.FC = () => {
       ? `unipath_chat_history_${user.email.trim().toLowerCase()}`
       : null;
 
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
+  // On desktop: open by default (not minimized)
+  const [isDesktopMinimized, setIsDesktopMinimized] = useState(false);
 
+  // If user clicks the header bot icon on desktop, ensure panel is un-minimized
+  useEffect(() => {
+    if (isChatBotOpen && isDesktop) {
+      setIsDesktopMinimized(false);
+    }
+  }, [isChatBotOpen, isDesktop]);
+
+  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -77,7 +87,7 @@ export const ChatBotModal: React.FC = () => {
     }
   }, [messages, chatKey]);
 
-  // Scroll to bottom cleanly within messages container ONLY (prevents scrolling window / outer modal)
+  // Scroll to bottom cleanly within messages container ONLY
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTo({
@@ -88,10 +98,10 @@ export const ChatBotModal: React.FC = () => {
   };
 
   useEffect(() => {
-    if (isChatBotOpen) {
+    if ((isDesktop && !isDesktopMinimized) || (!isDesktop && isChatBotOpen)) {
       scrollToBottom();
     }
-  }, [messages, isChatBotOpen, isTyping]);
+  }, [messages, isChatBotOpen, isDesktop, isDesktopMinimized, isTyping]);
 
   // Bot response algorithm matching ChatBotActivity.java
   const generateBotAnswer = useCallback((query: string): string => {
@@ -135,6 +145,15 @@ export const ChatBotModal: React.FC = () => {
         timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
       };
 
+      // Multi-turn history: extract up to 6 previous messages
+      const history: ChatHistoryItem[] = messages
+        .filter((m) => m.text && m.text.trim())
+        .slice(-6)
+        .map((m) => ({
+          role: m.sender === 'user' ? 'user' : 'model',
+          text: m.text.slice(0, 500),
+        }));
+
       setMessages((prev) => [...prev, userMsg]);
       setInputText('');
       setIsTyping(true);
@@ -144,7 +163,8 @@ export const ChatBotModal: React.FC = () => {
           content.trim(),
           universitiesList,
           profile.expectedScore,
-          generateBotAnswer
+          generateBotAnswer,
+          history
         );
 
         const botMsg: ChatMessage = {
@@ -169,7 +189,7 @@ export const ChatBotModal: React.FC = () => {
         setIsTyping(false);
       }
     },
-    [inputText, generateBotAnswer, incrementAiQueryCount, universitiesList, profile.expectedScore]
+    [inputText, messages, generateBotAnswer, incrementAiQueryCount, universitiesList, profile.expectedScore]
   );
 
   const handleClearHistory = () => {
@@ -177,8 +197,544 @@ export const ChatBotModal: React.FC = () => {
     setShowClearConfirm(false);
   };
 
-  if (!isChatBotOpen) return null;
+  // Reusable Message Content Renderer
+  const renderMessageList = () => (
+    <div
+      ref={messagesContainerRef}
+      style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '16px 18px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+      }}
+    >
+      {messages.map((msg) => {
+        const isUser = msg.sender === 'user';
 
+        return (
+          <div
+            key={msg.id}
+            style={{
+              display: 'flex',
+              justifyContent: isUser ? 'flex-end' : 'flex-start',
+              alignItems: 'flex-end',
+              gap: '8px',
+            }}
+          >
+            {!isUser && (
+              <div
+                style={{
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '50%',
+                  backgroundColor: '#EFF6FF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#2563EB',
+                  flexShrink: 0,
+                }}
+              >
+                <Bot size={16} />
+              </div>
+            )}
+
+            <div
+              style={{
+                maxWidth: '78%',
+                backgroundColor: isUser ? '#2563EB' : '#FFFFFF',
+                color: isUser ? '#FFFFFF' : '#1E293B',
+                padding: '11px 15px',
+                borderRadius: isUser ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
+                border: isUser ? 'none' : '1px solid #E2E8F0',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                fontSize: '13.5px',
+                lineHeight: 1.45,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+              }}
+            >
+              <div>{msg.text}</div>
+
+              {!isUser && msg.isOfflineFallback && (
+                <div
+                  style={{
+                    marginTop: '6px',
+                    fontSize: '11px',
+                    color: '#94A3B8',
+                    fontStyle: 'italic',
+                  }}
+                >
+                  (chế độ ngoại tuyến)
+                </div>
+              )}
+
+              {!isUser && msg.suggestedUniversities && msg.suggestedUniversities.length > 0 && (
+                <div
+                  style={{
+                    marginTop: '8px',
+                    paddingTop: '6px',
+                    borderTop: '1px dashed #E2E8F0',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '6px',
+                    alignItems: 'center',
+                  }}
+                >
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B' }}>
+                    Trường liên quan:
+                  </span>
+                  {msg.suggestedUniversities.map((code) => (
+                    <span
+                      key={code}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '2px 8px',
+                        borderRadius: '8px',
+                        backgroundColor: '#EFF6FF',
+                        color: '#1D4ED8',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        border: '1px solid #BFDBFE',
+                      }}
+                    >
+                      🏫 {code}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Typing Indicator */}
+      {isTyping && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div
+            style={{
+              width: '30px',
+              height: '30px',
+              borderRadius: '50%',
+              backgroundColor: '#EFF6FF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#2563EB',
+            }}
+          >
+            <Bot size={16} />
+          </div>
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              padding: '10px 16px',
+              borderRadius: '20px 20px 20px 4px',
+              border: '1px solid #E2E8F0',
+              display: 'flex',
+              gap: '4px',
+              alignItems: 'center',
+            }}
+          >
+            <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
+            <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]" />
+            <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Reusable Input Bar Renderer
+  const renderInputBar = () => (
+    <>
+      {/* Quick Suggestion Chips */}
+      <div
+        style={{
+          padding: '8px 14px',
+          backgroundColor: '#FFFFFF',
+          borderTop: '1px solid #F1F5F9',
+          display: 'flex',
+          gap: '6px',
+          overflowX: 'auto',
+        }}
+      >
+        {SUGGESTIONS.map((sugg, idx) => (
+          <button
+            key={idx}
+            type="button"
+            onClick={() => handleSendMessage(sugg)}
+            style={{
+              padding: '5px 10px',
+              borderRadius: '14px',
+              backgroundColor: '#EFF6FF',
+              color: '#2563EB',
+              border: '1px solid #DBEAFE',
+              fontSize: '11.5px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {sugg}
+          </button>
+        ))}
+      </div>
+
+      {/* Input Form */}
+      <div
+        style={{
+          padding: '10px 14px',
+          backgroundColor: '#FFFFFF',
+          borderTop: '1px solid #E2E8F0',
+          display: 'flex',
+          gap: '8px',
+          alignItems: 'center',
+        }}
+      >
+        <input
+          type="text"
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+              e.preventDefault();
+              handleSendMessage();
+            }
+          }}
+          placeholder="Nhập câu hỏi về tuyển sinh..."
+          style={{
+            flex: 1,
+            height: '40px',
+            borderRadius: '20px',
+            border: '1.5px solid #CBD5E1',
+            padding: '0 14px',
+            fontSize: '13px',
+            outline: 'none',
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => handleSendMessage()}
+          disabled={!inputText.trim()}
+          style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '12px',
+            backgroundColor: inputText.trim() ? '#2563EB' : '#E2E8F0',
+            color: '#FFFFFF',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: inputText.trim() ? 'pointer' : 'not-allowed',
+            transition: 'background 0.2s',
+          }}
+        >
+          <Send size={16} />
+        </button>
+      </div>
+    </>
+  );
+
+  // Clear Confirmation Modal
+  const renderClearConfirmModal = () =>
+    showClearConfirm && (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+          zIndex: 1100,
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '24px',
+            padding: '24px',
+            width: '100%',
+            maxWidth: '340px',
+            textAlign: 'center',
+          }}
+        >
+          <h4 style={{ margin: '0 0 10px', fontSize: '18px', fontWeight: 800 }}>
+            Xóa lịch sử trò chuyện?
+          </h4>
+          <p style={{ margin: '0 0 20px', fontSize: '13px', color: '#64748B' }}>
+            Toàn bộ tin nhắn trước đây sẽ được làm mới về hội thoại chào mừng mặc định.
+          </p>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={() => setShowClearConfirm(false)}
+              style={{
+                flex: 1,
+                padding: '10px',
+                borderRadius: '16px',
+                border: '1px solid #CBD5E1',
+                backgroundColor: '#FFFFFF',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Hủy
+            </button>
+            <button
+              onClick={handleClearHistory}
+              style={{
+                flex: 1,
+                padding: '10px',
+                borderRadius: '16px',
+                border: 'none',
+                backgroundColor: '#EF4444',
+                color: '#FFFFFF',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Xóa lịch sử
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+
+  // =========================================================================
+  // 1. DESKTOP VIEWPORT: Pinned bottom-right panel or minimized floating button
+  // =========================================================================
+  if (isDesktop) {
+    if (isDesktopMinimized) {
+      // Minimized State: Neat round floating button at bottom-right
+      return (
+        <button
+          onClick={() => setIsDesktopMinimized(false)}
+          aria-label="Mở Trợ lý AI UniPath"
+          title="Mở Trợ lý AI UniPath"
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            width: '56px',
+            height: '56px',
+            borderRadius: '50%',
+            backgroundColor: '#2563EB',
+            color: '#FFFFFF',
+            border: 'none',
+            boxShadow: '0 8px 24px rgba(37,99,235,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            zIndex: 900,
+            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.08)';
+            e.currentTarget.style.boxShadow = '0 12px 28px rgba(37,99,235,0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.boxShadow = '0 8px 24px rgba(37,99,235,0.4)';
+          }}
+        >
+          <Bot size={26} />
+          <span
+            style={{
+              position: 'absolute',
+              top: '4px',
+              right: '4px',
+              width: '12px',
+              height: '12px',
+              borderRadius: '50%',
+              backgroundColor: '#10B981',
+              border: '2px solid #FFFFFF',
+            }}
+          />
+        </button>
+      );
+    }
+
+    // Expanded Desktop Fixed Panel: 390px x 540px at bottom-right (zIndex 900 < 1000 modals)
+    return (
+      <>
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            width: '390px',
+            height: '540px',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '22px',
+            boxShadow: '0 12px 40px rgba(15, 23, 42, 0.18)',
+            border: '1.5px solid #E2E8F0',
+            display: 'flex',
+            flexDirection: 'column',
+            zIndex: 900,
+            overflow: 'hidden',
+            animation: 'fadeIn 0.25s ease-out',
+          }}
+        >
+          {/* Header Bar */}
+          <div
+            style={{
+              padding: '12px 16px',
+              backgroundColor: '#FFFFFF',
+              borderBottom: '1px solid #E2E8F0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  backgroundColor: '#EFF6FF',
+                  border: '2px solid #2563EB',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#2563EB',
+                  position: 'relative',
+                }}
+              >
+                <Bot size={19} />
+                <span
+                  style={{
+                    position: 'absolute',
+                    bottom: '-2px',
+                    right: '-2px',
+                    width: '9px',
+                    height: '9px',
+                    borderRadius: '50%',
+                    backgroundColor: '#10B981',
+                    border: '2px solid #FFFFFF',
+                  }}
+                />
+              </div>
+
+              <div>
+                <div style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>
+                  Trợ lý AI UniPath
+                </div>
+                <div style={{ fontSize: '10.5px', color: '#10B981', fontWeight: 600 }}>
+                  ● Đang hoạt động • Hỗ trợ 24/7
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button
+                onClick={() => setShowClearConfirm(true)}
+                title="Xóa cuộc trò chuyện"
+                aria-label="Xóa cuộc trò chuyện"
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  backgroundColor: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#64748B',
+                }}
+              >
+                <Trash2 size={14} />
+              </button>
+
+              <button
+                onClick={() => setIsDesktopMinimized(true)}
+                title="Thu nhỏ trợ lý AI"
+                aria-label="Thu nhỏ trợ lý AI"
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  backgroundColor: '#F8FAFC',
+                  border: '1.5px solid #E2E8F0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#1E293B',
+                }}
+              >
+                <Minus size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Messages */}
+          {renderMessageList()}
+
+          {/* Input Area */}
+          {renderInputBar()}
+        </div>
+
+        {renderClearConfirmModal()}
+      </>
+    );
+  }
+
+  // =========================================================================
+  // 2. MOBILE VIEWPORT (< 1024px / < 768px):
+  //    Floating action button when closed; full bottom sheet modal when opened
+  // =========================================================================
+  if (!isChatBotOpen) {
+    return (
+      <button
+        onClick={openChatBot}
+        aria-label="Trợ lý AI UniPath"
+        title="Trợ lý AI UniPath"
+        style={{
+          position: 'fixed',
+          bottom: '82px',
+          right: '16px',
+          width: '50px',
+          height: '50px',
+          borderRadius: '50%',
+          backgroundColor: '#2563EB',
+          color: '#FFFFFF',
+          border: 'none',
+          boxShadow: '0 6px 18px rgba(37,99,235,0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          zIndex: 85,
+        }}
+      >
+        <Bot size={22} />
+        <span
+          style={{
+            position: 'absolute',
+            top: '2px',
+            right: '2px',
+            width: '10px',
+            height: '10px',
+            borderRadius: '50%',
+            backgroundColor: '#10B981',
+            border: '2px solid #FFFFFF',
+          }}
+        />
+      </button>
+    );
+  }
+
+  // Mobile Open State: Bottom Sheet Modal
   return (
     <div
       style={{
@@ -188,44 +744,41 @@ export const ChatBotModal: React.FC = () => {
         backgroundColor: 'rgba(15, 23, 42, 0.65)',
         backdropFilter: 'blur(8px)',
         display: 'flex',
-        alignItems: isDesktop ? 'center' : 'flex-end',
+        alignItems: 'flex-end',
         justifyContent: 'center',
-        padding: isDesktop ? '24px' : '0',
       }}
       onClick={closeChatBot}
     >
       <div
         style={{
           width: '100%',
-          maxWidth: isDesktop ? '660px' : '520px',
-          height: isDesktop ? 'min(86vh, 800px)' : 'min(88dvh, calc(100dvh - 56px))',
-          maxHeight: isDesktop ? '86vh' : 'calc(100dvh - 56px)',
+          maxWidth: '520px',
+          height: 'min(88dvh, calc(100dvh - 56px))',
+          maxHeight: 'calc(100dvh - 56px)',
           backgroundColor: '#F8FAFC',
-          borderRadius: isDesktop ? '24px' : '28px 28px 0 0',
+          borderRadius: '28px 28px 0 0',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: isDesktop ? '0 25px 60px rgba(0,0,0,0.35)' : '0 -10px 30px rgba(0,0,0,0.25)',
-          animation: isDesktop ? 'fadeIn 0.25s ease-out' : 'slideUp 0.3s ease-out',
+          boxShadow: '0 -10px 30px rgba(0,0,0,0.25)',
+          animation: 'slideUp 0.3s ease-out',
           overflow: 'hidden',
           position: 'relative',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Drag handle (mobile only) */}
-        {!isDesktop && (
-          <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '8px', paddingBottom: '4px', backgroundColor: '#FFFFFF' }}>
-            <div
-              style={{
-                width: '40px',
-                height: '4px',
-                borderRadius: '2px',
-                backgroundColor: '#CBD5E1',
-              }}
-            />
-          </div>
-        )}
+        {/* Drag handle */}
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '8px', paddingBottom: '4px', backgroundColor: '#FFFFFF' }}>
+          <div
+            style={{
+              width: '40px',
+              height: '4px',
+              borderRadius: '2px',
+              backgroundColor: '#CBD5E1',
+            }}
+          />
+        </div>
 
-        {/* App Bar (Sticky Top with Safe Area, 100% visible on all phones) */}
+        {/* Mobile Header */}
         <div
           style={{
             padding: '8px 18px 12px',
@@ -240,7 +793,6 @@ export const ChatBotModal: React.FC = () => {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {/* Robot Avatar with blinking dot */}
             <div
               style={{
                 width: '42px',
@@ -272,7 +824,7 @@ export const ChatBotModal: React.FC = () => {
 
             <div>
               <div style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-                Trợ lý AI Unipath
+                Trợ lý AI UniPath
               </div>
               <div style={{ fontSize: '11px', color: '#10B981', fontWeight: 600 }}>
                 ● Đang hoạt động • Hỗ trợ tuyển sinh 24/7
@@ -323,304 +875,13 @@ export const ChatBotModal: React.FC = () => {
         </div>
 
         {/* Message Container */}
-        <div
-          ref={messagesContainerRef}
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: '16px 18px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-          }}
-        >
-          {messages.map((msg) => {
-            const isUser = msg.sender === 'user';
-
-            return (
-              <div
-                key={msg.id}
-                style={{
-                  display: 'flex',
-                  justifyContent: isUser ? 'flex-end' : 'flex-start',
-                  alignItems: 'flex-end',
-                  gap: '8px',
-                }}
-              >
-                {!isUser && (
-                  <div
-                    style={{
-                      width: '30px',
-                      height: '30px',
-                      borderRadius: '50%',
-                      backgroundColor: '#EFF6FF',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#2563EB',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Bot size={16} />
-                  </div>
-                )}
-
-                <div
-                  style={{
-                    maxWidth: '75%',
-                    backgroundColor: isUser ? '#2563EB' : '#FFFFFF',
-                    color: isUser ? '#FFFFFF' : '#1E293B',
-                    padding: '12px 16px',
-                    borderRadius: isUser ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
-                    border: isUser ? 'none' : '1px solid #E2E8F0',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
-                    fontSize: '14px',
-                    lineHeight: 1.45,
-                    whiteSpace: 'pre-wrap',
-                  }}
-                >
-                  <div>{msg.text}</div>
-
-                  {!isUser && msg.isOfflineFallback && (
-                    <div
-                      style={{
-                        marginTop: '6px',
-                        fontSize: '11px',
-                        color: '#94A3B8',
-                        fontStyle: 'italic',
-                      }}
-                    >
-                      (chế độ ngoại tuyến)
-                    </div>
-                  )}
-
-                  {!isUser && msg.suggestedUniversities && msg.suggestedUniversities.length > 0 && (
-                    <div
-                      style={{
-                        marginTop: '8px',
-                        paddingTop: '6px',
-                        borderTop: '1px dashed #E2E8F0',
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '6px',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B' }}>
-                        Trường liên quan:
-                      </span>
-                      {msg.suggestedUniversities.map((code) => (
-                        <span
-                          key={code}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            padding: '2px 8px',
-                            borderRadius: '8px',
-                            backgroundColor: '#EFF6FF',
-                            color: '#1D4ED8',
-                            fontSize: '11.5px',
-                            fontWeight: 700,
-                            border: '1px solid #BFDBFE',
-                          }}
-                        >
-                          🏫 {code}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Typing Indicator */}
-          {isTyping && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div
-                style={{
-                  width: '30px',
-                  height: '30px',
-                  borderRadius: '50%',
-                  backgroundColor: '#EFF6FF',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#2563EB',
-                }}
-              >
-                <Bot size={16} />
-              </div>
-              <div
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  padding: '10px 16px',
-                  borderRadius: '20px 20px 20px 4px',
-                  border: '1px solid #E2E8F0',
-                  display: 'flex',
-                  gap: '4px',
-                  alignItems: 'center',
-                }}
-              >
-                <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
-                <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]" />
-                <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]" />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Quick Suggestion Chips */}
-        <div
-          style={{
-            padding: '8px 18px',
-            backgroundColor: '#FFFFFF',
-            borderTop: '1px solid #F1F5F9',
-            display: 'flex',
-            gap: '8px',
-            overflowX: 'auto',
-          }}
-        >
-          {SUGGESTIONS.map((sugg, idx) => (
-            <button
-              key={idx}
-              onClick={() => handleSendMessage(sugg)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '16px',
-                backgroundColor: '#EFF6FF',
-                color: '#2563EB',
-                border: '1px solid #DBEAFE',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {sugg}
-            </button>
-          ))}
-        </div>
+        {renderMessageList()}
 
         {/* Input Bar */}
-        <div
-          style={{
-            padding: '12px 18px',
-            backgroundColor: '#FFFFFF',
-            borderTop: '1px solid #E2E8F0',
-            display: 'flex',
-            gap: '10px',
-            alignItems: 'center',
-          }}
-        >
-          <input
-            type="text"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                if (e.nativeEvent.isComposing || e.keyCode === 229) return;
-                e.preventDefault();
-                handleSendMessage();
-              }
-            }}
-            placeholder="Nhập câu hỏi về tuyển sinh..."
-            style={{
-              flex: 1,
-              height: '46px',
-              borderRadius: '23px',
-              border: '1.5px solid #CBD5E1',
-              padding: '0 18px',
-              fontSize: '14px',
-              outline: 'none',
-            }}
-          />
-          <button
-            onClick={() => handleSendMessage()}
-            disabled={!inputText.trim()}
-            style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '14px',
-              backgroundColor: inputText.trim() ? '#2563EB' : '#E2E8F0',
-              color: '#FFFFFF',
-              border: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: inputText.trim() ? 'pointer' : 'not-allowed',
-              transition: 'background 0.2s',
-            }}
-          >
-            <Send size={18} />
-          </button>
-        </div>
-
-        {/* Clear History Confirmation Modal */}
-        {showClearConfirm && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              backgroundColor: 'rgba(0,0,0,0.5)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '20px',
-              zIndex: 1100,
-            }}
-          >
-            <div
-              style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: '24px',
-                padding: '24px',
-                width: '100%',
-                maxWidth: '340px',
-                textAlign: 'center',
-              }}
-            >
-              <h4 style={{ margin: '0 0 10px', fontSize: '18px', fontWeight: 800 }}>
-                Xóa lịch sử trò chuyện?
-              </h4>
-              <p style={{ margin: '0 0 20px', fontSize: '13px', color: '#64748B' }}>
-                Toàn bộ tin nhắn trước đây sẽ được làm mới về hội thoại chào mừng mặc định.
-              </p>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button
-                  onClick={() => setShowClearConfirm(false)}
-                  style={{
-                    flex: 1,
-                    padding: '10px',
-                    borderRadius: '16px',
-                    border: '1px solid #CBD5E1',
-                    backgroundColor: '#FFFFFF',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={handleClearHistory}
-                  style={{
-                    flex: 1,
-                    padding: '10px',
-                    borderRadius: '16px',
-                    border: 'none',
-                    backgroundColor: '#EF4444',
-                    color: '#FFFFFF',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Xóa lịch sử
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {renderInputBar()}
       </div>
+
+      {renderClearConfirmModal()}
     </div>
   );
 };
