@@ -43,7 +43,13 @@ import {
   validateNewApplicationSubmission,
   validateReviewerStatusChange,
 } from '../services/ApplicationWorkflow';
-import { syncApplicationToCloud, syncBookingToCloud, syncQuizResultToCloud } from '../lib/supabase';
+import {
+  syncApplicationToCloud,
+  syncBookingToCloud,
+  syncQuizResultToCloud,
+  fetchUniversitiesFromCloud,
+  mergeUniversitiesWithCloud,
+} from '../lib/supabase';
 
 export interface HollandResult {
   primaryCode: HollandCode;
@@ -842,6 +848,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     window.addEventListener('storage', onStorageChange);
     return () => window.removeEventListener('storage', onStorageChange);
+  }, []);
+
+  // --- Hybrid Data Fetch: Supabase Cloud Universities with Safe MockData Fallback ---
+  useEffect(() => {
+    let isCancelled = false;
+    void fetchUniversitiesFromCloud().then((cloudRows) => {
+      if (isCancelled) return;
+      const { merged, source } = mergeUniversitiesWithCloud(UNIVERSITIES, cloudRows);
+      if (source === 'db') {
+        console.log(`[UniPath Data] Loaded ${cloudRows?.length || 0} universities from Supabase DB (merged with local MockData)`);
+        setUniversitiesList(merged);
+      } else {
+        console.log('[UniPath Data] Using local MockData fallback (Supabase offline or unconfigured)');
+      }
+    });
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   // --- Toast Helper ---
