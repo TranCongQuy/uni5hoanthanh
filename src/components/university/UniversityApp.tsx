@@ -1266,6 +1266,7 @@ export const UniversityApp: React.FC = () => {
       <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', width: '100%' }}>
         {/* PXU Emerald Aurora Sidebar */}
         <aside
+          className="up-sidebar-scroll"
           style={{
             width: '256px',
             flexShrink: 0,
@@ -1273,12 +1274,18 @@ export const UniversityApp: React.FC = () => {
             color: '#FFFFFF',
             display: 'flex',
             flexDirection: 'column',
-            padding: '20px 14px',
-            position: 'sticky',
+            padding: '20px 14px 28px',
+            position: 'fixed',
+            left: 0,
             top: 0,
+            bottom: 0,
             height: '100vh',
+            maxHeight: '100dvh',
             boxSizing: 'border-box',
-            overflow: 'hidden',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            overscrollBehavior: 'contain',
+            zIndex: 70,
           }}
         >
           {/* Subtle Geometric SVG Pattern */}
@@ -1366,7 +1373,7 @@ export const UniversityApp: React.FC = () => {
         </aside>
 
         {/* Right Workspace */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, minWidth: 0, marginLeft: '256px', display: 'flex', flexDirection: 'column' }}>
           <header
             style={{
               height: '64px',
