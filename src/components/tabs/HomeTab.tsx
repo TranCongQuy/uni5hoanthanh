@@ -22,6 +22,7 @@ import { getCutoffRangeText } from '../../data/MockData';
 import { formatTuitionRange } from '../../utils/validation';
 import { UniversityAvatar, ImageSafe, AppFooter, EmptyState } from '../common/UI';
 import { AccountRoleMenu } from '../common/AccountRoleMenu';
+import { AuroraHeroMesh } from '../common/AuroraEffects';
 
 // % phù hợp hiển thị trên thẻ trường: dùng CHUNG công thức thống nhất với AI Matching và Chi tiết trường.
 const badgePercent = (uni: University, score: number, hollandCode?: string): number => {
@@ -311,41 +312,14 @@ export const HomeTab: React.FC = () => {
         </div>
       </header>
 
-      {/* 2. Single-Message SaaS Hero */}
+      {/* 2. Aurora Premium Mobile Hero */}
       <div style={{ padding: '14px 20px 8px' }}>
-        <div
-          style={{
-            position: 'relative',
-            borderRadius: '24px',
-            overflow: 'hidden',
-            background: 'linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4F46E5 100%)',
-            padding: '24px 20px',
-            color: '#FFFFFF',
-            boxShadow: 'var(--up-shadow-lg, 0 10px 25px -5px rgba(30,27,75,0.25))',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-          }}
+        <AuroraHeroMesh
+          variant="student"
+          minHeight="220px"
+          padding="24px 20px"
+          borderRadius="20px"
         >
-          {/* Subtle Geometric SVG Pattern */}
-          <svg
-            style={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              opacity: 0.14,
-              pointerEvents: 'none',
-            }}
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <defs>
-              <pattern id="hero-pattern-mobile" width="28" height="28" patternUnits="userSpaceOnUse">
-                <path d="M0 28 L28 0 M0 0 L28 28" fill="none" stroke="#FFFFFF" strokeWidth="0.75" />
-                <circle cx="14" cy="14" r="1.2" fill="#FFFFFF" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#hero-pattern-mobile)" />
-          </svg>
-
           <div style={{ position: 'relative', zIndex: 2 }}>
             <div
               style={{
@@ -439,7 +413,7 @@ export const HomeTab: React.FC = () => {
               <span style={{ fontWeight: 700, color: '#A7F3D0' }}>92% Có việc làm</span>
             </div>
           </div>
-        </div>
+        </AuroraHeroMesh>
       </div>
 
       {/* 2B. 4-Step Student Journey Stepper ("Nhìn 3 Giây Hiểu Ngay") */}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   FileText,
@@ -24,6 +24,9 @@ import {
   GraduationCap,
   AlertTriangle,
   XCircle,
+  TrendingUp,
+  Building2,
+  Sliders,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import type { BookingState } from '../../context/AppContext';
@@ -47,18 +50,40 @@ import {
 import { getCutoffRangeText } from '../../data/MockData';
 import { UniversityAvatar, StatusChip } from '../common/UI';
 import { AccountRoleMenu } from '../common/AccountRoleMenu';
+import { AnalyticsSection } from './AnalyticsSection';
+import { BenchmarkSection } from './BenchmarkSection';
+import { AdminGlobalSearch } from './AdminGlobalSearch';
+import { SystemSection } from './SystemSection';
 
-type AdminSection = 'dashboard' | 'apps' | 'bookings' | 'unis' | 'account';
+type AdminSection = 'dashboard' | 'analytics' | 'benchmark' | 'system' | 'apps' | 'bookings' | 'unis' | 'account';
 type AppSort = 'list' | 'scoreDesc' | 'scoreAsc' | 'nameAsc';
 type UniSort = 'name' | 'scoreDesc' | 'tuitionAsc';
 
-const NAV_ITEMS: { id: AdminSection; label: string; shortLabel: string; icon: React.ReactNode }[] = [
-  { id: 'dashboard', label: 'Tổng quan điều hành', shortLabel: 'Tổng quan', icon: <LayoutDashboard size={19} /> },
-  { id: 'apps', label: 'Hồ sơ xét tuyển', shortLabel: 'Hồ sơ', icon: <FileText size={19} /> },
-  { id: 'bookings', label: 'Lịch tư vấn 1-1', shortLabel: 'Tư vấn', icon: <Calendar size={19} /> },
-  { id: 'unis', label: 'CSDL 30 Trường ĐH', shortLabel: '30 Trường', icon: <School size={19} /> },
-  { id: 'account', label: 'Phân quyền & User', shortLabel: 'Phân quyền', icon: <Users size={19} /> },
+const NAV_GROUPS: {
+  title: string;
+  items: { id: AdminSection; label: string; shortLabel: string; icon: React.ReactNode }[];
+}[] = [
+  {
+    title: 'TRUNG TÂM ĐIỀU HÀNH',
+    items: [
+      { id: 'dashboard', label: 'Tổng quan điều hành', shortLabel: 'Tổng quan', icon: <LayoutDashboard size={18} /> },
+      { id: 'analytics', label: 'Phân tích tuyển sinh', shortLabel: 'Phân tích', icon: <TrendingUp size={18} /> },
+      { id: 'benchmark', label: 'Benchmark 30 Trường', shortLabel: 'Benchmark', icon: <Building2 size={18} /> },
+      { id: 'system', label: 'Quản trị hệ thống', shortLabel: 'Hệ thống', icon: <Sliders size={18} /> },
+    ],
+  },
+  {
+    title: 'NGHIỆP VỤ VẬN HÀNH',
+    items: [
+      { id: 'apps', label: 'Hồ sơ xét tuyển', shortLabel: 'Hồ sơ', icon: <FileText size={18} /> },
+      { id: 'bookings', label: 'Lịch tư vấn 1-1', shortLabel: 'Tư vấn', icon: <Calendar size={18} /> },
+      { id: 'unis', label: 'CSDL 30 Trường ĐH', shortLabel: '30 Trường', icon: <School size={18} /> },
+      { id: 'account', label: 'Phân quyền & User', shortLabel: 'Phân quyền', icon: <Users size={18} /> },
+    ],
+  },
 ];
+
+const NAV_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 
 const QUICK_REVIEW_NOTES = [
   'Đủ điều kiện trúng tuyển sớm đợt 1 năm 2026.',
@@ -154,6 +179,18 @@ export const AdminApp: React.FC = () => {
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [reviewerNote, setReviewerNote] = useState('');
   const [mobileBkTab, setMobileBkTab] = useState<BookingState>('pending');
+  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsGlobalSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Filters
   const [appSearch, setAppSearch] = useState('');
@@ -370,17 +407,34 @@ export const AdminApp: React.FC = () => {
               </span>
             </div>
             <div>
-              <div
-                className="tabular-nums"
-                style={{
-                  fontSize: isDesktop ? '28px' : '24px',
-                  fontWeight: 900,
-                  color: 'var(--up-admin-navy, #0F172A)',
-                  lineHeight: 1.1,
-                  fontFamily: 'var(--up-font-family)',
-                }}
-              >
-                {kpi.value}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                <div
+                  className="tabular-nums"
+                  style={{
+                    fontSize: isDesktop ? '28px' : '24px',
+                    fontWeight: 900,
+                    color: 'var(--up-admin-navy, #0F172A)',
+                    lineHeight: 1.1,
+                    fontFamily: 'var(--up-font-family)',
+                  }}
+                >
+                  {kpi.value}
+                </div>
+                {/* SVG Mini Sparkline */}
+                <svg width="60" height="22" viewBox="0 0 60 22" fill="none" style={{ flexShrink: 0 }}>
+                  <path
+                    d="M2 17 L12 14 L22 15 L32 9 L42 11 L52 5 L58 3"
+                    stroke={kpi.accent}
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M2 17 L12 14 L22 15 L32 9 L42 11 L52 5 L58 3 L58 22 L2 22 Z"
+                    fill={kpi.accent}
+                    fillOpacity="0.12"
+                  />
+                </svg>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', gap: '6px' }}>
                 <span style={{ fontSize: '11.5px', color: '#64748B', fontWeight: 500 }}>{kpi.sub}</span>
@@ -1874,11 +1928,35 @@ export const AdminApp: React.FC = () => {
   );
 
   // =========================================================================
-  // DESKTOP & MOBILE SHELLS (CLEAN SAAS CONTROL CENTER)
+  // DESKTOP & MOBILE SHELLS (AURORA CONTROL CENTER)
   // =========================================================================
   const renderMainBody = () => (
     <>
       {section === 'dashboard' && renderDashboard()}
+      {section === 'analytics' && (
+        <AnalyticsSection
+          applications={applications}
+          universities={universitiesList}
+          isDesktop={isDesktop}
+        />
+      )}
+      {section === 'benchmark' && (
+        <BenchmarkSection
+          universities={universitiesList}
+          applications={applications}
+          isDesktop={isDesktop}
+        />
+      )}
+      {section === 'system' && (
+        <SystemSection
+          applications={applications}
+          universities={universitiesList}
+          bookings={bookings}
+          processingLog={processingLog}
+          onResetData={resetAllData}
+          isDesktop={isDesktop}
+        />
+      )}
       {section === 'apps' && renderApps()}
       {section === 'bookings' && renderBookings()}
       {section === 'unis' && renderUnis()}
@@ -1889,12 +1967,12 @@ export const AdminApp: React.FC = () => {
   if (isDesktop) {
     return (
       <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', width: '100%' }}>
-        {/* Sticky Left Sidebar */}
+        {/* Sticky Left Aurora Admin Sidebar */}
         <aside
           style={{
-            width: '252px',
+            width: '260px',
             flexShrink: 0,
-            backgroundColor: '#0F172A',
+            background: 'var(--up-gradient-aurora-admin, linear-gradient(180deg, #050B14 0%, #0B132B 45%, #1C2541 100%))',
             color: '#FFFFFF',
             display: 'flex',
             flexDirection: 'column',
@@ -1903,79 +1981,100 @@ export const AdminApp: React.FC = () => {
             top: 0,
             height: '100vh',
             boxSizing: 'border-box',
+            overflowY: 'auto',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 8px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '16px' }}>
-            <div style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'linear-gradient(135deg, #4F46E5 0%, #2563EB 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          {/* Subtle Geometric SVG Pattern */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px)',
+              backgroundSize: '20px 20px',
+              pointerEvents: 'none',
+              zIndex: 0,
+            }}
+          />
+
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 8px 18px', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '14px' }}>
+            <div style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'linear-gradient(135deg, #0284C7 0%, #38BDF8 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(2, 132, 199, 0.35)' }}>
               <ShieldCheck size={21} color="#FFFFFF" />
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: '15px', fontWeight: 900, letterSpacing: '-0.2px' }}>UniPath Admin</div>
-              <div style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600 }}>Control Center 2026</div>
+              <div style={{ fontSize: '11px', color: '#38BDF8', fontWeight: 700 }}>Trung Tâm Điều Hành</div>
             </div>
           </div>
 
-          <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.6px', padding: '0 10px 8px' }}>
-            Phân hệ quản trị
+          {/* 2-Tier Navigation Groups (B5) */}
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {NAV_GROUPS.map((group) => (
+              <div key={group.title}>
+                <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.6px', padding: '0 10px 6px' }}>
+                  {group.title}
+                </div>
+                <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {group.items.map((item) => {
+                    const active = section === item.id;
+                    const badge =
+                      item.id === 'apps' && pendingApps.length > 0
+                        ? pendingApps.length
+                        : item.id === 'bookings' && pendingBookings.length > 0
+                        ? pendingBookings.length
+                        : null;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        data-section={item.id}
+                        onClick={() => {
+                          setSection(item.id);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '9px 12px',
+                          borderRadius: '12px',
+                          border: active ? '1px solid rgba(56, 189, 248, 0.35)' : '1px solid transparent',
+                          backgroundColor: active ? 'rgba(14, 116, 144, 0.45)' : 'transparent',
+                          boxShadow: active ? 'var(--up-shadow-glow-cyan, 0 4px 18px rgba(56, 189, 248, 0.35))' : 'none',
+                          color: active ? '#FFFFFF' : '#CBD5E1',
+                          fontSize: '13px',
+                          fontWeight: active ? 800 : 600,
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%',
+                          transition: 'all var(--up-transition-fast, 150ms ease)',
+                        }}
+                      >
+                        {item.icon}
+                        <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
+                        {badge !== null && (
+                          <span
+                            style={{
+                              padding: '1px 7px',
+                              borderRadius: '999px',
+                              backgroundColor: active ? '#FFFFFF' : '#F59E0B',
+                              color: active ? '#0369A1' : '#451A03',
+                              fontSize: '11px',
+                              fontWeight: 900,
+                            }}
+                          >
+                            {badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </nav>
+              </div>
+            ))}
           </div>
 
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {NAV_ITEMS.map((item) => {
-              const active = section === item.id;
-              const badge =
-                item.id === 'apps' && pendingApps.length > 0
-                  ? pendingApps.length
-                  : item.id === 'bookings' && pendingBookings.length > 0
-                  ? pendingBookings.length
-                  : null;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setSection(item.id);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 12px 10px 10px',
-                    borderRadius: '0 10px 10px 0',
-                    border: 'none',
-                    borderLeft: active ? '3px solid var(--up-admin-accent, #38BDF8)' : '3px solid transparent',
-                    backgroundColor: active ? 'var(--up-admin-navy-hover, #334155)' : 'transparent',
-                    color: active ? '#FFFFFF' : 'var(--up-color-slate-300, #CBD5E1)',
-                    fontSize: '13.5px',
-                    fontWeight: active ? 800 : 600,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    width: '100%',
-                    transition: 'all var(--up-transition-fast, 150ms ease)',
-                  }}
-                >
-                  {item.icon}
-                  <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
-                  {badge !== null && (
-                    <span
-                      style={{
-                        padding: '1px 7px',
-                        borderRadius: '999px',
-                        backgroundColor: active ? '#FFFFFF' : '#F59E0B',
-                        color: active ? '#1D4ED8' : '#451A03',
-                        fontSize: '11px',
-                        fontWeight: 900,
-                      }}
-                    >
-                      {badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-
-          <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ position: 'relative', zIndex: 1, marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ padding: '10px 12px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.05)', fontSize: '11.5px', color: '#94A3B8', lineHeight: 1.5 }}>
               <div style={{ color: '#E2E8F0', fontWeight: 700, marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <Sparkles size={13} color="#60A5FA" /> Đồng bộ trực tiếp
@@ -2031,6 +2130,52 @@ export const AdminApp: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+              {/* Global Search Button Trigger (B3) */}
+              <button
+                type="button"
+                data-testid="admin-global-search-trigger"
+                onClick={() => setIsGlobalSearchOpen(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  height: '38px',
+                  padding: '0 12px',
+                  borderRadius: '10px',
+                  backgroundColor: '#F1F5F9',
+                  border: '1px solid #E2E8F0',
+                  color: '#64748B',
+                  fontSize: '12.5px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#EFF6FF';
+                  e.currentTarget.style.borderColor = '#BFDBFE';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#F1F5F9';
+                  e.currentTarget.style.borderColor = '#E2E8F0';
+                }}
+              >
+                <Search size={15} color="#64748B" />
+                <span>Tìm kiếm toàn diện...</span>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    backgroundColor: '#FFFFFF',
+                    padding: '2px 5px',
+                    borderRadius: '4px',
+                    border: '1px solid #CBD5E1',
+                    color: '#475569',
+                  }}
+                >
+                  Ctrl K
+                </span>
+              </button>
+
               <button
                 type="button"
                 onClick={openNotifications}
@@ -2065,6 +2210,20 @@ export const AdminApp: React.FC = () => {
             {renderMainBody()}
           </main>
         </div>
+
+        {/* Global Search Modal */}
+        <AdminGlobalSearch
+          isOpen={isGlobalSearchOpen}
+          onClose={() => setIsGlobalSearchOpen(false)}
+          applications={applications}
+          universities={universitiesList}
+          bookings={bookings}
+          onNavigateToSection={(s) => setSection(s as AdminSection)}
+          onSelectApplication={(app) => {
+            setSection('apps');
+            openApplicationDetail(app);
+          }}
+        />
       </div>
     );
   }
@@ -2099,6 +2258,14 @@ export const AdminApp: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexShrink: 0 }}>
           <button
             type="button"
+            onClick={() => setIsGlobalSearchOpen(true)}
+            aria-label="Tìm kiếm"
+            style={{ width: '34px', height: '34px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.1)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          >
+            <Search size={16} />
+          </button>
+          <button
+            type="button"
             onClick={openNotifications}
             aria-label="Thông báo"
             style={{ position: 'relative', width: '34px', height: '34px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.1)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
@@ -2130,6 +2297,7 @@ export const AdminApp: React.FC = () => {
           borderTop: '1px solid #E2E8F0',
           boxShadow: '0 -4px 20px rgba(15,23,42,0.06)',
           display: 'flex',
+          overflowX: 'auto',
           paddingTop: '6px',
           paddingBottom: 'max(10px, env(safe-area-inset-bottom, 12px))',
           zIndex: 80,
@@ -2143,7 +2311,8 @@ export const AdminApp: React.FC = () => {
               type="button"
               onClick={() => setSection(item.id)}
               style={{
-                flex: 1,
+                flex: '0 0 auto',
+                minWidth: '60px',
                 border: 'none',
                 backgroundColor: 'transparent',
                 color: active ? '#2563EB' : '#64748B',
@@ -2154,15 +2323,29 @@ export const AdminApp: React.FC = () => {
                 fontSize: '10px',
                 fontWeight: active ? 800 : 600,
                 cursor: 'pointer',
-                padding: '4px 2px',
+                padding: '4px 6px',
               }}
             >
               {item.icon}
-              <span>{item.shortLabel}</span>
+              <span style={{ whiteSpace: 'nowrap' }}>{item.shortLabel}</span>
             </button>
           );
         })}
       </nav>
+
+      {/* Global Search Modal */}
+      <AdminGlobalSearch
+        isOpen={isGlobalSearchOpen}
+        onClose={() => setIsGlobalSearchOpen(false)}
+        applications={applications}
+        universities={universitiesList}
+        bookings={bookings}
+        onNavigateToSection={(s) => setSection(s as AdminSection)}
+        onSelectApplication={(app) => {
+          setSection('apps');
+          openApplicationDetail(app);
+        }}
+      />
     </div>
   );
 };

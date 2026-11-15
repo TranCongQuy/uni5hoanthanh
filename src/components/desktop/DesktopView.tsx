@@ -10,7 +10,6 @@ import {
   Bot,
   Scale,
   GraduationCap,
-  MapPin,
   ArrowRight,
   ArrowLeft,
   Heart,
@@ -52,13 +51,15 @@ import { CANCELLED_STATUS_FILTER_LABEL, getStatusMeta, isCancelledStatus } from 
 import type { ApplicationRecord, HollandCode, MatchResult, EvaluationGroup } from '../../types';
 import { canStudentCancelApplication, computeHollandAssessment } from '../../services/ApplicationWorkflow';
 import { formatCleanDecimal, formatTuitionRange } from '../../utils/validation';
-import { UniversityAvatar, ImageSafe, Button } from '../common/UI';
+import { UniversityAvatar, Button } from '../common/UI';
 import { AccountRoleMenu } from '../common/AccountRoleMenu';
 import { SoundFX } from '../../utils/sound';
 import { RadarChart } from '../charts/RadarChart';
 import { DonutChart } from '../charts/DonutChart';
 import { MatchingBreakdownAccordion } from '../common/MatchingBreakdownAccordion';
 import { evaluateMatching } from '../../services/MatchingService';
+import { AuroraHeroMesh, UniversityCard } from '../common/AuroraEffects';
+import { useCountUp } from '../../hooks/useAurora';
 
 const EDUFAIR_DESKTOP_TARGET_TS = new Date('2026-12-20T08:00:00+07:00').getTime();
 
@@ -157,6 +158,11 @@ export const DesktopView: React.FC = () => {
   const [selectedRegion, setSelectedRegion] = useState<string>('Tất cả');
   const [desktopVisibleCount, setDesktopVisibleCount] = useState<number>(12);
   const [desktopSearch, setDesktopSearch] = useState<string>(searchKeyword);
+
+  // Aurora count-up proof metrics
+  const countUnis = useCountUp(30, 800);
+  const countRegions = useCountUp(3, 700);
+  const countRate = useCountUp(92, 900);
 
   // Sync search input
   useEffect(() => {
@@ -707,6 +713,7 @@ export const DesktopView: React.FC = () => {
               return (
                 <button
                   key={tab.id}
+                  data-tab-id={tab.id}
                   onClick={() => {
                     setActiveTab(tab.id);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -893,42 +900,15 @@ export const DesktopView: React.FC = () => {
         {/* =================================================================== */}
         {activeTab === 0 && (
           <div>
-            {/* 1. SINGLE-MESSAGE SAAS HERO (WIDESCREEN OPTIMIZED) */}
-            <div
-              style={{
-                position: 'relative',
-                borderRadius: '24px',
-                overflow: 'hidden',
-                background: 'linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4F46E5 100%)',
-                padding: '38px 48px',
-                color: '#FFFFFF',
-                boxShadow: 'var(--up-shadow-xl, 0 20px 25px -5px rgba(30,27,75,0.25))',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                marginBottom: '28px',
-              }}
+            {/* 1. SINGLE-MESSAGE SAAS HERO (AURORA PREMIUM WIDESCREEN) */}
+            <AuroraHeroMesh
+              variant="student"
+              minHeight="480px"
+              padding="44px 48px"
+              borderRadius="24px"
+              style={{ marginBottom: '28px' }}
             >
-              {/* Subtle Geometric SVG Pattern */}
-              <svg
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  width: '100%',
-                  height: '100%',
-                  opacity: 0.12,
-                  pointerEvents: 'none',
-                }}
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <defs>
-                  <pattern id="hero-pattern-desktop" width="36" height="36" patternUnits="userSpaceOnUse">
-                    <path d="M0 36 L36 0 M0 0 L36 36" fill="none" stroke="#FFFFFF" strokeWidth="0.8" />
-                    <circle cx="18" cy="18" r="1.5" fill="#FFFFFF" />
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#hero-pattern-desktop)" />
-              </svg>
-
-              <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '32px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '32px' }}>
                 <div style={{ maxWidth: '680px' }}>
                   <div
                     style={{
@@ -944,7 +924,7 @@ export const DesktopView: React.FC = () => {
                       fontSize: '11.5px',
                       fontWeight: 700,
                       letterSpacing: '0.4px',
-                      marginBottom: '12px',
+                      marginBottom: '14px',
                     }}
                   >
                     <Sparkles size={14} />
@@ -953,12 +933,12 @@ export const DesktopView: React.FC = () => {
 
                   <h1
                     style={{
-                      fontSize: '30px',
+                      fontSize: 'clamp(40px, 3.6vw, 54px)',
                       fontWeight: 900,
                       color: '#FFFFFF',
-                      lineHeight: 1.25,
-                      margin: '0 0 10px',
-                      letterSpacing: '-0.5px',
+                      lineHeight: 1.15,
+                      margin: '0 0 14px',
+                      letterSpacing: '-0.025em',
                       fontFamily: 'var(--up-font-family)',
                     }}
                   >
@@ -967,8 +947,8 @@ export const DesktopView: React.FC = () => {
 
                   <p
                     style={{
-                      margin: '0 0 22px',
-                      fontSize: '14.5px',
+                      margin: '0 0 24px',
+                      fontSize: '15px',
                       color: '#C7D2FE',
                       lineHeight: 1.5,
                       fontWeight: 400,
@@ -981,6 +961,7 @@ export const DesktopView: React.FC = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                     <button
                       onClick={() => setActiveTab(1)}
+                      className="up-btn-shine"
                       style={{
                         height: '44px',
                         padding: '0 24px',
@@ -1028,7 +1009,7 @@ export const DesktopView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Proof Metric Cards on Right */}
+                {/* Proof Metric Cards on Right (Aurora Glass + CountUp) */}
                 <div
                   className="tabular-nums"
                   style={{
@@ -1039,52 +1020,49 @@ export const DesktopView: React.FC = () => {
                   }}
                 >
                   <div
+                    className="up-glass-card-dark"
                     style={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      border: '1px solid rgba(255, 255, 255, 0.16)',
-                      backdropFilter: 'blur(8px)',
                       borderRadius: '16px',
                       padding: '12px 18px',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
                     }}
                   >
                     <div style={{ fontSize: '24px', fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.5px' }}>
-                      30
+                      {countUnis}
                     </div>
                     <div style={{ fontSize: '12px', color: '#C7D2FE', fontWeight: 600 }}>Trường đại học đối tác</div>
                   </div>
 
                   <div
+                    className="up-glass-card-dark"
                     style={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      border: '1px solid rgba(255, 255, 255, 0.16)',
-                      backdropFilter: 'blur(8px)',
                       borderRadius: '16px',
                       padding: '12px 18px',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
                     }}
                   >
                     <div style={{ fontSize: '24px', fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.5px' }}>
-                      3
+                      {countRegions}
                     </div>
                     <div style={{ fontSize: '12px', color: '#C7D2FE', fontWeight: 600 }}>Miền Bắc • Trung • Nam</div>
                   </div>
 
                   <div
+                    className="up-glass-card-dark"
                     style={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      border: '1px solid rgba(255, 255, 255, 0.16)',
-                      backdropFilter: 'blur(8px)',
                       borderRadius: '16px',
                       padding: '12px 18px',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
                     }}
                   >
                     <div style={{ fontSize: '24px', fontWeight: 900, color: '#A7F3D0', letterSpacing: '-0.5px' }}>
-                      92%
+                      {countRate}%
                     </div>
                     <div style={{ fontSize: '12px', color: '#C7D2FE', fontWeight: 600 }}>Có việc làm sau tốt nghiệp</div>
                   </div>
                 </div>
               </div>
-            </div>
+            </AuroraHeroMesh>
 
             {/* 1B. 4-STEP INTERACTIVE STUDENT JOURNEY BAR ("NHÌN 3 GIÂY HIỂU NGAY") */}
             <div
@@ -1836,7 +1814,7 @@ export const DesktopView: React.FC = () => {
                 </div>
               </div>
 
-              {/* University Cards Grid (3 Columns) */}
+              {/* University Cards Grid (3 Columns) with Aurora Cards */}
               <div
                 style={{
                   display: 'grid',
@@ -1845,174 +1823,19 @@ export const DesktopView: React.FC = () => {
                   marginBottom: '28px',
                 }}
               >
-                {filteredUnis.slice(0, desktopVisibleCount).map((uni) => {
-                  const compared = isCompared(uni.id);
-                  const isFav = favoriteIds.includes(uni.id);
-
-                  return (
-                    <div
-                      key={uni.id}
-                      style={{
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: '20px',
-                        border: '1px solid #E2E8F0',
-                        boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
-                        overflow: 'hidden',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-3px)';
-                        e.currentTarget.style.boxShadow = '0 10px 24px rgba(0,0,0,0.07)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0px)';
-                        e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.03)';
-                      }}
-                    >
-                      {/* Campus Cover Image */}
-                      <div style={{ height: '140px', position: 'relative', backgroundColor: '#CBD5E1' }}>
-                        <ImageSafe
-                          src={`/images/campus_${uni.code.toLowerCase()}.jpg`}
-                          fallbackSrc="/images/campus_default.png"
-                          altText={uni.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                        {/* Region & Code badge overlay */}
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: '12px',
-                            left: '12px',
-                            backgroundColor: 'rgba(15, 23, 42, 0.75)',
-                            backdropFilter: 'blur(4px)',
-                            color: '#FFFFFF',
-                            fontSize: '11px',
-                            fontWeight: 800,
-                            padding: '3px 8px',
-                            borderRadius: '6px',
-                          }}
-                        >
-                          {uni.code} • Miền {uni.region}
-                        </div>
-
-                        {/* Favorite button */}
-                        <button
-                          onClick={() => toggleFavorite(uni.id)}
-                          aria-label="Yêu thích"
-                          style={{
-                            position: 'absolute',
-                            top: '10px',
-                            right: '10px',
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '50%',
-                            backgroundColor: '#FFFFFF',
-                            border: 'none',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            color: isFav ? '#EF4444' : '#64748B',
-                            boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                          }}
-                        >
-                          <Heart size={16} fill={isFav ? '#EF4444' : 'none'} />
-                        </button>
-                      </div>
-
-                      {/* Content Info */}
-                      <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                          <UniversityAvatar code={uni.code} size={36} />
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <h3
-                              style={{
-                                margin: 0,
-                                fontSize: '15.5px',
-                                fontWeight: 800,
-                                color: '#0F172A',
-                                lineHeight: 1.3,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
-                              {uni.name}
-                            </h3>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#64748B' }}>
-                              <MapPin size={12} color="#94A3B8" />
-                              <span>{uni.loc}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Metric pills */}
-                        <div
-                          style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(3, 1fr)',
-                            gap: '6px',
-                            backgroundColor: '#F8FAFC',
-                            borderRadius: '12px',
-                            padding: '8px',
-                            textAlign: 'center',
-                            margin: '10px 0 14px',
-                            border: '1px solid #E2E8F0',
-                          }}
-                        >
-                          <div>
-                            <div style={{ fontSize: '13px', fontWeight: 800, color: '#2563EB' }}>
-                              {getCutoffRangeText(uni)}
-                            </div>
-                            <div style={{ fontSize: '10.5px', color: '#64748B' }}>Chuẩn ngành</div>
-                          </div>
-                          <div style={{ borderLeft: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0' }}>
-                            <div style={{ fontSize: '13px', fontWeight: 800, color: '#059669' }}>
-                              {formatTuitionRange(uni.tuitionMin, uni.tuitionMax, false)}
-                            </div>
-                            <div style={{ fontSize: '10.5px', color: '#64748B' }}>Học phí/năm</div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#F59E0B' }}>
-                              ⭐ {uni.rating}
-                            </div>
-                            <div style={{ fontSize: '10.5px', color: '#64748B' }}>Đánh giá</div>
-                          </div>
-                        </div>
-
-                        {/* Action buttons */}
-                        <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>
-                          <Button
-                            variant="primary"
-                            size="M"
-                            fullWidth
-                            onClick={() => openUniDetail(uni.id)}
-                          >
-                            Chi tiết trường
-                          </Button>
-                          <button
-                            onClick={() => toggleCompare(uni.id)}
-                            style={{
-                              padding: '8px 14px',
-                              borderRadius: '10px',
-                              border: compared ? '1.5px solid #2563EB' : '1px solid #E2E8F0',
-                              backgroundColor: compared ? '#EFF6FF' : '#FFFFFF',
-                              color: compared ? '#2563EB' : '#475569',
-                              fontSize: '12.5px',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {compared ? 'Đã thêm' : 'So sánh'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                {filteredUnis.slice(0, desktopVisibleCount).map((uni, idx) => (
+                  <UniversityCard
+                    key={uni.id}
+                    uni={uni}
+                    onSelect={(u) => openUniDetail(u.id)}
+                    onCompareToggle={(id) => toggleCompare(id)}
+                    isCompared={isCompared(uni.id)}
+                    onFavoriteToggle={(id) => toggleFavorite(id)}
+                    isFavorite={favoriteIds.includes(uni.id)}
+                    onApply={(u) => openUniDetail(u.id)}
+                    staggerIndex={idx % 6}
+                  />
+                ))}
               </div>
 
               {/* Pagination control */}
@@ -2530,6 +2353,8 @@ export const DesktopView: React.FC = () => {
 
               {/* Submit analyze button */}
               <button
+                type="button"
+                data-testid="btn-evaluate-matching"
                 disabled={isMatchLoading}
                 onClick={handleEvaluateMatching}
                 style={{
@@ -2882,7 +2707,7 @@ export const DesktopView: React.FC = () => {
                 {/* Overlays */}
                 <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', gap: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#EF4444', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 800 }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#FFFFFF' }} />
+                    <span className="up-live-pulse" style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#FFFFFF', display: 'inline-block' }} />
                     <span>TRỰC TIẾP</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: 'rgba(0,0,0,0.6)', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 700 }}>
@@ -4022,31 +3847,153 @@ export const DesktopView: React.FC = () => {
       {/* ===================================================================== */}
       <footer
         style={{
-          backgroundColor: '#FFFFFF',
-          borderTop: '1px solid #E2E8F0',
-          padding: '24px 32px',
+          background: 'linear-gradient(180deg, #0B132B 0%, #050B14 100%)',
+          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+          padding: '48px 32px 32px',
           marginTop: 'auto',
+          color: '#94A3B8',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
+        {/* Subtle SVG Grid Background */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px)',
+            backgroundSize: '24px 24px',
+            pointerEvents: 'none',
+          }}
+        />
+
         <div
           style={{
             maxWidth: '1380px',
             margin: '0 auto',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '16px',
-            fontSize: '13px',
-            color: '#64748B',
+            position: 'relative',
+            zIndex: 1,
           }}
         >
-          <div>
-            © 2026 <strong>UniPath Vietnam</strong>. Phát triển bởi <strong style={{ color: '#2563EB' }}>Trần Công Quý</strong> • Trưởng nhóm: <strong>Dương Đình Phát</strong> • Bản quyền thuộc <strong>Nhóm UP5 — Trường Đại học Phú Xuân (PXU)</strong>.
+          {/* Top Columns */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '2fr 1fr 1fr 1.2fr',
+              gap: '36px',
+              paddingBottom: '36px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              marginBottom: '24px',
+            }}
+          >
+            {/* Col 1: Brand & Mission */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#FFFFFF',
+                    fontWeight: 900,
+                    fontSize: '18px',
+                    boxShadow: '0 4px 12px rgba(79, 70, 229, 0.35)',
+                  }}
+                >
+                  U
+                </div>
+                <span style={{ fontSize: '18px', fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.3px' }}>
+                  UniPath 2.0
+                </span>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    color: '#38BDF8',
+                    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                    border: '1px solid rgba(56, 189, 248, 0.25)',
+                    padding: '2px 8px',
+                    borderRadius: '999px',
+                  }}
+                >
+                  Aurora Edition
+                </span>
+              </div>
+              <p style={{ fontSize: '13.5px', color: '#94A3B8', lineHeight: 1.6, margin: '0 0 14px', maxWidth: '380px' }}>
+                Hệ sinh thái Hướng nghiệp &amp; Xét tuyển Đại học Thông minh ứng dụng AI. Đối soát điểm chuẩn, gợi ý nguyện vọng cá nhân hóa và quản lý hồ sơ trực tuyến 30 trường đại học hàng đầu Việt Nam.
+              </p>
+              <div style={{ fontSize: '12px', color: '#64748B' }}>
+                Đồ án môn <strong>AI Based Programming</strong> • Học kỳ 2026
+              </div>
+            </div>
+
+            {/* Col 2: Hệ Thống 3 Cổng */}
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.5px', marginBottom: '14px' }}>
+                HỆ THỐNG 3 CỔNG
+              </div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                <li><span style={{ color: '#818CF8' }}>•</span> Cổng Thí sinh (Indigo)</li>
+                <li><span style={{ color: '#34D399' }}>•</span> Cổng ĐH Phú Xuân (Emerald)</li>
+                <li><span style={{ color: '#38BDF8' }}>•</span> Trung tâm Điều hành Admin (Navy)</li>
+                <li><span style={{ color: '#FCD34D' }}>•</span> Trợ lý AI Cố vấn Tuyển sinh</li>
+              </ul>
+            </div>
+
+            {/* Col 3: Dữ Liệu & Quy Chuẩn */}
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.5px', marginBottom: '14px' }}>
+                DỮ LIỆU &amp; CÔNG NGHỆ
+              </div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                <li>30 Trường đại học chuẩn hóa</li>
+                <li>120+ Ngành đào tạo 2026</li>
+                <li>Khảo sát tính cách Holland RIASEC</li>
+                <li>Thuật toán Matching Điểm chuẩn 3 năm</li>
+                <li>Supabase Database PostgreSQL</li>
+              </ul>
+            </div>
+
+            {/* Col 4: Tác Giả & Bản Quyền */}
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.5px', marginBottom: '14px' }}>
+                BẢN QUYỀN &amp; TÁC GIẢ
+              </div>
+              <div style={{ fontSize: '13px', lineHeight: 1.6, color: '#CBD5E1' }}>
+                <div>Kỹ sư Phát triển: <strong style={{ color: '#60A5FA' }}>Trần Công Quý</strong></div>
+                <div>Trưởng nhóm: <strong>Dương Đình Phát</strong></div>
+                <div style={{ marginTop: '6px', color: '#94A3B8' }}>
+                  Bản quyền thuộc <strong>Nhóm UP5 — Trường Đại học Phú Xuân (PXU)</strong>.
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-            <span style={{ fontSize: '12.5px', color: '#64748B' }}>💻 Phiên bản Màn hình Rộng (Desktop Widescreen)</span>
+          {/* Bottom Bar */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+              fontSize: '12px',
+              color: '#64748B',
+            }}
+          >
+            <div>
+              © 2026 UniPath Vietnam. All rights reserved. Nền tảng hướng nghiệp thông minh sinh viên UP5.
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <span>💻 Màn hình Rộng (Desktop Widescreen)</span>
+              <span>•</span>
+              <span>🔒 Demo Sandbox an toàn</span>
+            </div>
           </div>
         </div>
       </footer>

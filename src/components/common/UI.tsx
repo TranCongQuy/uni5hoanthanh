@@ -175,6 +175,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   icon?: React.ReactNode;
   fullWidth?: boolean;
   loading?: boolean;
+  shine?: boolean;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -184,6 +185,7 @@ export const Button: React.FC<ButtonProps> = ({
   icon,
   fullWidth = false,
   loading = false,
+  shine,
   disabled,
   style,
   className = '',
@@ -248,10 +250,12 @@ export const Button: React.FC<ButtonProps> = ({
     boxShadow = 'none';
   }
 
+  const shouldShine = shine ?? (variant === 'primary' || variant === 'onGradient');
+
   return (
     <button
       disabled={disabled || loading}
-      className={`font-semibold inline-flex items-center justify-center gap-2 select-none ${className}`}
+      className={`font-semibold inline-flex items-center justify-center gap-2 select-none ${shouldShine ? 'up-btn-shine' : ''} ${className}`}
       style={{
         height,
         fontSize,
@@ -436,6 +440,9 @@ export const Badge: React.FC<BadgeProps> = ({
 export interface CardProps {
   children: React.ReactNode;
   hoverable?: boolean;
+  glass?: boolean;
+  aurora?: boolean;
+  glow?: 'indigo' | 'emerald' | 'navy';
   padding?: string;
   style?: React.CSSProperties;
   className?: string;
@@ -445,32 +452,51 @@ export interface CardProps {
 export const Card: React.FC<CardProps> = ({
   children,
   hoverable = false,
+  glass = false,
+  aurora = false,
+  glow,
   padding = '20px',
   style,
   className = '',
   onClick,
 }) => {
+  const glowShadow =
+    glow === 'emerald'
+      ? 'var(--up-shadow-glow-emerald)'
+      : glow === 'navy'
+        ? 'var(--up-shadow-glow-navy)'
+        : 'var(--up-shadow-glow-indigo)';
+
+  const baseShadow = aurora || glow ? 'var(--up-shadow-card)' : 'var(--up-shadow-card, 0 4px 16px -2px rgba(15,23,42,0.06))';
+
   return (
     <div
       onClick={onClick}
-      className={`bg-white rounded-2xl border ${hoverable ? 'cursor-pointer transition-all' : ''} ${className}`}
+      className={`${glass ? 'up-glass-card' : 'bg-white'} rounded-2xl border ${hoverable ? 'cursor-pointer transition-all' : ''} ${aurora ? 'up-card-aurora' : ''} ${className}`}
       style={{
-        borderColor: 'var(--up-color-slate-200, #E2E8F0)',
-        boxShadow: 'var(--up-shadow-card, 0 4px 16px -2px rgba(15,23,42,0.06))',
+        borderRadius: aurora ? '22px' : 'var(--up-radius-xl, 20px)',
+        borderColor: glass ? 'var(--up-glass-border-light, rgba(255, 255, 255, 0.85))' : 'var(--up-color-slate-200, #E2E8F0)',
+        boxShadow: baseShadow,
         padding,
-        transition: 'transform var(--up-transition-normal, 200ms ease), box-shadow var(--up-transition-normal, 200ms ease)',
+        transition: 'transform var(--up-transition-normal, 200ms ease), box-shadow var(--up-transition-normal, 200ms ease), border-color 0.2s ease',
         ...style,
       }}
       onMouseEnter={(e) => {
         if (hoverable) {
           e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = 'var(--up-shadow-lg, 0 12px 28px -4px rgba(15,23,42,0.1))';
+          e.currentTarget.style.boxShadow = glow ? glowShadow : 'var(--up-shadow-lg, 0 12px 28px -4px rgba(15,23,42,0.1))';
+          if (aurora) {
+            e.currentTarget.style.borderColor = glow === 'emerald' ? '#A7F3D0' : '#C7D2FE';
+          }
         }
       }}
       onMouseLeave={(e) => {
         if (hoverable) {
           e.currentTarget.style.transform = 'none';
-          e.currentTarget.style.boxShadow = 'var(--up-shadow-card, 0 4px 16px -2px rgba(15,23,42,0.06))';
+          e.currentTarget.style.boxShadow = baseShadow;
+          if (aurora) {
+            e.currentTarget.style.borderColor = 'var(--up-color-slate-200, #E2E8F0)';
+          }
         }
       }}
     >

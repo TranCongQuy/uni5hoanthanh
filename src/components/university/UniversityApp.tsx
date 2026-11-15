@@ -1264,12 +1264,12 @@ export const UniversityApp: React.FC = () => {
   if (isDesktop) {
     return (
       <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', width: '100%' }}>
-        {/* PXU Emerald Sidebar */}
+        {/* PXU Emerald Aurora Sidebar */}
         <aside
           style={{
             width: '256px',
             flexShrink: 0,
-            background: 'linear-gradient(180deg, #042F2E 0%, #064E3B 100%)',
+            background: 'var(--up-gradient-aurora-pxu, linear-gradient(180deg, #022C22 0%, #064E3B 45%, #0F766E 100%))',
             color: '#FFFFFF',
             display: 'flex',
             flexDirection: 'column',
@@ -1278,10 +1278,24 @@ export const UniversityApp: React.FC = () => {
             top: 0,
             height: '100vh',
             boxSizing: 'border-box',
+            overflow: 'hidden',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 8px 20px', borderBottom: '1px solid rgba(255,255,255,0.12)', marginBottom: '16px' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '11px', backgroundColor: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+          {/* Subtle Geometric SVG Pattern */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px)',
+              backgroundSize: '20px 20px',
+              pointerEvents: 'none',
+              zIndex: 0,
+            }}
+          />
+
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 8px 20px', borderBottom: '1px solid rgba(255,255,255,0.12)', marginBottom: '16px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '11px', backgroundColor: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
               <img src="/images/logo_pxu.png" alt="PXU" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
             </div>
             <div style={{ minWidth: 0 }}>
@@ -1290,11 +1304,11 @@ export const UniversityApp: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#6EE7B7', textTransform: 'uppercase', letterSpacing: '0.6px', padding: '0 10px 8px', opacity: 0.85 }}>
+          <div style={{ position: 'relative', zIndex: 1, fontSize: '10.5px', fontWeight: 800, color: '#6EE7B7', textTransform: 'uppercase', letterSpacing: '0.6px', padding: '0 10px 8px', opacity: 0.9 }}>
             Nghiệp vụ tuyển sinh PXU
           </div>
 
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <nav style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
             {NAV_ITEMS.map((item) => {
               const active = section === item.id;
               const badge =
@@ -1315,11 +1329,11 @@ export const UniversityApp: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '10px',
-                    padding: '10px 12px 10px 10px',
-                    borderRadius: '0 10px 10px 0',
-                    border: 'none',
-                    borderLeft: active ? '3px solid var(--up-color-emerald-300, #6EE7B7)' : '3px solid transparent',
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    border: active ? '1px solid rgba(110, 231, 183, 0.35)' : '1px solid transparent',
                     backgroundColor: active ? 'rgba(5, 150, 105, 0.45)' : 'transparent',
+                    boxShadow: active ? 'var(--up-shadow-glow-emerald, 0 4px 18px rgba(5, 150, 105, 0.4))' : 'none',
                     color: active ? '#FFFFFF' : '#D1FAE5',
                     fontSize: '13.5px',
                     fontWeight: active ? 800 : 600,
@@ -1408,7 +1422,7 @@ export const UniversityApp: React.FC = () => {
     <div style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', width: '100%', maxWidth: '520px', margin: '0 auto', display: 'flex', flexDirection: 'column', overflowX: 'clip' }}>
       <header
         style={{
-          background: `linear-gradient(135deg, #042F2E 0%, ${EMERALD_DARK} 100%)`,
+          background: 'var(--up-gradient-aurora-pxu, linear-gradient(135deg, #022C22 0%, #064E3B 45%, #0F766E 100%))',
           color: '#FFFFFF',
           padding: '12px 14px',
           display: 'flex',
@@ -1418,6 +1432,7 @@ export const UniversityApp: React.FC = () => {
           position: 'sticky',
           top: 0,
           zIndex: 60,
+          boxShadow: '0 4px 20px rgba(2, 44, 34, 0.25)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>

@@ -86,6 +86,32 @@
   --up-color-primary-light: #EEF2FF;
   --up-color-primary-subtle: #E0E7FF;
 
+  /* =========================================================================
+     AURORA PREMIUM DESIGN SYSTEM TOKENS (Multi-layer Gradients, Glow & Mesh)
+     ========================================================================= */
+  --up-gradient-aurora-hero: linear-gradient(135deg, #0F172A 0%, #1E1B4B 35%, #312E81 70%, #4338CA 100%);
+  --up-gradient-aurora-admin: linear-gradient(180deg, #0B1120 0%, #0F172A 50%, #1E293B 100%);
+  --up-gradient-aurora-pxu: linear-gradient(135deg, #022C22 0%, #064E3B 40%, #059669 100%);
+
+  /* Gradient Text Tokens */
+  --up-gradient-text-accent: linear-gradient(135deg, #60A5FA 0%, #A78BFA 50%, #F472B6 100%);
+  --up-gradient-text-indigo: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%);
+  --up-gradient-text-emerald: linear-gradient(135deg, #34D399 0%, #10B981 50%, #059669 100%);
+  --up-gradient-text-cyan: linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
+  --up-gradient-text-gold: linear-gradient(135deg, #FDE047 0%, #F59E0B 50%, #D97706 100%);
+
+  /* Dual-layer Soft Color Glows (Near + Far) */
+  --up-shadow-glow-indigo: 0 4px 20px -2px rgba(79, 70, 229, 0.16), 0 12px 32px -4px rgba(79, 70, 229, 0.1);
+  --up-shadow-glow-emerald: 0 4px 20px -2px rgba(5, 150, 105, 0.18), 0 12px 32px -4px rgba(5, 150, 105, 0.1);
+  --up-shadow-glow-navy: 0 4px 24px -2px rgba(15, 23, 42, 0.22), 0 14px 36px -4px rgba(15, 23, 42, 0.12);
+  --up-shadow-glow-cyan: 0 4px 20px -2px rgba(56, 189, 248, 0.25), 0 10px 28px -4px rgba(56, 189, 248, 0.12);
+
+  /* Glassmorphism Surface Tokens */
+  --up-glass-bg-light: rgba(255, 255, 255, 0.78);
+  --up-glass-border-light: rgba(255, 255, 255, 0.7);
+  --up-glass-bg-dark: rgba(15, 23, 42, 0.68);
+  --up-glass-border-dark: rgba(255, 255, 255, 0.14);
+
   /* Semantic Feedback */
   --up-color-success: #059669;
   --up-color-success-hover: #047857;

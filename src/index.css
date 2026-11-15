@@ -349,3 +349,175 @@ body.modal-open, html.modal-open {
 .up-table tr:last-child td {
   border-bottom: none;
 }
+
+/* =========================================================================
+   AURORA PREMIUM SYSTEM UTILITIES (A1, A2, A4)
+   ========================================================================= */
+
+/* A1: Aurora Organic Glow Mesh Animations (20-30s slow ease-in-out) */
+@keyframes auroraOrbSlow1 {
+  0% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(50px, -25px) scale(1.18); }
+  100% { transform: translate(-35px, 35px) scale(0.96); }
+}
+
+@keyframes auroraOrbSlow2 {
+  0% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(-45px, 35px) scale(1.12); }
+  100% { transform: translate(30px, -20px) scale(0.92); }
+}
+
+@keyframes auroraOrbSlow3 {
+  0% { transform: translate(0px, 0px) scale(0.9); }
+  50% { transform: translate(35px, 25px) scale(1.15); }
+  100% { transform: translate(-25px, -25px) scale(1); }
+}
+
+.aurora-orb-1 {
+  animation: auroraOrbSlow1 24s ease-in-out infinite alternate;
+}
+.aurora-orb-2 {
+  animation: auroraOrbSlow2 28s ease-in-out infinite alternate;
+}
+.aurora-orb-3 {
+  animation: auroraOrbSlow3 20s ease-in-out infinite alternate;
+}
+
+/* A2: Gradient Text Utilities */
+.up-gradient-text {
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  display: inline-block;
+}
+.up-gradient-text-accent {
+  background-image: var(--up-gradient-text-accent, linear-gradient(135deg, #60A5FA 0%, #A78BFA 50%, #F472B6 100%));
+}
+.up-gradient-text-indigo {
+  background-image: var(--up-gradient-text-indigo, linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%));
+}
+.up-gradient-text-emerald {
+  background-image: var(--up-gradient-text-emerald, linear-gradient(135deg, #34D399 0%, #10B981 50%, #059669 100%));
+}
+.up-gradient-text-gold {
+  background-image: var(--up-gradient-text-gold, linear-gradient(135deg, #FDE047 0%, #F59E0B 50%, #D97706 100%));
+}
+
+/* A1 & A3: Glassmorphism & Aurora Content Cards */
+.up-glass-card {
+  background: var(--up-glass-bg-light, rgba(255, 255, 255, 0.82));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--up-glass-border-light, rgba(255, 255, 255, 0.85));
+  box-shadow: 0 8px 28px -4px rgba(15, 23, 42, 0.08);
+}
+
+.up-glass-card-dark {
+  background: var(--up-glass-bg-dark, rgba(15, 23, 42, 0.72));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--up-glass-border-dark, rgba(255, 255, 255, 0.14));
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.35);
+}
+
+.up-card-aurora {
+  border-radius: 20px;
+  background: #FFFFFF;
+  border: 1px solid var(--up-color-slate-200, #E2E8F0);
+  box-shadow: var(--up-shadow-card, 0 4px 16px -2px rgba(15, 23, 42, 0.06));
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+}
+@media (hover: hover) {
+  .up-card-aurora:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--up-shadow-glow-indigo);
+    border-color: #C7D2FE;
+  }
+}
+
+/* A4: Button Shine Sweep Effect */
+.up-btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+.up-btn-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .up-btn-shine:hover::after {
+    left: 180%;
+    transition: left 0.75s ease-in-out;
+  }
+}
+
+/* A4: Live Badge Pulse Ring */
+@keyframes liveRingPulse {
+  0% { transform: scale(0.95); opacity: 0.9; }
+  50% { transform: scale(1.35); opacity: 0.15; }
+  100% { transform: scale(0.95); opacity: 0.9; }
+}
+
+.up-live-pulse {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.up-live-pulse::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 9999px;
+  background: rgba(239, 68, 68, 0.5);
+  animation: liveRingPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  z-index: 0;
+}
+
+/* A4: Modal Fade + Scale In (0.98 -> 1) */
+@keyframes modalFadeScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.up-modal-enter {
+  animation: modalFadeScaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* A5: Section Eyebrow Header Accent */
+.up-section-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--up-student-primary, #4F46E5);
+  margin-bottom: 6px;
+}
+.up-section-eyebrow::after {
+  content: '';
+  display: inline-block;
+  width: 28px;
+  height: 2.5px;
+  border-radius: 9999px;
+  background: var(--up-gradient-text-accent);
+}
