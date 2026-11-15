@@ -26,6 +26,7 @@ import {
   CheckCircle2,
   GitCompare,
   Calendar,
+  Clock,
   Crown,
   Trash2,
   LogIn,
@@ -60,8 +61,7 @@ import { MatchingBreakdownAccordion } from '../common/MatchingBreakdownAccordion
 import { evaluateMatching } from '../../services/MatchingService';
 import { AuroraHeroMesh, UniversityCard } from '../common/AuroraEffects';
 import { useCountUp } from '../../hooks/useAurora';
-
-const EDUFAIR_DESKTOP_TARGET_TS = new Date('2026-12-20T08:00:00+07:00').getTime();
+import { getEventPhase, computeCountdownParts } from '../../utils/edufair';
 
 const QUIZ_OPTIONS = [
   {
@@ -435,16 +435,16 @@ export const DesktopView: React.FC = () => {
       setFloatingReactions((prev) => prev.filter((p) => !idsToRemove.has(p.id)));
     }, 1250);
   };
-  const [liveDaysLeft, setLiveDaysLeft] = useState<number>(() =>
-    Math.max(0, Math.floor((EDUFAIR_DESKTOP_TARGET_TS - Date.now()) / 86400000))
-  );
-
+  const [edufairNow, setEdufairNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => {
-      setLiveDaysLeft(Math.max(0, Math.floor((EDUFAIR_DESKTOP_TARGET_TS - Date.now()) / 86400000)));
-    }, 60000);
+      setEdufairNow(Date.now());
+    }, 1000);
     return () => clearInterval(t);
   }, []);
+
+  const edufairPhase = getEventPhase(new Date(edufairNow));
+  const edufairCountdown = computeCountdownParts(new Date(edufairNow));
 
   const [liveMessages, setLiveMessages] = useState<LiveMessage[]>([
     {
@@ -522,7 +522,7 @@ export const DesktopView: React.FC = () => {
     };
     setLiveMessages((prev) => [...prev.slice(-7), userMsg]);
     setLiveChatInput('');
-    showToast('Đã gửi bình luận vào phòng trực tiếp!');
+    showToast(edufairPhase === 'live' ? 'Đã gửi bình luận vào phòng trực tiếp!' : 'Đã gửi câu hỏi tư vấn!');
     if (liveChatContainerRef.current) {
       setTimeout(() => {
         if (liveChatContainerRef.current) {
@@ -764,7 +764,7 @@ export const DesktopView: React.FC = () => {
                       AI
                     </span>
                   )}
-                  {tab.id === 3 && (
+                  {tab.id === 3 && edufairPhase === 'live' && (
                     <span
                       style={{
                         backgroundColor: '#FEE2E2',
@@ -1269,7 +1269,7 @@ export const DesktopView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Card 3: Unipath LIVE */}
+              {/* Card 3: Unipath EduFair / LIVE */}
               <div
                 onClick={() => setActiveTab(3)}
                 style={{
@@ -1288,8 +1288,8 @@ export const DesktopView: React.FC = () => {
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = '0 12px 28px rgba(239,68,68,0.12)';
-                  e.currentTarget.style.borderColor = '#FCA5A5';
+                  e.currentTarget.style.boxShadow = edufairPhase === 'live' ? '0 12px 28px rgba(239,68,68,0.12)' : '0 12px 28px rgba(37,99,235,0.14)';
+                  e.currentTarget.style.borderColor = edufairPhase === 'live' ? '#FCA5A5' : '#93C5FD';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0px)';
@@ -1299,22 +1299,49 @@ export const DesktopView: React.FC = () => {
               >
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                    <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#FEF2F2', color: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(239,68,68,0.12)' }}>
+                    <div style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '12px',
+                      backgroundColor: edufairPhase === 'live' ? '#FEF2F2' : '#EFF6FF',
+                      color: edufairPhase === 'live' ? '#EF4444' : '#2563EB',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: edufairPhase === 'live' ? '0 2px 8px rgba(239,68,68,0.12)' : '0 2px 8px rgba(37,99,235,0.12)',
+                    }}>
                       <Radio size={22} />
                     </div>
-                    <span style={{ fontSize: '11px', fontWeight: 800, color: '#EF4444', backgroundColor: '#FEF2F2', padding: '3px 8px', borderRadius: '6px' }}>
-                      LIVE NOW
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      color: edufairPhase === 'live' ? '#EF4444' : '#2563EB',
+                      backgroundColor: edufairPhase === 'live' ? '#FEF2F2' : '#EFF6FF',
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                    }}>
+                      {edufairPhase === 'live' ? 'LIVE NOW' : 'SẮP DIỄN RA'}
                     </span>
                   </div>
                   <h3 style={{ fontSize: '16.5px', fontWeight: 800, color: '#1E293B', marginBottom: '6px' }}>
-                    Unipath LIVE
+                    {edufairPhase === 'live' ? 'Unipath LIVE' : 'Unipath EduFair'}
                   </h3>
                   <p style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.5, margin: 0 }}>
-                    Giao lưu ban tuyển sinh trực tuyến & hỏi đáp trực tiếp trong phòng phát sóng
+                    {edufairPhase === 'live'
+                      ? 'Giao lưu ban tuyển sinh trực tuyến & hỏi đáp trực tiếp trong phòng phát sóng'
+                      : 'Đại hội trực tuyến kết nối 30 trường ĐH & cơ hội săn học bổng xét tuyển 2026'}
                   </p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: '#EF4444', marginTop: '16px' }}>
-                  <span>Vào phòng Live</span>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: edufairPhase === 'live' ? '#EF4444' : '#2563EB',
+                  marginTop: '16px',
+                }}>
+                  <span>{edufairPhase === 'live' ? 'Vào phòng Live' : 'Khám phá EduFair'}</span>
                   <ArrowRight size={14} />
                 </div>
               </div>
@@ -2683,7 +2710,7 @@ export const DesktopView: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '24px', alignItems: 'start' }}>
             {/* Left: Video Stage & Information */}
             <div>
-              {/* 16:9 Video Canvas */}
+              {/* 16:9 Video Canvas / Upcoming Panel */}
               <div
                 style={{
                   position: 'relative',
@@ -2695,39 +2722,153 @@ export const DesktopView: React.FC = () => {
                   marginBottom: '18px',
                 }}
               >
-                <img
-                  src="/images/advisor_live.png"
-                  alt="Live Stage"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/images/slide_edufair.png';
-                  }}
-                />
+                {edufairPhase === 'live' ? (
+                  <>
+                    <img
+                      src="/images/advisor_live.png"
+                      alt="Live Stage"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/images/slide_edufair.png';
+                      }}
+                    />
 
-                {/* Overlays */}
-                <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', gap: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#EF4444', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 800 }}>
-                    <span className="up-live-pulse" style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#FFFFFF', display: 'inline-block' }} />
-                    <span>TRỰC TIẾP</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: 'rgba(0,0,0,0.6)', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 700 }}>
-                    <Users size={12} />
-                    <span>2,480 người xem (Mô phỏng)</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: 'rgba(37,99,235,0.85)', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 800 }}>
-                    <span>Sự kiện chính: Còn {liveDaysLeft} ngày (20/12/2026)</span>
-                  </div>
-                </div>
+                    {/* Overlays */}
+                    <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#EF4444', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 800 }}>
+                        <span className="up-live-pulse" style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#FFFFFF', display: 'inline-block' }} />
+                        <span>TRỰC TIẾP</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: 'rgba(0,0,0,0.6)', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 700 }}>
+                        <Users size={12} />
+                        <span>2,480 người xem (Mô phỏng)</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: 'rgba(37,99,235,0.85)', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 800 }}>
+                        <span>Sự kiện chính: Đang diễn ra (20/12/2026)</span>
+                      </div>
+                    </div>
 
-                {/* Bottom title inside player */}
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '20px', background: 'linear-gradient(transparent, rgba(0,0,0,0.8))', color: '#FFFFFF' }}>
-                  <h2 style={{ margin: '0 0 4px', fontSize: '20px', fontWeight: 800 }}>
-                    Virtual EduFair 2026: Giải mã Cơ hội Xét tuyển Sớm & Học bổng 30 Trường ĐH
-                  </h2>
-                  <div style={{ fontSize: '13px', opacity: 0.9 }}>
-                    Diễn giả: TS. Lê Thành Trung • Đại diện Ban Tuyển sinh
-                  </div>
-                </div>
+                    {/* Bottom title inside player */}
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '20px', background: 'linear-gradient(transparent, rgba(0,0,0,0.8))', color: '#FFFFFF' }}>
+                      <h2 style={{ margin: '0 0 4px', fontSize: '20px', fontWeight: 800 }}>
+                        Virtual EduFair 2026: Giải mã Cơ hội Xét tuyển Sớm & Học bổng 30 Trường ĐH
+                      </h2>
+                      <div style={{ fontSize: '13px', opacity: 0.9 }}>
+                        Diễn giả: TS. Lê Thành Trung • Đại diện Ban Tuyển sinh
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <img
+                      src="/images/slide_edufair.png"
+                      alt="EduFair 2026"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.28, filter: 'blur(2px)' }}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'radial-gradient(ellipse at top left, rgba(37,99,235,0.25), transparent 70%), linear-gradient(180deg, rgba(15,23,42,0.82) 0%, rgba(15,23,42,0.96) 100%)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        padding: '28px 32px',
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      {/* Top Badges */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#2563EB', color: '#FFFFFF', padding: '5px 12px', borderRadius: '8px', fontSize: '11.5px', fontWeight: 800 }}>
+                          <Calendar size={13} />
+                          <span>SẮP DIỄN RA</span>
+                        </div>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: 'rgba(255,255,255,0.1)', color: '#E2E8F0', padding: '5px 12px', borderRadius: '8px', fontSize: '11.5px', fontWeight: 600, border: '1px solid rgba(255,255,255,0.15)' }}>
+                          <Clock size={13} />
+                          <span>Khai mạc: 08:00 • 20/12/2026 (GMT+7)</span>
+                        </div>
+                      </div>
+
+                      {/* Middle: Title & description */}
+                      <div>
+                        <h2 style={{ margin: '0 0 8px', fontSize: '24px', fontWeight: 900, color: '#FFFFFF', lineHeight: 1.3 }}>
+                          Virtual EduFair 2026: Giải mã Cơ hội Xét tuyển Sớm & Học bổng 30 Trường ĐH
+                        </h2>
+                        <p style={{ margin: '0 0 20px', fontSize: '13.5px', color: '#CBD5E1', lineHeight: 1.5, maxWidth: '680px' }}>
+                          Sự kiện trực tuyến chính thức kết nối học sinh 2k8 cùng các chuyên gia tuyển sinh. Đặt câu hỏi và tìm hiểu thông tin học bổng độc quyền ngay từ hôm nay.
+                        </p>
+
+                        {/* 4 Countdown Boxes */}
+                        <div style={{ display: 'flex', gap: '12px', marginBottom: '22px' }}>
+                          {[
+                            { val: edufairCountdown.days, label: 'Ngày' },
+                            { val: edufairCountdown.hours, label: 'Giờ' },
+                            { val: edufairCountdown.minutes, label: 'Phút' },
+                            { val: edufairCountdown.seconds, label: 'Giây' },
+                          ].map((unit, idx) => (
+                            <div
+                              key={idx}
+                              style={{
+                                minWidth: '78px',
+                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                backdropFilter: 'blur(10px)',
+                                borderRadius: '12px',
+                                padding: '10px 8px',
+                                textAlign: 'center',
+                                border: '1px solid rgba(255, 255, 255, 0.18)',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.18)',
+                              }}
+                            >
+                              <div style={{ fontSize: '24px', fontWeight: 900, color: '#FFFFFF', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+                                {String(unit.val).padStart(2, '0')}
+                              </div>
+                              <div style={{ fontSize: '10.5px', color: '#94A3B8', fontWeight: 700, marginTop: '5px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                {unit.label}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* CTA button */}
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const pxu = universitiesList.find((u) => u.id === 11) || universitiesList[0];
+                              if (pxu) openBookConsultation(pxu);
+                            }}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              padding: '11px 22px',
+                              backgroundColor: '#2563EB',
+                              color: '#FFFFFF',
+                              borderRadius: '12px',
+                              fontWeight: 800,
+                              fontSize: '13.5px',
+                              border: 'none',
+                              cursor: 'pointer',
+                              boxShadow: '0 4px 14px rgba(37,99,235,0.4)',
+                              transition: 'all 0.2s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#1D4ED8';
+                              e.currentTarget.style.transform = 'translateY(-1px)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = '#2563EB';
+                              e.currentTarget.style.transform = 'translateY(0)';
+                            }}
+                          >
+                            <Calendar size={15} />
+                            <span>Đặt lịch tư vấn 1-1</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Interaction bar */}
@@ -2835,7 +2976,7 @@ export const DesktopView: React.FC = () => {
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(window.location.href);
-                    showToast('Đã sao chép liên kết phòng Live!');
+                    showToast(edufairPhase === 'live' ? 'Đã sao chép liên kết phòng Live!' : 'Đã sao chép liên kết sự kiện EduFair!');
                   }}
                   style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF', color: '#475569', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}
                 >
@@ -2847,7 +2988,7 @@ export const DesktopView: React.FC = () => {
               {/* Participating Universities in EduFair */}
               <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '20px', border: '1px solid #E2E8F0' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', marginBottom: '14px' }}>
-                  Gian hàng trực tuyến các trường tham gia hôm nay
+                  {edufairPhase === 'live' ? 'Gian hàng trực tuyến các trường tham gia hôm nay' : 'Gian hàng các trường tham gia EduFair'}
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
                   {universitiesList.slice(0, 8).map((u) => (
@@ -2920,9 +3061,11 @@ export const DesktopView: React.FC = () => {
             >
               <div style={{ padding: '16px 20px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>
-                  Bình luận trực tiếp ({liveMessages.length})
+                  {edufairPhase === 'live' ? `Bình luận trực tiếp (${liveMessages.length})` : `Khung trao đổi câu hỏi (${liveMessages.length})`}
                 </div>
-                <span style={{ fontSize: '11px', color: '#10B981', fontWeight: 700 }}>● Đang kết nối</span>
+                <span style={{ fontSize: '11px', color: '#10B981', fontWeight: 700 }}>
+                  {edufairPhase === 'live' ? '● Đang kết nối' : '● Sẵn sàng tiếp nhận'}
+                </span>
               </div>
 
               {/* Messages container */}
@@ -2975,7 +3118,7 @@ export const DesktopView: React.FC = () => {
                   type="text"
                   value={liveChatInput}
                   onChange={(e) => setLiveChatInput(e.target.value)}
-                  placeholder="Đặt câu hỏi cho diễn giả..."
+                  placeholder={edufairPhase === 'live' ? 'Đặt câu hỏi cho diễn giả...' : 'Gửi câu hỏi trước cho ban tuyển sinh...'}
                   style={{
                     flex: 1,
                     height: '38px',
