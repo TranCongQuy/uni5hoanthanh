@@ -8,6 +8,9 @@ export const AuthModal: React.FC = () => {
     isAuthModalOpen,
     closeAuthModal,
     authPrefillEmail,
+    isLoggedIn,
+    user,
+    isDemoFeatureEnabled,
     isDemoMode,
     toggleDemoMode,
     demoQuickSwitch,
@@ -474,41 +477,43 @@ export const AuthModal: React.FC = () => {
               </form>
             )}
 
-            {/* Role Selection & Explicit Demo Sandbox Switch */}
+            {/* Role Selection & Explicit Demo Sandbox Switch (Admin Only when env flag active) */}
             <div style={{ margin: '18px 0 4px' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '8px',
-                  padding: '9px 12px',
-                  borderRadius: '12px',
-                  backgroundColor: isDemoMode ? '#FFFBEB' : '#F8FAFC',
-                  border: isDemoMode ? '1px solid #FCD34D' : '1px solid #E2E8F0',
-                  marginBottom: '12px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '7px', textAlign: 'left' }}>
-                  <FlaskConical size={15} color={isDemoMode ? '#D97706' : '#64748B'} />
-                  <div>
-                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A' }}>
-                      Chế độ Kiểm thử Hội đồng (Demo Sandbox)
-                    </div>
-                    <div style={{ fontSize: '10.5px', color: '#64748B' }}>
-                      {isDemoMode
-                        ? 'Đang bật: Bấm vai trò để vào thẳng Sandbox'
-                        : 'Mặc định tắt: Bấm vai trò sẽ điền Email & yêu cầu Mật khẩu'}
+              {isDemoFeatureEnabled && isLoggedIn && user.role === 'admin' && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '8px',
+                    padding: '9px 12px',
+                    borderRadius: '12px',
+                    backgroundColor: isDemoMode ? '#FFFBEB' : '#F8FAFC',
+                    border: isDemoMode ? '1px solid #FCD34D' : '1px solid #E2E8F0',
+                    marginBottom: '12px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px', textAlign: 'left' }}>
+                    <FlaskConical size={15} color={isDemoMode ? '#D97706' : '#64748B'} />
+                    <div>
+                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A' }}>
+                        Chế độ Kiểm thử Hội đồng (Demo Sandbox)
+                      </div>
+                      <div style={{ fontSize: '10.5px', color: '#64748B' }}>
+                        {isDemoMode
+                          ? 'Đang bật: Bấm vai trò để vào thẳng Sandbox'
+                          : 'Mặc định tắt: Bấm vai trò sẽ điền Email & yêu cầu Mật khẩu'}
+                      </div>
                     </div>
                   </div>
+                  <input
+                    type="checkbox"
+                    checked={isDemoMode}
+                    onChange={toggleDemoMode}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#D97706' }}
+                  />
                 </div>
-                <input
-                  type="checkbox"
-                  checked={isDemoMode}
-                  onChange={toggleDemoMode}
-                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#D97706' }}
-                />
-              </div>
+              )}
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <Button

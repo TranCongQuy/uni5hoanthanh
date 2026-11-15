@@ -28,6 +28,7 @@ import {
   validateVietnamPhone,
 } from '../utils/validation';
 import {
+  canActivateDemoSandbox,
   hashPassword,
   migrateStoredAccounts,
   nextUniqueId,
@@ -92,6 +93,7 @@ interface AppContextType {
   isLoggedIn: boolean;
   isGuest: boolean;
   user: CurrentUser;
+  isDemoFeatureEnabled: boolean;
   isDemoMode: boolean;
   toggleDemoMode: () => void;
   demoQuickSwitch: (target: 'student' | 'admin' | 'pxu') => void;
@@ -686,9 +688,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(initialSession.isLoggedIn);
   const [isGuest, setIsGuest] = useState<boolean>(initialSession.isGuest);
   const [user, setUser] = useState<CurrentUser>(initialSession.user);
+  const isDemoFeatureEnabled = import.meta.env.VITE_ENABLE_DEMO_MODE === 'true';
   const [isDemoMode, setIsDemoMode] = useState<boolean>(() => {
+    if (!isDemoFeatureEnabled) return false;
     try {
-      return sessionStorage.getItem(STORAGE_KEYS.DEMO_MODE) === 'true';
+      const stored = sessionStorage.getItem(STORAGE_KEYS.DEMO_MODE) === 'true';
+      return stored && initialSession.isLoggedIn && initialSession.user.role === 'admin';
     } catch {
       return false;
     }
@@ -929,6 +934,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleDemoMode = () => {
+    const check = canActivateDemoSandbox(isDemoFeatureEnabled, isLoggedIn, user.role);
+    if (!check.allowed) {
+      setIsDemoMode(false);
+      try {
+        sessionStorage.removeItem(STORAGE_KEYS.DEMO_MODE);
+      } catch {
+        // ignore
+      }
+      showToast(check.reason || '⛔ Bạn không có quyền thao tác Chế độ Demo Sandbox.');
+      return;
+    }
     setIsDemoMode((prev) => {
       const next = !prev;
       try {
@@ -1056,7 +1072,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const demoQuickSwitch = (target: 'student' | 'admin' | 'pxu') => {
-    if (!isDemoMode) {
+    const check = canActivateDemoSandbox(isDemoFeatureEnabled, isLoggedIn, user.role);
+    if (!check.allowed || !isDemoMode) {
       const targetEmail =
         target === 'admin'
           ? ACCOUNT_ADMIN.email
@@ -1065,7 +1082,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           : ACCOUNT_STUDENT.email;
       setAuthPrefillEmail(targetEmail);
       setIsAuthModalOpen(true);
-      showToast('🔒 Vui lòng nhập mật khẩu xác thực vai trò (hoặc bật Chế độ Kiểm thử Demo).');
+      showToast('🔒 Vui lòng nhập mật khẩu xác thực vai trò.');
       return;
     }
     if (target === 'admin') {
@@ -1224,9 +1241,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = () => {
     try {
       localStorage.removeItem(STORAGE_KEYS.SESSION);
+      sessionStorage.removeItem(STORAGE_KEYS.DEMO_MODE);
     } catch {
       // ignore
     }
+    setIsDemoMode(false);
     setIsLoggedIn(false);
     setIsGuest(false);
     setUser(GUEST_USER);
@@ -2173,6 +2192,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isLoggedIn,
         isGuest,
         user,
+        isDemoFeatureEnabled,
         isDemoMode,
         toggleDemoMode,
         demoQuickSwitch,

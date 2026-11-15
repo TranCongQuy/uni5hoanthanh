@@ -22,7 +22,9 @@ export const SettingsModal: React.FC = () => {
     toggleNotifications,
     resetPersonalData,
     resetAllData,
+    isLoggedIn,
     user,
+    isDemoFeatureEnabled,
     isDemoMode,
     toggleDemoMode,
     viewMode,
@@ -242,35 +244,37 @@ export const SettingsModal: React.FC = () => {
 
           {/* Group 3: Đặt lại dữ liệu cá nhân / hệ thống */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div
-              style={{
-                padding: '12px 14px',
-                borderRadius: '16px',
-                backgroundColor: isDemoMode ? '#FFFBEB' : '#F8FAFC',
-                border: isDemoMode ? '1px solid #FCD34D' : '1px solid #E2E8F0',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '10px',
-              }}
-            >
-              <div>
-                <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A' }}>
-                  Chế độ Kiểm thử Hội đồng (Demo Sandbox)
+            {isDemoFeatureEnabled && isLoggedIn && user.role === 'admin' && (
+              <div
+                style={{
+                  padding: '12px 14px',
+                  borderRadius: '16px',
+                  backgroundColor: isDemoMode ? '#FFFBEB' : '#F8FAFC',
+                  border: isDemoMode ? '1px solid #FCD34D' : '1px solid #E2E8F0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '10px',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A' }}>
+                    Chế độ Kiểm thử Hội đồng (Demo Sandbox)
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+                    {isDemoMode
+                      ? 'Đang bật chuyển nhanh vai trò trong phiên này'
+                      : 'Mặc định tắt — Mọi cổng vai trò bắt buộc mật khẩu'}
+                  </div>
                 </div>
-                <div style={{ fontSize: '11.5px', color: '#64748B' }}>
-                  {isDemoMode
-                    ? 'Đang bật chuyển nhanh vai trò trong phiên này'
-                    : 'Mặc định tắt — Mọi cổng vai trò bắt buộc mật khẩu'}
-                </div>
+                <input
+                  type="checkbox"
+                  checked={isDemoMode}
+                  onChange={toggleDemoMode}
+                  style={{ width: '19px', height: '19px', cursor: 'pointer', accentColor: '#D97706' }}
+                />
               </div>
-              <input
-                type="checkbox"
-                checked={isDemoMode}
-                onChange={toggleDemoMode}
-                style={{ width: '19px', height: '19px', cursor: 'pointer', accentColor: '#D97706' }}
-              />
-            </div>
+            )}
 
             <Button
               variant="outline"

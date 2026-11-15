@@ -13,6 +13,7 @@ import { calculateSingleMatch, evaluateMatching } from '../services/MatchingServ
 import type { ApplicationRecord } from '../types';
 import {
   SYSTEM_RESERVED_EMAILS,
+  canActivateDemoSandbox,
   hashPassword,
   verifySystemAccountPassword,
 } from '../utils/security';
@@ -253,5 +254,37 @@ describe('A.1, C.1, C.2 — Băm mật khẩu Salted SHA-256 & Chặn mạo danh
     expect(hashPassword('sinhvien@unipath.vn', 'MatKhauAnToan2026!')).toBe(digest);
     expect(hashPassword('sinhvien@unipath.vn', 'MatKhauSai')).not.toBe(digest);
     expect(hashPassword('khac@unipath.vn', 'MatKhauAnToan2026!')).not.toBe(digest);
+  });
+});
+
+describe('Hạng mục 6 — Khóa lỗ hổng Demo Sandbox (RBAC + Environment Flag)', () => {
+  it('từ chối kích hoạt khi biến môi trường VITE_ENABLE_DEMO_MODE tắt (false)', () => {
+    const res = canActivateDemoSandbox(false, true, 'admin');
+    expect(res.allowed).toBe(false);
+    expect(res.reason).toContain('vô hiệu hóa');
+  });
+
+  it('khách chưa đăng nhập không thể kích hoạt demo mode kể cả khi cờ môi trường bật', () => {
+    const res = canActivateDemoSandbox(true, false, undefined);
+    expect(res.allowed).toBe(false);
+    expect(res.reason).toContain('Chỉ Quản trị viên (Admin)');
+  });
+
+  it('thí sinh đã đăng nhập (role student) không thể kích hoạt demo mode', () => {
+    const res = canActivateDemoSandbox(true, true, 'student');
+    expect(res.allowed).toBe(false);
+    expect(res.reason).toContain('Chỉ Quản trị viên (Admin)');
+  });
+
+  it('tuyển sinh trường (role pxu) không thể kích hoạt demo mode', () => {
+    const res = canActivateDemoSandbox(true, true, 'pxu');
+    expect(res.allowed).toBe(false);
+    expect(res.reason).toContain('Chỉ Quản trị viên (Admin)');
+  });
+
+  it('chỉ Quản trị viên (role admin) đã đăng nhập mới được phép kích hoạt demo mode khi cờ môi trường bật', () => {
+    const res = canActivateDemoSandbox(true, true, 'admin');
+    expect(res.allowed).toBe(true);
+    expect(res.reason).toBeUndefined();
   });
 });
