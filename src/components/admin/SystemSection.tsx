@@ -231,7 +231,7 @@ export const SystemSection: React.FC<SystemSectionProps> = ({
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: '12px', backgroundColor: '#F8FAFC', border: '1px solid #F1F5F9' }}>
               <div style={{ fontSize: '13px', color: '#475569', fontWeight: 600 }}>Edge Function AI Chat</div>
               <div style={{ fontSize: '12px', fontWeight: 700, color: '#059669' }}>
-                Gemini 2.5 Grounding Online
+                Gemini 3.5 Flash Lite (Grounding Online)
               </div>
             </div>
 

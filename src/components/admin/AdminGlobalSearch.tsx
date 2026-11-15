@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Search,
   X,
@@ -50,17 +50,6 @@ export const AdminGlobalSearch: React.FC<AdminGlobalSearchProps> = ({
     }
   }, [isOpen]);
 
-  // Keyboard navigation: Esc to close
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
   // Search results
   const results = useMemo(() => {
     const q = removeTones(query);
@@ -99,6 +88,38 @@ export const AdminGlobalSearch: React.FC<AdminGlobalSearchProps> = ({
   }, [query, applications, universities, bookings]);
 
   const totalResults = results.apps.length + results.unis.length + results.bks.length;
+
+  // Select first result helper (Enter key support)
+  const selectFirstResult = useCallback(() => {
+    if (results.apps.length > 0) {
+      onClose();
+      if (onSelectApplication) {
+        onSelectApplication(results.apps[0]);
+      } else {
+        onNavigateToSection('apps');
+      }
+    } else if (results.unis.length > 0) {
+      onClose();
+      onNavigateToSection('unis');
+    } else if (results.bks.length > 0) {
+      onClose();
+      onNavigateToSection('bookings');
+    }
+  }, [results, onClose, onSelectApplication, onNavigateToSection]);
+
+  // Keyboard navigation: Esc to close, Enter to open first result
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      } else if (e.key === 'Enter' && isOpen) {
+        e.preventDefault();
+        selectFirstResult();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, selectFirstResult]);
 
   if (!isOpen) return null;
 
@@ -152,7 +173,13 @@ export const AdminGlobalSearch: React.FC<AdminGlobalSearchProps> = ({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Tìm kiếm nhanh hồ sơ, mã thí sinh, trường ĐH, lịch tư vấn... (Esc để đóng)"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                selectFirstResult();
+              }
+            }}
+            placeholder="Tìm kiếm nhanh hồ sơ, mã thí sinh, trường ĐH, lịch tư vấn... (Esc để đóng, Enter để chọn)"
             style={{
               flex: 1,
               border: 'none',
