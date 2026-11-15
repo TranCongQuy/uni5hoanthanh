@@ -1,11 +1,16 @@
 // Supabase Edge Function: chat/index.ts
-// Secure backend proxy for Google Gemini 2.5 API with UniPath Admission Grounding
+// Secure backend proxy for Google Gemini 2.5 API with UniPath Admission Grounding & Multi-turn Memory
 
 interface RequestBody {
   message: string;
+  history?: Array<{
+    role: 'user' | 'model';
+    text: string;
+  }>;
   universities?: Array<{
     code: string;
     name: string;
+    score2023?: number;
     score2024?: number;
     score2025?: number;
     score2026?: number;
@@ -13,6 +18,9 @@ interface RequestBody {
     tuitionMax?: number;
     major?: string;
     city?: string;
+    rating?: number;
+    employmentRate?: number;
+    desc?: string;
   }>;
   candidateScore?: number;
 }
@@ -128,34 +136,87 @@ Deno.serve(async (req: Request): Promise<Response> => {
     ? `Điểm thi dự kiến/thực tế của thí sinh: ${body.candidateScore} điểm.`
     : 'Thí sinh chưa cung cấp điểm dự kiến.';
 
-  // Build compact knowledge base context for Grounding
+  // Build enriched knowledge base context for Grounding
   const contextSnippet = universitiesContext
-    .map(
-      (u) =>
-        `- [${u.code}] ${u.name} (TP: ${u.city || 'Chưa rõ'}): Ngành thế mạnh: ${u.major || 'Đa ngành'}. Điểm chuẩn 2024: ${u.score2024 || 'N/A'}, 2025: ${u.score2025 || 'N/A'}, 2026: ${u.score2026 || 'N/A'}. Học phí: ${u.tuitionMin ?? 'N/A'} - ${u.tuitionMax ?? 'N/A'} triệu VNĐ/năm.`
-    )
+    .map((u) => {
+      let line = `- [${u.code}] ${u.name} (TP: ${u.city || 'Chưa rõ'}): Ngành & Điểm chuẩn: ${u.major || 'Đa ngành'}.`;
+      if (u.score2024 !== undefined || u.score2023 !== undefined) {
+        line += ` Điểm chuẩn chung (2024: ${u.score2024 ?? 'N/A'}, 2023: ${u.score2023 ?? 'N/A'}).`;
+      }
+      line += ` Học phí: ${u.tuitionMin ?? 'N/A'} - ${u.tuitionMax ?? 'N/A'} triệu VNĐ/năm.`;
+      if (u.employmentRate !== undefined) {
+        line += ` Tỷ lệ việc làm: ${u.employmentRate}%.`;
+      }
+      if (u.rating !== undefined) {
+        line += ` Đánh giá: ${u.rating}/5.`;
+      }
+      if (u.desc) {
+        line += ` Giới thiệu: ${u.desc}.`;
+      }
+      return line;
+    })
     .join('\n');
 
+  // Grounding System Instruction with relaxed tone, strict official figures, general guidance allowed
   const systemInstruction = `
 Bạn là Trợ lý AI Chuyên gia Tư vấn Tuyển sinh & Hướng nghiệp Đại học UniPath 2026.
-Nhiệm vụ của bạn là giải đáp câu hỏi của thí sinh về chọn trường, chọn ngành, cơ hội trúng tuyển và học phí năm 2026.
+Nhiệm vụ của bạn là đồng hành, giải đáp và tư vấn nhiệt tình cho thí sinh về chọn trường, chọn ngành, phương thức xét tuyển và học phí năm 2026.
 
-NGUYÊN TẮC BẮT BUỘC (GROUNDING & AN TOÀN):
-1. DỮ LIỆU ĐƯỢC PHÉP DÙNG: Bạn chỉ được sử dụng dữ liệu từ danh sách các trường đại học đối tác của UniPath được cung cấp bên dưới.
-2. TUYỆT ĐỐI KHÔNG ẢO GIÁC: Nếu người dùng hỏi về trường không có trong danh sách 30 trường dưới đây, hoặc thông tin nằm ngoài phạm vi được cung cấp, bạn PHẢI trả lời rõ: "Hệ thống UniPath hiện chưa có dữ liệu chính thức về trường này." Không được tự bịa ra điểm chuẩn hay học phí.
-3. PHONG CÁCH: Thân thiện, khích lệ, khách quan, súc tích, giải thích rõ ràng và có căn cứ điểm số.
+QUY TẮC BẮT BUỘC VỀ SỐ LIỆU & PHONG CÁCH TƯ VẤN:
+1. SỐ LIỆU CHÍNH THỨC: Điểm chuẩn từng ngành, điểm chuẩn chung, học phí, tỷ lệ việc làm và xếp hạng CHỈ được lấy từ CƠ SỞ DỮ LIỆU ĐỐI SOÁT UNIPATH được cấp bên dưới. Tuyệt đối không tự bịa ra bất kỳ con số cụ thể nào.
+2. TƯ VẤN CHUYÊN MÔN & TRƯỜNG NGOÀI DANH SÁCH:
+   - Bạn ĐƯỢC PHÉP tư vấn chung về định hướng nghề nghiệp, kỹ năng cần thiết, xu hướng thị trường lao động, phương pháp học tập, giải thích các khái niệm tuyển sinh và so sánh định tính giữa các khối ngành.
+   - Khi thí sinh hỏi về trường ĐẠI HỌC NGOÀI DANH SÁCH đối tác của UniPath: bạn ĐƯỢC PHÉP chia sẻ thông tin tổng quan, lịch sử, thế mạnh đào tạo chung của trường đó, NHƯNG BẮT BUỘC mở đầu phần đó bằng câu:
+     "UniPath chưa có dữ liệu chính thức về trường này — thông tin tham khảo chung:"
+     và TUYỆT ĐỐI KHÔNG đưa ra bất kỳ con số cụ thể nào (không nêu điểm chuẩn cụ thể, không nêu số tiền học phí cụ thể) cho trường ngoài danh sách.
+3. CẤU TRÚC TRẢ LỜI: Trả lời tự nhiên, thân thiện, rõ ràng, có cấu trúc mạch lạc (kết hợp đoạn văn ngắn và các gạch đầu dòng). Khi gợi ý trường/ngành học cho thí sinh, hãy giải thích rõ lý do dựa trên so sánh giữa điểm thi của thí sinh và điểm chuẩn CỦA TỪNG NGÀNH CỤ THỂ.
 4. ĐỊNH DẠNG ĐẦU RA BẮT BUỘC: Bạn PHẢI trả về duy nhất một chuỗi JSON hợp lệ tuân thủ schema sau:
 {
-  "reply": "Nội dung trả lời tư vấn cho thí sinh bằng tiếng Việt (có thể dùng bullet points ngắn gọn)",
+  "reply": "Nội dung trả lời tư vấn cho thí sinh bằng tiếng Việt (định dạng Markdown nhẹ, rõ ràng)",
   "suggestedUniversities": ["MÃ_TRƯỜNG_1", "MÃ_TRƯỜNG_2"]
 }
-(Lưu ý: suggestedUniversities là mảng các mã trường - code - viết hoa như ["PXU", "BKA"] xuất hiện hoặc được gợi ý trực tiếp trong câu trả lời).
+(Lưu ý: suggestedUniversities là mảng các mã trường - code - viết hoa như ["PXU", "BKA"] trong cơ sở dữ liệu UniPath được gợi ý hoặc xuất hiện trong câu trả lời).
 
-CƠ SỞ DỮ LIỆU 30 TRƯỜNG ĐỐI SOÁT CỦA UNIPATH:
+CƠ SỞ DỮ LIỆU CÁC TRƯỜNG ĐỐI SOÁT CỦA UNIPATH:
 ${contextSnippet || 'Dữ liệu trường đang được đồng bộ.'}
 
 ${candidateScoreInfo}
 `.trim();
+
+  // Validate server-side multi-turn history: max 6 items, valid role, truncated text
+  const rawHistory = Array.isArray(body.history) ? body.history : [];
+  const sanitizedHistory = rawHistory
+    .filter(
+      (h) =>
+        h &&
+        (h.role === 'user' || h.role === 'model') &&
+        typeof h.text === 'string' &&
+        h.text.trim().length > 0
+    )
+    .slice(-6)
+    .map((h) => ({
+      role: h.role,
+      text: h.text.trim().slice(0, 500),
+    }));
+
+  // Build alternating contents for Gemini:
+  // Must alternate user -> model -> user -> model, and the current message is the final 'user' turn.
+  const validHistory: Array<{ role: 'user' | 'model'; parts: [{ text: string }] }> = [];
+  let expectedRole: 'user' | 'model' = 'user';
+  for (const item of sanitizedHistory) {
+    if (item.role === expectedRole) {
+      validHistory.push({
+        role: item.role,
+        parts: [{ text: item.text }],
+      });
+      expectedRole = expectedRole === 'user' ? 'model' : 'user';
+    }
+  }
+
+  // If the last history turn is 'user', drop it so that history ends with 'model' before appending the current user query
+  if (validHistory.length > 0 && validHistory[validHistory.length - 1].role === 'user') {
+    validHistory.pop();
+  }
 
   const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`;
 
@@ -164,13 +225,14 @@ ${candidateScoreInfo}
       parts: [{ text: systemInstruction }],
     },
     contents: [
+      ...validHistory,
       {
         role: 'user',
         parts: [{ text: userQuery }],
       },
     ],
     generationConfig: {
-      temperature: 0.3,
+      temperature: 0.55,
       response_mime_type: 'application/json',
     },
   };
