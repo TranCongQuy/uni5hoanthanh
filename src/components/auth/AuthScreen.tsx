@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../common/UI';
+import { authLoginSchema, authRegisterSchema } from '../../utils/schemas';
 
 export const AuthScreen: React.FC = () => {
   const {
@@ -44,11 +45,18 @@ export const AuthScreen: React.FC = () => {
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+
+    const validation = authLoginSchema.safeParse({ email, password });
+    if (!validation.success) {
+      setErrorMsg(validation.error.issues[0]?.message || 'Thông tin đăng nhập không hợp lệ.');
+      return;
+    }
+
     setLoading(true);
 
     setTimeout(() => {
       setLoading(false);
-      const success = login(email, password);
+      const success = login(validation.data.email, validation.data.password);
       if (!success) {
         setErrorMsg('Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại thông tin xác thực!');
       }
@@ -59,25 +67,26 @@ export const AuthScreen: React.FC = () => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (password.length < 6) {
-      setErrorMsg('Mật khẩu phải chứa ít nhất 6 ký tự!');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setErrorMsg('Mật khẩu nhập lại không khớp!');
-      return;
-    }
-
-    if (!agreedTerms) {
-      setErrorMsg('Vui lòng tích chọn đồng ý với Điều khoản sử dụng UniPath!');
+    const validation = authRegisterSchema.safeParse({
+      fullName,
+      email,
+      password,
+      confirmPassword,
+      agreedTerms,
+    });
+    if (!validation.success) {
+      setErrorMsg(validation.error.issues[0]?.message || 'Thông tin đăng ký không hợp lệ.');
       return;
     }
 
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      const res = register(fullName, email, password);
+      const res = register(
+        validation.data.fullName,
+        validation.data.email,
+        validation.data.password
+      );
       if (!res.ok) {
         setErrorMsg(res.error || 'Không thể đăng ký tài khoản với thông tin này!');
       }

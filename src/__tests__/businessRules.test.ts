@@ -13,6 +13,11 @@ import { calculateSingleMatch, evaluateMatching } from '../services/MatchingServ
 import { sendChatMessageToAssistant } from '../services/AiChatService';
 import type { ApplicationRecord } from '../types';
 import {
+  applicationSubmissionSchema,
+  authLoginSchema,
+  authRegisterSchema,
+} from '../utils/schemas';
+import {
   SYSTEM_RESERVED_EMAILS,
   canActivateDemoSandbox,
   hashPassword,
@@ -297,5 +302,90 @@ describe('Hạng mục 7 — AI Thật Qua Backend & Offline Fallback', () => {
     expect(res.isOfflineFallback).toBe(true);
     expect(res.reply).toBe('Trả lời mẫu cho: Học phí Bách Khoa thế nào?');
     expect(Array.isArray(res.suggestedUniversities)).toBe(true);
+  });
+});
+
+describe('Hạng mục 8 — Validation Schema Zod & Form Validation', () => {
+  it('applicationSubmissionSchema chấp nhận dữ liệu hợp lệ (tên, SĐT VN 10 số, điểm 0-30)', () => {
+    const res = applicationSubmissionSchema.safeParse({
+      candidateName: 'Trần Công Quý',
+      phone: '0912345678',
+      score: 25.5,
+    });
+    expect(res.success).toBe(true);
+  });
+
+  it('applicationSubmissionSchema từ chối số điện thoại sai định dạng (thiếu số, sai đầu số)', () => {
+    const wrongLength = applicationSubmissionSchema.safeParse({
+      candidateName: 'Trần Công Quý',
+      phone: '091234567', // 9 digits
+      score: 25.5,
+    });
+    expect(wrongLength.success).toBe(false);
+
+    const wrongPrefix = applicationSubmissionSchema.safeParse({
+      candidateName: 'Trần Công Quý',
+      phone: '0123456789', // đầu số cũ
+      score: 25.5,
+    });
+    expect(wrongPrefix.success).toBe(false);
+  });
+
+  it('applicationSubmissionSchema từ chối điểm xét tuyển âm hoặc vượt quá 30 điểm', () => {
+    const negative = applicationSubmissionSchema.safeParse({
+      candidateName: 'Trần Công Quý',
+      phone: '0912345678',
+      score: -0.5,
+    });
+    expect(negative.success).toBe(false);
+
+    const over30 = applicationSubmissionSchema.safeParse({
+      candidateName: 'Trần Công Quý',
+      phone: '0912345678',
+      score: 30.25,
+    });
+    expect(over30.success).toBe(false);
+  });
+
+  it('authLoginSchema và authRegisterSchema từ chối mật khẩu quá ngắn (< 6 ký tự)', () => {
+    const loginShort = authLoginSchema.safeParse({
+      email: 'test@unipath.vn',
+      password: '123',
+    });
+    expect(loginShort.success).toBe(false);
+    if (!loginShort.success) {
+      expect(loginShort.error.issues[0]?.message).toContain('ít nhất 6 ký tự');
+    }
+
+    const regShort = authRegisterSchema.safeParse({
+      fullName: 'Thí sinh mới',
+      email: 'test@unipath.vn',
+      password: '12345',
+      confirmPassword: '12345',
+      agreedTerms: true,
+    });
+    expect(regShort.success).toBe(false);
+  });
+
+  it('authLoginSchema từ chối địa chỉ email sai cú pháp', () => {
+    const res = authLoginSchema.safeParse({
+      email: 'sai-dinh-dang-email',
+      password: 'password123',
+    });
+    expect(res.success).toBe(false);
+  });
+
+  it('authRegisterSchema từ chối khi mật khẩu xác nhận không khớp', () => {
+    const mismatch = authRegisterSchema.safeParse({
+      fullName: 'Thí sinh mới',
+      email: 'test@unipath.vn',
+      password: 'password123',
+      confirmPassword: 'passwordKhac',
+      agreedTerms: true,
+    });
+    expect(mismatch.success).toBe(false);
+    if (!mismatch.success) {
+      expect(mismatch.error.issues[0]?.message).toContain('không khớp');
+    }
   });
 });
