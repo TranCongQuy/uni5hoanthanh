@@ -7,9 +7,9 @@
 
 ---
 
-## 1. KIẾN TRÚC ĐỊNH TUYẾN ĐA CỔNG THEO VAI TRÒ (ROLE-BASED PORTAL ROUTING)
+## 1. KIẾN TRÚC ĐỊNH TUYẾN ĐA CỔNG & RÀO QUYỀN AUTH GATE
 
-Trong `src/App.tsx`, hệ thống kiểm tra trực tiếp phiên xác thực (`isLoggedIn`, `user.role`) để định tuyến người dùng vào **3 không gian ứng dụng hoàn toàn tách biệt**, kết hợp cùng chế độ **Khách trải nghiệm (`Guest`)**:
+Trong `src/App.tsx`, hệ thống thực thi rào chắn **Auth Gate**: Người dùng bắt buộc phải đăng nhập/đăng ký tài khoản trước khi vào app. Sau khi xác thực, hệ thống kiểm tra `user.role` để định tuyến vào **3 không gian ứng dụng hoàn toàn tách biệt**:
 
 ```text
                         ┌──────────────────────────────────────────────┐
@@ -27,11 +27,12 @@ Trong `src/App.tsx`, hệ thống kiểm tra trực tiếp phiên xác thực (`
 │ • Chỉ đọc myApplications &    │  │ • CÔ LẬP DỮ LIỆU CẤP TRƯỜNG:   │  │ • Toàn quyền giám sát 100%   │
 │   myBookings của chính mình   │  │   Chỉ xem & xử lý hồ sơ/lịch   │  │   hồ sơ & lịch hẹn 30 trường │
 │ • Nộp hồ sơ mới, bổ sung minh │  │   hẹn có uniCode === 'PXU'     │  │ • Duyệt đơn lẻ & hàng loạt   │
-│   chứng khi 'Thiếu hồ sơ'     │  │ • Phê duyệt 4 trạng thái + ghi │  │   (Batch Update) kèm ghi chú │
+│   chứng khi 'Thiếu hồ sơ'     │  │ • Phê duyệt 4 trạng thái + ghi │  │   (Batch Update) kèm FSM     │
 │ • Chủ động rút hồ sơ cá nhân  │  │   chú hội đồng tuyển sinh PXU  │  │ • Chỉnh sửa điểm chuẩn & học │
-│ • Đặt lịch tư vấn 1-1         │  │ • Cập nhật điểm chuẩn & học    │  │   phí toàn bộ 30 trường ĐH   │
-│ • Chặn 100% quyền xem hồ sơ   │  │   phí của riêng trường PXU     │  │ • Quản lý tài khoản & Nhật   │
-│   người khác hoặc duyệt đơn   │  │ • Chặn 100% 29 trường còn lại  │  │   ký kiểm toán hệ thống      │
+│ • Đặt lịch tư vấn 1-1         │  │ • Tự động đối soát chuẩn ngành │  │   phí toàn bộ 30 trường ĐH   │
+│ • Chặn 100% quyền xem hồ sơ   │  │   PXU & gợi ý học bổng OJT     │  │ • Benchmark 30 trường 6 cụm  │
+│   người khác hoặc duyệt đơn   │  │ • Cập nhật điểm chuẩn của PXU  │  │ • Quản trị hệ thống & Audit  │
+│ • Dock Cố vấn AI đa lượt      │  │ • Chặn 100% 29 trường còn lại  │  │ • Global Search (Ctrl + K)   │
 └───────────────────────────────┘  └────────────────────────────────┘  └──────────────────────────────┘
 ```
 
@@ -39,43 +40,61 @@ Trong `src/App.tsx`, hệ thống kiểm tra trực tiếp phiên xác thực (`
 
 ## 2. MA TRẬN PHÂN QUYỀN & GIỚI HẠN BẢO MẬT CHI TIẾT (RBAC MATRIX)
 
-| Nghiệp vụ / Quyền thao tác | Khách (`Guest`) | Thí sinh (`student`) | ĐH Phú Xuân (`university_pxu`) | Admin (`admin`) |
-| :--- | :---: | :---: | :---: | :---: |
-| **Tra cứu, lọc & so sánh 30 trường ĐH** | ✅ Có | ✅ Có | 🏛️ Cổng riêng PXU | 🛡️ Cổng quản trị 30 trường |
-| **Làm trắc nghiệm Holland RIASEC & AI Matching** | ✅ Dùng thử | ✅ Lưu theo tài khoản | — | — |
-| **Nộp hồ sơ xét tuyển trực tuyến (`addApplication`)** | 🔒 Yêu cầu đăng nhập | ✅ Toàn quyền | ❌ Chặn bởi RBAC Guard | ❌ Chặn bởi RBAC Guard |
-| **Đặt lịch tư vấn 1-1 (`addBooking`)** | 🔒 Yêu cầu đăng nhập | ✅ Toàn quyền | ❌ Chặn bởi RBAC Guard | ❌ Chặn bởi RBAC Guard |
-| **Xem danh sách hồ sơ xét tuyển** | ❌ Trống (`0`) | 🔒 Chỉ hồ sơ của mình | 🔒 Chỉ hồ sơ nộp `PXU` | ✅ Toàn bộ 30 trường |
-| **Rút / Hủy hồ sơ cá nhân (`cancelApplication`)** | ❌ Không | 🔒 Chỉ hồ sơ của mình | ❌ Không (dùng chức năng Từ chối) | ❌ Không (dùng chức năng Từ chối) |
-| **Gửi bổ sung minh chứng khi `Thiếu hồ sơ`** | ❌ Không | 🔒 Chỉ chủ sở hữu hồ sơ | ❌ Không | ❌ Không |
-| **Xác nhận `Hồ sơ hợp lệ` / `Đã trúng tuyển`** | ❌ Không | ❌ Nghiêm cấm | 🔒 Chỉ hồ sơ nộp `PXU` | ✅ Toàn bộ 30 trường (+ Duyệt hàng loạt) |
-| **Yêu cầu bổ sung (`Thiếu hồ sơ`) / Từ chối (`Đã bị hủy`)** | ❌ Không | ❌ Nghiêm cấm | 🔒 Chỉ hồ sơ nộp `PXU` | ✅ Toàn bộ 30 trường (+ Duyệt hàng loạt) |
-| **Cập nhật trạng thái lịch hẹn tư vấn 1-1** | ❌ Không | 👁️ Chỉ xem tiến độ của mình | 🔒 Chỉ lịch hẹn của `PXU` | ✅ Toàn bộ lịch hẹn hệ thống |
-| **Chỉnh sửa Điểm chuẩn & Học phí (`updateUniversityMetrics`)** | ❌ Không | ❌ Nghiêm cấm | 🔒 **Chỉ riêng trường `PXU` (`id: 11`)** | ✅ Toàn bộ 30 trường đại học |
-| **Xem danh sách tài khoản thí sinh đăng ký** | ❌ Không | ❌ Nghiêm cấm | ❌ Không | ✅ Toàn quyền tra cứu |
-| **Xem Nhật ký kiểm toán (`processingLog`)** | ❌ Không | ❌ Không | 🔒 Chỉ nhật ký hồ sơ `PXU` | ✅ Toàn bộ nhật ký hệ thống |
+> **Lưu ý bảo mật:** Hệ thống **đã bãi bỏ hoàn toàn chế độ Khách vãng lai (`Guest`)**. Mọi hành vi truy cập đều phải được định danh và xác thực bằng mật khẩu băm một chiều Salted SHA-256 (`src/utils/security.ts`).
+
+| Nghiệp vụ / Quyền thao tác | Thí sinh (`student`) | ĐH Phú Xuân (`university_pxu`) | Admin (`admin`) |
+| :--- | :---: | :---: | :---: |
+| **Tra cứu, lọc & so sánh 30 trường ĐH** | ✅ Toàn quyền | 🏛️ Cổng riêng PXU | 🛡️ Cổng quản trị 30 trường |
+| **Làm trắc nghiệm Holland RIASEC & AI Matching** | ✅ Lưu theo tài khoản | — | — |
+| **Nộp hồ sơ xét tuyển trực tuyến (`addApplication`)** | ✅ Toàn quyền (tối đa 5 NV) | ❌ Chặn bởi RBAC Guard | ❌ Chặn bởi RBAC Guard |
+| **Đặt lịch tư vấn 1-1 (`addBooking`)** | ✅ Toàn quyền | ❌ Chặn bởi RBAC Guard | ❌ Chặn bởi RBAC Guard |
+| **Xem danh sách hồ sơ xét tuyển** | 🔒 Chỉ hồ sơ của chính mình | 🔒 Chỉ hồ sơ nộp vào `PXU` | ✅ Toàn bộ 30 trường toàn quốc |
+| **Rút / Hủy hồ sơ cá nhân (`cancelApplication`)** | 🔒 Chỉ hồ sơ của chính mình | ❌ Không (dùng chức năng Từ chối) | ❌ Không (dùng chức năng Từ chối) |
+| **Gửi bổ sung minh chứng khi `Thiếu hồ sơ`** | 🔒 Chỉ chủ sở hữu hồ sơ | ❌ Không | ❌ Không |
+| **Xác nhận `Hồ sơ hợp lệ` / `Đã trúng tuyển`** | ❌ Nghiêm cấm | 🔒 Chỉ hồ sơ nộp `PXU` | ✅ Toàn bộ 30 trường (+ Duyệt hàng loạt) |
+| **Yêu cầu bổ sung (`Thiếu hồ sơ`) / Từ chối (`Đã bị hủy`)** | ❌ Nghiêm cấm | 🔒 Chỉ hồ sơ nộp `PXU` | ✅ Toàn bộ 30 trường (+ Duyệt hàng loạt) |
+| **Cập nhật trạng thái lịch hẹn tư vấn 1-1** | 👁️ Chỉ xem tiến độ của mình | 🔒 Chỉ lịch hẹn của `PXU` | ✅ Toàn bộ lịch hẹn hệ thống |
+| **Chỉnh sửa Điểm chuẩn & Học phí (`updateUniversityMetrics`)** | ❌ Nghiêm cấm | 🔒 **Chỉ riêng trường `PXU` (`id: 11`)** | ✅ Toàn bộ 30 trường đại học |
+| **Xem Benchmark 30 trường & Phân bố 6 phân khoảng** | ❌ Không | ❌ Không | ✅ Toàn quyền phân tích |
+| **Giám sát Nguồn dữ liệu Supabase, LocalStorage & Audit Log** | ❌ Không | ❌ Không | ✅ Toàn quyền giám sát |
+| **Tìm kiếm Toàn diện bằng phím tắt (`Ctrl + K`)** | ❌ Không | ❌ Không | ✅ Tra cứu tức thì thí sinh, trường, ngành |
+| **Xem danh sách tài khoản thí sinh đăng ký** | ❌ Nghiêm cấm | ❌ Không | ✅ Toàn quyền tra cứu |
+| **Xem Toàn bộ Nhật ký kiểm toán (`processingLog`)** | ❌ Không | 🔒 Chỉ nhật ký hồ sơ `PXU` | ✅ Toàn bộ nhật ký hệ thống |
 
 ---
 
 ## 3. ĐẶC TẢ KỸ THUẬT 2 CỔNG QUẢN TRỊ CHUYÊN BIỆT
 
 ### 3.1. Cổng Tuyển sinh Trường Đại học Phú Xuân (`src/components/university/UniversityApp.tsx`)
-Được thiết kế theo chuẩn **Executive Emerald CRM (`#064E3B` + `#F8FAFC`)** dành riêng cho **Ban Tư vấn Tuyển sinh ĐH Phú Xuân (`tuyensinh@pxu.edu.vn` / `pxu123`)**:
-1. **Tổng quan PXU (`overview`):** Banner nhận diện ĐH Phú Xuân (OJT 3 năm, 96% việc làm), 4 thẻ KPI tương tác (bấm nhảy thẳng sang bộ lọc tương ứng), biểu đồ phân bổ thí sinh theo ngành đào tạo mũi nhọn và danh sách hồ sơ ưu tiên chờ duyệt.
-2. **Hồ sơ nộp PXU (`applications`):**
-   - Thực thi bộ lọc cô lập cứng `applications.filter(a => a.uniCode === 'PXU')` trên bảng dữ liệu SaaS kết hợp **Smart Inspector Panel**.
-   - **Tự động đối soát Điểm chuẩn PXU & Đề xuất Học bổng OJT:** Hệ thống tự động so sánh điểm hồ sơ với điểm chuẩn ngành tại PXU (`≥ +4.0đ` gợi ý trao Học bổng Tài năng OJT 50–100%, `≥ 0đ` đủ điều kiện trúng tuyển sớm, `< 0đ` gợi ý xét học bạ THPT).
-   - Trang bị **Chip ghi chú mẫu 1-Click** của Hội đồng Tuyển sinh PXU và hệ thống nút phê duyệt phân cấp thị giác rõ ràng (*Duyệt Trúng tuyển sớm*, *Xác nhận Hợp lệ*, *Yêu cầu Bổ sung*, *Từ chối*).
-3. **Lịch tư vấn 1-1 PXU (`bookings`):** Bảng **Kanban 3 cột trực quan** (`Chờ liên hệ` → `Đã liên hệ` → `Hoàn thành`) trên Desktop và bộ chuyển 3 tab gọn gàng trên Mobile, hỗ trợ gọi điện/gửi email 1 chạm và chuyển trạng thái tức thì.
-4. **Ngành & Điểm chuẩn PXU (`programs`):** Thẻ chỉ tiêu các ngành đào tạo OJT (bấm xem ngay hồ sơ nộp vào ngành đó) và bảng cập nhật **Điểm chuẩn tham chiếu & Học phí tối thiểu của riêng PXU** (đồng bộ tức thì sang AI Matching, khóa 100% quyền can thiệp vào 29 trường khác).
+Được thiết kế theo chuẩn **Emerald Aurora CRM (`#022C22` → `#0F766E`)** dành riêng cho **Ban Tư vấn Tuyển sinh ĐH Phú Xuân (`tuyensinh@pxu.edu.vn` / `pxu123`)**:
+1. **Kiến trúc Sidebar 3 Tầng Cố Định:**
+   - Pinned Header giữ logo PXU luôn ở đỉnh (`top: 0`).
+   - Middle Menu cuộn độc lập với class `.up-sidebar-scroll` lướt mượt mà không che khuất đầu hay chân trang.
+   - Pinned Footer neo thẻ bảo mật phân lập dữ liệu.
+2. **Tổng quan PXU (`overview`):** Banner nhận diện ĐH Phú Xuân (OJT 3 năm, 96% việc làm), 4 thẻ KPI tương tác, biểu đồ phân bổ thí sinh theo ngành đào tạo mũi nhọn và danh sách hồ sơ ưu tiên chờ duyệt.
+3. **Hồ sơ nộp PXU (`applications`):**
+   - Thực thi bộ lọc cô lập cứng `applications.filter(a => a.uniCode === 'PXU')`.
+   - **Tự động đối soát Điểm chuẩn PXU & Đề xuất Học bổng OJT:** So sánh điểm hồ sơ với điểm chuẩn ngành tại PXU (`≥ +4.0đ` gợi ý trao Học bổng Doanh nghiệp OJT 50–100%, `≥ 0đ` đủ điều kiện trúng tuyển sớm, `< 0đ` gợi ý xét học bạ THPT kèm giải trình bắt buộc).
+   - Trang bị **Chip ghi chú mẫu 1-Click** của Hội đồng Tuyển sinh PXU và hệ thống nút phê duyệt phân cấp thị giác rõ ràng.
+4. **Lịch tư vấn 1-1 PXU (`bookings`):** Bảng **Kanban 3 cột trực quan** (`Chờ liên hệ` → `Đã liên hệ` → `Hoàn thành`).
+5. **Ngành & Điểm chuẩn PXU (`programs`):** Bảng cập nhật **Điểm chuẩn tham chiếu & Học phí tối thiểu của riêng PXU** (đồng bộ tức thì sang AI Matching, khóa 100% quyền can thiệp vào 29 trường khác).
 
 ### 3.2. Cổng Quản trị Hệ thống Toàn quốc (`src/components/admin/AdminApp.tsx`)
-Được thiết kế theo chuẩn **SaaS Control Center (`#0F172A` + `#4F46E5`)** dành cho **Quản trị viên Cấp cao (`admin@unipath.vn` / `admin123`)**:
-1. **Tổng quan Toàn quốc (`dashboard`):** 4 thẻ KPI điều hướng nhanh, **Phễu tiến trình xét tuyển 4 giai đoạn** (*Chờ xét duyệt* → *Hợp lệ / Bổ sung* → *Đã trúng tuyển* → *Từ chối / Hủy*), hàng đợi hồ sơ mới nhất cần xử lý, thống kê 3 miền Bắc – Trung – Nam và Nhật ký kiểm toán (`processingLog`).
-2. **Hồ sơ Xét tuyển (`applications`):** Thanh công cụ lọc gọn 1 hàng (Tìm kiếm + Dropdown Trường + Xuất CSV + Segmented Status Tabs), duyệt hàng loạt (`batchUpdateApplicationStatus`) và **Smart Inspector** bên phải (Stepper 3 bước, thanh đối chiếu điểm chuẩn tự động, chip ghi chú nhanh 1-Click).
-3. **Lịch tư vấn 1-1 (`bookings`):** Bảng **Kanban 3 cột toàn quốc** điều phối toàn bộ lịch hẹn tư vấn giữa thí sinh và 30 trường đại học.
-4. **30 Trường Đại học (`universities`):** Bảng dữ liệu 30 trường hỗ trợ lọc miền, tìm kiếm nhanh và **chỉnh sửa trực tiếp trên dòng (Inline Edit)** điểm chuẩn tham chiếu `score2024` & học phí `tuitionMin`.
-5. **Tài khoản & Hệ thống (`users`):** Quản lý danh sách tài khoản phân quyền RBAC cùng toàn bộ tài khoản thí sinh đăng ký mới (`registeredUsers`) và công cụ **Khôi phục dữ liệu gốc Demo**.
+Được thiết kế theo chuẩn **Deep Aurora Control Center (`#050B14` → `#1C2541`)** dành cho **Quản trị viên Cấp cao (`admin@unipath.vn` / `admin123`)**:
+1. **Kiến trúc Sidebar 3 Tầng Cố Định:** Pinned Top Header (UniPath Admin), Scrollable Middle Nav (`.up-sidebar-scroll`) và Pinned Bottom Footer (Trạng thái đồng bộ + Nút khôi phục dữ liệu mẫu).
+2. **Global Search (`Ctrl + K`):** Thanh tìm kiếm và phím tắt mở modal `AdminGlobalSearch` tra cứu tức thì mã hồ sơ, tên thí sinh, trường đại học, ngành học và thao tác nhanh.
+3. **Tổng quan Toàn quốc (`dashboard`):** 4 thẻ KPI điều hướng nhanh, phễu tiến trình xét tuyển 4 giai đoạn (*Chờ xét duyệt* → *Hợp lệ / Bổ sung* → *Đã trúng tuyển* → *Từ chối / Hủy*), hàng đợi hồ sơ mới nhất cần xử lý, và thống kê 3 miền Bắc – Trung – Nam.
+4. **Benchmark 30 Trường ĐH (`benchmark`):**
+   - Biểu đồ cột phân bố điểm chuẩn 6 phân khoảng chuẩn hóa (`BenchmarkHistogram`).
+   - Thống kê tỷ lệ thí sinh đạt chuẩn ngành, top 3 ngành cạnh tranh nhất và điểm chuẩn trung bình phân chia theo 3 miền.
+5. **Quản trị Hệ thống & Audit Log (`system`):**
+   - Giám sát trạng thái kết nối đám mây Supabase (Hybrid LocalFirst + Cloud Mirroring).
+   - Giám sát số bản ghi và dung lượng lưu trữ cục bộ LocalStorage (đảm bảo an toàn dưới hạn mức 5MB).
+   - Xem toàn bộ dòng lịch sử kiểm toán hồ sơ (`processingLog`) có lọc theo mã hồ sơ, người duyệt và vai trò.
+6. **Hồ sơ Xét tuyển (`applications`):** Duyệt đơn lẻ hoặc hàng loạt (`batchUpdateApplicationStatus`) kết hợp **Smart Inspector** bên phải (Stepper 3 bước, thanh đối chiếu điểm chuẩn, chip ghi chú 1-Click).
+7. **Lịch tư vấn 1-1 (`bookings`):** Bảng **Kanban 3 cột toàn quốc** điều phối toàn bộ lịch hẹn tư vấn.
+8. **30 Trường Đại học (`universities`):** Chỉnh sửa trực tiếp trên dòng (Inline Edit) điểm chuẩn tham chiếu `score2024` & học phí `tuitionMin`.
+9. **Tài khoản & Người dùng (`users`):** Quản lý danh sách tài khoản phân quyền RBAC cùng toàn bộ tài khoản thí sinh đăng ký mới.
 
 ---
 

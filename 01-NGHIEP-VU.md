@@ -109,6 +109,27 @@ Khi **Admin Hệ thống** (đối với cả 30 trường) hoặc **Ban Tuyển
 
 ---
 
-## 5. NGÀY HỘI TUYỂN SINH TRỰC TUYẾN EDUFAIR LIVE
-- **Gian hàng ảo các trường đại học:** Hiển thị trạng thái phát sóng trực tiếp (`LIVE`), số người đang theo dõi, cho phép xem hồ sơ trường hoặc bấm **Đặt lịch 1-1** ngay trên từng gian hàng.
-- **Phòng Livestream Tư vấn Chuyên gia:** Hỗ trợ thả cảm xúc đa giác quan (*Thích*, *Thả tim*, *Vỗ tay*) với âm thanh tổng hợp trực tiếp qua **Web Audio API**, đếm ngược sự kiện và khung hỏi đáp trực tuyến tự động phản hồi từ Ban Tư vấn Tuyển sinh.
+## 5. NGÀY HỘI TUYỂN SINH TRỰC TUYẾN EDUFAIR & ĐỒNG BỘ PHA SỰ KIỆN
+
+Nhằm bảo đảm tính chân thực và chuyên nghiệp, toàn bộ phân hệ EduFair trên cả Mobile (`LiveTab.tsx`) và Desktop (`DesktopView.tsx`) được chuẩn hóa theo cỗ máy phân loại pha thời gian thực tại `src/utils/edufair.ts`:
+
+### 5.1. Mốc Thời Gian Chuẩn & 3 Pha Sự Kiện (`EventPhase`)
+Hệ thống lấy mốc **EduFair Finale: 08:00 GMT+7 ngày 20/12/2026** (kéo dài 4 giờ đến 12:00 GMT+7) làm chuẩn đối soát:
+
+1. **Pha Sắp Diễn Ra (`upcoming` — Hiện tại):**
+   - **Đồng hồ đếm ngược thời gian thực (`computeCountdownParts`)**: Hiển thị chính xác số ngày, giờ, phút, giây còn lại đến giờ khai mạc.
+   - **Giao diện sân khấu**: Chuyển thành panel *"Sắp diễn ra"* trang trọng, hiển thị chủ đề ngày hội, diễn giả chính và lời mời tham gia.
+   - **Nhãn điều hướng**: Chuẩn hóa thành **"EduFair"** (loại bỏ nhãn LIVE gây hiểu lầm).
+   - **Tương tác**: Khung bình luận chuyển thành *"Khung trao đổi câu hỏi"*, gian hàng ảo hiển thị trạng thái chờ cùng nút kêu gọi hành động trọng tâm: **Đặt lịch tư vấn 1-1** trước với ban tuyển sinh.
+2. **Pha Đang Phát Sóng (`live` — 20/12/2026 từ 08:00 đến 12:00 GMT+7):**
+   - **Sân khấu trực tiếp**: Bật huy hiệu đỏ *"TRỰC TIẾP (LIVE NOW)"*, phát luồng tư vấn và hiển thị số lượng người xem trực tuyến.
+   - **Tương tác đa giác quan**: Khung bình luận trực tiếp, các nút thả cảm xúc (*Thích*, *Thả tim*, *Vỗ tay*) kích hoạt hạt bay lượn và hiệu ứng âm thanh tổng hợp thời gian thực qua **Web Audio API**.
+3. **Pha Đã Kết Thúc (`ended` — Sau 12:00 GMT+7 ngày 20/12/2026):**
+   - Thông báo sự kiện đã hoàn thành tốt đẹp, cung cấp liên kết xem lại bản ghi hình tư vấn (Replay) và hướng dẫn thí sinh nộp hồ sơ xét tuyển sớm vào các trường.
+
+---
+
+## 6. NGUYÊN TẮC RÀO QUYỀN AUTH GATE & DỮ LIỆU CHÂN THỰC
+1. **Rào quyền Auth Gate**: Xóa bỏ hoàn toàn tài khoản khách vãng lai. Mọi hoạt động nộp hồ sơ xét tuyển, đặt lịch hẹn tư vấn 1-1 và lưu trữ trắc nghiệm đều yêu cầu người dùng đăng nhập tài khoản thí sinh chính chủ.
+2. **Đối soát dữ liệu 100%**: Mọi trường thông tin từ Điểm chuẩn 30 trường, ngành học, mức học phí đến trạng thái hồ sơ đều liên thông thời gian thực giữa 3 cổng Thí sinh – ĐH Phú Xuân – Admin.
+3. **Bảo mật FSM & Chặn nộp trùng**: Thí sinh bị giới hạn tối đa 5 nguyện vọng cùng lúc, không thể nộp 2 hồ sơ vào cùng một ngành của một trường, và hội đồng xét tuyển bắt buộc phải giải trình khi duyệt thí sinh có điểm thấp hơn chuẩn ngành.

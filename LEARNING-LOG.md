@@ -85,3 +85,46 @@
   **Khắc phục:**  
   Con người kiểm tra bằng `git status`, nhận ra các file đang ở trạng thái `Changes not staged for commit: deleted: ...`.  
   Sử dụng quy trình chuẩn: `git add -A` để đồng bộ toàn bộ trạng thái xóa (deletion staging) vào index trước khi commit, hoặc dùng `git rm <path>` trực tiếp. Đồng thời sinh viên hiểu rõ cơ chế Git Tree: Git theo dõi nội dung dạng snapshot, mọi thay đổi xóa file đều phải được ghi nhận rõ ràng vào commit.
+
+---
+
+## 6. Tình huống 6: Lỗi `margin-top: auto` trong flexbox cuộn làm che khuất đầu trang Sidebar
+- **Câu hỏi đã hỏi AI:**  
+  *"Hãy sửa thanh điều hướng ở cổng Admin và PXU để nó cố định bên trái màn hình, nếu dài thì lướt lên lướt xuống chứ không bị che khuất."*
+- **Chỗ AI trả lời sai / chưa phù hợp:**  
+  AI triển khai giải pháp ban đầu bằng cách đặt `<aside>` có `position: fixed`, `height: 100vh`, `display: flex`, `flexDirection: column`, `overflowY: auto`. Để đẩy khối thông tin chân trang xuống đáy, AI dùng thuộc tính CSS `marginTop: 'auto'` trên thẻ con chân trang.  
+  Hậu quả tai hại: Trong đặc tả CSS Flexbox, khi một flex container dạng cột có `overflow-y: auto` và phần tử con có `margin-top: auto`, nếu chiều cao màn hình nhỏ hơn chiều cao nội dung, flexbox sẽ căn chỉnh và đẩy các phần tử đầu trang vào **tọa độ cuộn âm ($y < 0$)**. Trình duyệt coi đây là vùng đã vượt quá mép trên và không cho phép cuộn ngược lên, khiến logo và tiêu đề cổng biến mất hoàn toàn.
+- **Cách con người phát hiện và sửa:**  
+  Khi kiểm thử trên laptop màn hình 1440x700px, toàn bộ logo UniPath Admin và ĐH Phú Xuân bị biến mất khỏi màn hình, trong khi chân trang lại nằm đè lên trên.  
+  **Khắc phục:**  
+  Con người phát hiện nguyên lý xung đột giữa `margin-top: auto` và `overflow-y: auto`, yêu cầu bãi bỏ hoàn toàn cách làm này và chuyển sang **Kiến trúc 3 tầng (3-Tier Architecture)**:
+  1. Khối đầu trang thương hiệu cố định (`flexShrink: 0`) ở đỉnh (`top: 0`).
+  2. Khối danh mục điều hướng ở giữa cuộn độc lập (`flex: 1; minHeight: 0; overflowY: 'auto'`) với class `.up-sidebar-scroll`.
+  3. Khối chân trang cố định (`flexShrink: 0`) ở đáy màn hình.  
+  Nhờ đó, logo luôn luôn hiện rõ và danh mục ở giữa lướt lên lướt xuống mượt mà không bao giờ bị khuất.
+
+---
+
+## 7. Tình huống 7: Xung đột khóa cuộn giữa Onboarding Tour và các Cổng Quản trị
+- **Câu hỏi đã hỏi AI:**  
+  *"Tại sao khi đăng nhập vào Cổng Admin hoặc PXU, trang web đôi khi bị đóng băng không cuộn được?"*
+- **Chỗ AI trả lời sai / chưa phù hợp:**  
+  AI phỏng đoán rằng do thuộc tính `overflow: hidden` của layout Admin bị lỗi, và đề xuất xóa bỏ hoàn toàn component `OnboardingModal` khỏi dự án.
+- **Cách con người phát hiện và sửa:**  
+  Sinh viên kiểm tra mã nguồn tại `App.tsx` và phát hiện nguyên nhân thực sự: Logic khóa cuộn của Onboarding Tour (dành cho thí sinh) đã gán `document.body.style.overflow = 'hidden'` khi tour chưa hoàn tất. Khi người dùng dùng tính năng chuyển nhanh sang Admin/PXU, cờ khóa cuộn này không được dọn dẹp (cleanup), dẫn đến việc `body` bị khóa cứng cả ở cổng quản trị.  
+  **Khắc phục:**  
+  Con người từ chối xóa Onboarding Tour. Thay vào đó, bổ sung hook cleanup thông minh trong `App.tsx`: khi phát hiện `user.role === 'admin' || user.role === 'university_pxu'`, hệ thống tự động giải phóng khóa cuộn (`document.body.style.overflow = 'unset'`). Cả tour hướng dẫn thí sinh lẫn cổng quản trị đều hoạt động hoàn hảo song song.
+
+---
+
+## 8. Tình huống 8: Mâu thuẫn pha sự kiện EduFair (Đếm ngược vs Trực tiếp)
+- **Câu hỏi đã hỏi AI:**  
+  *"Kiểm tra tính logic của trang Ngày hội Tuyển sinh EduFair: tại sao vừa có đồng hồ đếm ngược Còn 34 ngày vừa có nhãn TRỰC TIẾP và người xem mô phỏng?"*
+- **Chỗ AI trả lời sai / chưa phù hợp:**  
+  AI ban đầu chỉ sửa component `LiveTab.tsx` (dành cho Mobile), nhưng bỏ quên khối sân khấu EduFair hoàn toàn riêng biệt trong `DesktopView.tsx`. Kết quả là trên Mobile thì đúng, nhưng trên màn hình Desktop 1440px vẫn hiển thị badge "TRỰC TIẾP", "2,480 người xem" dù đồng hồ ghi "Còn 34 ngày".
+- **Cách con người phát hiện và sửa:**  
+  Sinh viên thực hiện kiểm thử chéo giữa giao diện Mobile và Desktop, phát hiện sự thiếu đồng nhất giữa hai giao diện.  
+  **Khắc phục:**  
+  1. Tạo module dùng chung `src/utils/edufair.ts` với hàm `getEventPhase()` và `computeCountdownParts()` lấy mốc chuẩn EduFair Finale 20/12/2026 08:00 GMT+7.  
+  2. Bắt buộc cả `LiveTab.tsx` (Mobile) và `DesktopView.tsx` (Desktop) đều dùng chung hàm tính toán này: khi ở pha `upcoming`, chuyển sân khấu thành panel "Sắp diễn ra", đổi nhãn điều hướng thành "EduFair" (bỏ chữ LIVE), đổi khung bình luận thành "Khung trao đổi câu hỏi".  
+  3. Viết bộ unit test `src/__tests__/edufair.test.ts` để kiểm chứng độc lập logic chuyển pha.

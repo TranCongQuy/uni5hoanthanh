@@ -13,7 +13,8 @@
 | :--- | :--- | :---: | :--- |
 | **Core UI Library** | **React** | **19.3.x** | Kiến trúc component hướng hàm (Functional Components & Hooks), tối ưu cập nhật trạng thái đồng thời |
 | **Static Typing** | **TypeScript** | **5.9.x** | Kiểm tra kiểu tĩnh nghiêm ngặt (`tsc -b` Strict Mode), đảm bảo an toàn kiểu dữ liệu xuyên suốt 100% module |
-| **Build Tool & Bundler** | **Vite (Rolldown)** | **8.3.x** | Khởi động máy chủ phát triển tức thì, đóng gói bản Production dưới 1 giây |
+| **Build Tool & Bundler** | **Vite (Rolldown)** | **8.3.x** | Khởi động máy chủ phát triển tức thì, đóng gói bản Production dưới 1 giây (~630ms) |
+| **Unit Testing Engine** | **Vitest** | **5.1.x** | **77 bài kiểm thử tự động đạt 100%** qua 6 file kiểm thử chuyên sâu, thực thi trong ~450ms |
 | **Code Quality** | **ESLint + TS-ESLint** | **10.x / 8.x** | Kiểm soát chất lượng mã nguồn chuẩn mực (0 lỗi, 0 cảnh báo) |
 | **Iconography** | **Lucide React** | **1.62.x** | Hệ thống biểu tượng vector sắc nét, đồng nhất độ dày nét vẽ |
 | **Celebration FX** | **Canvas Confetti** | **1.9.4** | Hiệu ứng pháo hoa chúc mừng khi hoàn thành bài test RIASEC và tương tác sự kiện |
@@ -31,17 +32,24 @@ d:/VSCODE PXU K22/unipath-web/
 ├── src/
 │   ├── components/
 │   │   ├── admin/
-│   │   │   └── AdminApp.tsx            # Cổng Quản trị Hệ thống Toàn quốc (Dashboard, Hồ sơ, 30 Trường, Lịch 1-1, User)
+│   │   │   ├── AdminApp.tsx            # Cổng Quản trị Hệ thống Toàn quốc (Overview, Benchmark, CSDL, Lịch, User)
+│   │   │   ├── BenchmarkHistogram.tsx  # Biểu đồ cột phân bố điểm chuẩn 6 phân khoảng (SVG thuần)
+│   │   │   ├── AdminGlobalSearch.tsx   # Tìm kiếm toàn diện đa năng kích hoạt bằng phím tắt Ctrl + K
+│   │   │   └── SystemSection.tsx       # Quản trị nguồn cấp dữ liệu, Supabase Cloud, LocalStorage & Audit Log
 │   │   ├── auth/
-│   │   │   └── AuthScreen.tsx          # Màn hình Đăng nhập / Đăng ký / Chọn nhanh vai trò Demo trên Mobile
+│   │   │   └── AuthScreen.tsx          # Cổng Auth Gate bắt buộc Đăng nhập / Đăng ký & Điền sẵn vai trò Demo
 │   │   ├── charts/
 │   │   │   ├── RadarChart.tsx          # Biểu đồ mạng nhện 6 trục Holland RIASEC (SVG thuần)
 │   │   │   ├── DonutChart.tsx          # Biểu đồ vòng tròn xác suất trúng tuyển (SVG thuần)
 │   │   │   └── LineChart.tsx           # Biểu đồ đường xu hướng điểm chuẩn 3 năm (SVG thuần)
 │   │   ├── common/
-│   │   │   └── UI.tsx                  # Thư viện UI dùng chung (Button, UniversityAvatar, ImageSafe, Toast, EmptyState)
+│   │   │   ├── UI.tsx                  # Thư viện UI chuẩn SaaS (Button, Card, StatusChip, Toast, EmptyState)
+│   │   │   ├── AuroraEffects.tsx       # Hệ thống Design Tokens Aurora, UniversityCard, Mesh, Pulse Ring
+│   │   │   ├── AppLoadingScreen.tsx    # Màn hình chờ loader sang trọng loại bỏ màn hình trắng khi tải lazy chunk
+│   │   │   └── ErrorBoundary.tsx       # Bộ chặn lỗi runtime an toàn cấp ứng dụng và cấp portal kèm khôi phục
 │   │   ├── desktop/
-│   │   │   └── DesktopView.tsx         # Không gian làm việc Thí sinh trên màn hình rộng (≥ 1024px)
+│   │   │   ├── DesktopView.tsx         # Không gian làm việc Thí sinh trên màn hình rộng (≥ 1024px)
+│   │   │   └── AIAssistantDock.tsx     # Dock Trợ lý AI cố định góc phải màn hình desktop với bộ nhớ đa lượt
 │   │   ├── layout/
 │   │   │   └── BottomNav.tsx           # Thanh điều hướng 5 tab cố định đáy trên Mobile (< 1024px)
 │   │   ├── modals/                     # Hệ thống 13 Hộp thoại tương tác chuyên biệt (Chi tiết bên dưới)
@@ -49,31 +57,37 @@ d:/VSCODE PXU K22/unipath-web/
 │   │   └── university/
 │   │       └── UniversityApp.tsx       # Cổng Tuyển sinh độc quyền Trường Đại học Phú Xuân (PXU)
 │   ├── context/
-│   │   └── AppContext.tsx              # Trung tâm điều phối State toàn cục, RBAC & Lưu trữ bền vững 2 tầng
+│   │   └── AppContext.tsx              # Trung tâm điều phối State toàn cục, Auth Gate, RBAC & Lưu trữ 2 tầng
 │   ├── data/
 │   │   └── MockData.ts                 # CSDL chuẩn hóa 30 trường ĐH Bắc - Trung - Nam & 12 câu hỏi RIASEC
 │   ├── services/
-│   │   └── MatchingService.ts          # Động cơ tính toán xác suất trúng tuyển & chọn ngành tham chiếu thống nhất
+│   │   ├── MatchingService.ts          # Động cơ tính toán xác suất trúng tuyển & chọn ngành tham chiếu thống nhất
+│   │   ├── ApplicationWorkflow.ts      # Máy trạng thái hữu hạn FSM hồ sơ xét tuyển & kiểm tra giải trình
+│   │   └── aiChatService.ts            # Dịch vụ gọi Edge Function Gemini Flash, multi-turn memory & offline fallback
 │   ├── types/
 │   │   └── index.ts                    # Định nghĩa toàn bộ Interface, Type, RBAC Account & getStatusMeta()
 │   ├── utils/
-│   │   └── sound.ts                    # Bộ tổng hợp âm thanh Web Audio API (SoundFX)
+│   │   ├── edufair.ts                  # Bộ phân loại pha sự kiện (upcoming/live/ended) & đếm ngược chính xác
+│   │   ├── security.ts                 # Thuật toán băm mật khẩu Salted SHA-256 một chiều an toàn
+│   │   ├── sound.ts                    # Bộ tổng hợp âm thanh Web Audio API (SoundFX)
+│   │   └── validation.ts               # Bộ xác thực dữ liệu đầu vào & phòng chống CSV Formula Injection (OWASP)
+│   ├── __tests__/                      # 77 bài kiểm thử đơn vị tự động (Vitest)
+│   │   ├── businessRules.test.ts       # 42 tests: FSM hồ sơ, giới hạn 5 nguyện vọng, chặn nộp trùng, CSV escape
+│   │   ├── adminAnalytics.test.ts      # 16 tests: Thống kê KPI, histogram 6 bucket, điểm TB 3 miền, top ngành
+│   │   ├── authGateAndPanel.test.ts    # 5 tests: Rào quyền Auth Gate, xóa tài khoản khách, AI dock minimized
+│   │   ├── errorBoundary.test.tsx      # 5 tests: Cơ chế bắt lỗi React Error Boundary & fallback UI
+│   │   ├── aiChatService.test.ts       # 5 tests: Gọi Edge Function, multi-turn memory & fallback offline
+│   │   └── edufair.test.ts             # 4 tests: Logic phân pha sự kiện upcoming / live / ended & countdown
 │   ├── App.tsx                         # Bộ định tuyến cổng vai trò (Role Router), Quản lý Modal & Body Scroll Lock
-│   ├── index.css                       # Hệ thống biến thiết kế CSS, chống tràn ngang (overflow-x: clip) & Keyframes
+│   ├── index.css                       # Hệ thống biến CSS, class .up-sidebar-scroll, chống tràn ngang (overflow-x: clip)
 │   └── main.tsx                        # Điểm khởi tạo React 19 Root
-├── README.md                           # Tổng quan dự án, ma trận RBAC & bảng ánh xạ luồng nút bấm
-├── USER_GUIDE.md                       # Hướng dẫn sử dụng chi tiết cho từng đối tượng người dùng
-├── 01-NGHIEP-VU.md                     # Tài liệu phân tích nghiệp vụ tuyển sinh & công thức AI Matching
-├── 02-GIAO-DIEN-AI.md                  # Tài liệu thiết kế giao diện thích ứng kép & trải nghiệm AI
-├── 03-KY-THUAT-FRONTEND.md             # Tài liệu kiến trúc kỹ thuật Frontend (Tài liệu hiện tại)
-└── 04-KY-THUAT-ADMIN.md                # Tài liệu kỹ thuật phân quyền RBAC & quản trị tuyển sinh
 ```
 
 ---
 
 ## 3. KIẾN TRÚC LƯU TRỮ BỀN VỮNG HAI TẦNG (TWO-TIER PERSISTENCE ENGINE)
 
-Một điểm nhấn kỹ thuật quan trọng trong `src/context/AppContext.tsx` là việc tách bạch rõ ràng giữa **Kho Dữ liệu Liên thông Toàn Hệ thống** và **Kho Dữ liệu Cá nhân Từng Người dùng** trên `localStorage`, giúp toàn bộ luồng nghiệp vụ **Thí sinh ↔ ĐH Phú Xuân ↔ Admin** hoạt động bền vững ngay cả khi đăng xuất, chuyển đổi tài khoản hoặc tải lại trang (`F5`):
+Trong `src/context/AppContext.tsx`, hệ thống tách bạch rõ ràng giữa **Kho Dữ liệu Liên thông Toàn Hệ thống** và **Kho Dữ liệu Cá nhân Từng Người dùng** trên `localStorage`, giúp toàn bộ luồng nghiệp vụ **Thí sinh ↔ ĐH Phú Xuân ↔ Admin** hoạt động bền vững ngay cả khi đăng xuất, chuyển đổi tài khoản hoặc tải lại trang (`F5`):
 
 ### 3.1. Tầng 1: Kho Dữ liệu Liên thông Hệ thống (`Shared Institutional Store`)
 | Khóa lưu trữ (`localStorage`) | Nội dung quản lý | Tính liên thông nghiệp vụ |
@@ -111,12 +125,14 @@ Một điểm nhấn kỹ thuật quan trọng trong `src/context/AppContext.tsx
 
 ---
 
-## 5. KỸ THUẬT KHÓA CUỘN NỀN & KIỂM SOÁT CHẤT LƯỢNG ĐÓNG GÓI
+## 5. CƠ CHẾ AN TOÀN FRONTEND: ERROR BOUNDARY & APP LOADING SCREEN
 
-- **Khóa cuộn nền thông minh (`Body Scroll Lock` trong `App.tsx`):** Khi bất kỳ modal nào trong 13 modal mở ra (`isAnyModalOpen`), hệ thống tự động khóa cuộn `document.body` và `document.documentElement`, ngăn triệt để lỗi cuộn chồng chéo trên màn hình cảm ứng di động.
-- **Chất lượng đóng gói kiểm chứng thực tế:**
-  - `npm run lint`: **0 errors, 0 warnings** trên toàn bộ dự án.
-  - `npm run build` (`tsc -b && vite build`): Biên dịch thành công 100% dưới 1 giây, tối ưu hóa tài nguyên CSS & JS nén gzip siêu nhẹ sẵn sàng triển khai trên Vercel Edge.
+1. **`AppLoadingScreen.tsx` (Màn hình Chờ Tải Chunk):**
+   - Giải quyết triệt để lỗi màn hình trắng (Blank Screen) trong vài giây khi trình duyệt nạp các bundle mã nguồn được tách nhỏ bằng `React.lazy` (`AdminApp`, `UniversityApp`, `DesktopView`, `MobileView`).
+   - Thiết kế Aurora loader đồng bộ với logo UniPath phát sáng, vòng xoay nhịp nhàng và thông báo trạng thái khởi động chuyên nghiệp.
+2. **`ErrorBoundary.tsx` (Bộ Chặn Lỗi Runtime):**
+   - Triển khai React Error Boundary theo chuẩn W3C ở cả cấp toàn ứng dụng (`App.tsx`) và bao quanh từng cổng ứng dụng.
+   - Khi phát sinh lỗi JavaScript bất ngờ (Uncaught Exception), Error Boundary ngăn chặn hoàn toàn việc sập ứng dụng (Crash to White), hiển thị UI dự phòng thân thiện giải thích nguyên nhân và cung cấp 2 nút hành động: **Thử tải lại trang** hoặc **Khôi phục dữ liệu mẫu**.
 
 ---
 
@@ -140,19 +156,10 @@ Kiến trúc mã nguồn của UniPath 2.0 phân tách rõ ràng trách nhiệm 
 
 ### 6.2. Các Mẫu Thiết Kế Thực Tế Đã Sử Dụng (Real-World Design Patterns)
 - **Context / Provider Pattern (`React.createContext` & `AppProvider`):**  
-  Giải quyết triệt để vấn đề *Prop Drilling*, cho phép mọi thành phần trong cây DOM (từ Tab Thí sinh đến Cổng Quản trị Admin) đều có thể truy xuất dữ liệu dùng chung và các hàm cập nhật trạng thái một cách đồng bộ, phản ứng (Reactive).
+  Giải quyết triệt để vấn đề *Prop Drilling*, cho phép mọi thành phần trong cây DOM đều có thể truy xuất dữ liệu dùng chung và các hàm cập nhật trạng thái một cách phản ứng (Reactive).
 - **Service Layer Pattern:**  
-  Toàn bộ logic nghiệp vụ cốt lõi không nằm rải rác trong các nút bấm (button `onClick`), mà được tập trung tại thư mục `src/services/`. Nhờ đó, logic tính điểm và xét duyệt hồ sơ có thể được kiểm thử độc lập 100% bằng Unit Tests mà không cần dựng môi trường trình duyệt ảo (Headless DOM).
+  Toàn bộ logic nghiệp vụ cốt lõi tập trung tại thư mục `src/services/`. Nhờ đó, logic tính điểm và xét duyệt hồ sơ được kiểm thử độc lập 100% bằng 77 bài Unit Tests tự động.
 - **Adapter Pattern (`src/lib/supabase.ts`):**  
-  Cung cấp giao diện đồng nhất (`SupabaseDataService`) bao bọc phía trên Supabase PostgREST API. Lớp này chuyển đổi kiểu dữ liệu giữa database snake_case và frontend camelCase, đồng thời hoạt động như một *Graceful Degradation Adapter*: nếu máy chủ chưa cấu hình biến môi trường, hệ thống vẫn vận hành bình thường thông qua Mock Store.
+  Cung cấp giao diện đồng nhất (`SupabaseDataService`) bao bọc phía trên Supabase PostgREST API, hỗ trợ chuyển đổi snake_case sang camelCase và tự động fallback về Mock Store an toàn.
 - **Strategy Pattern (Thuật toán Chọn Ngành Tham Chiếu Tuyển Sinh):**  
-  Hàm `pickReferenceCutoff` trong `MatchingService.ts` linh hoạt thay đổi chiến lược chọn ngành tham chiếu tùy theo ngữ cảnh của thí sinh:
-  - *Chiến lược 1:* Khớp theo tổ hợp Khối thi được chọn (A00, A01, D01, B00, C00).
-  - *Chiến lược 2:* Khớp theo nhóm tính cách tâm lý nghề nghiệp Holland (RIASEC).
-  - *Chiến lược 3:* Khớp theo độ lệch điểm số tiệm cận gần nhất (`minDiff`).
-
-### 6.3. Đánh Giá Trung Thực Về Giới Hạn Kiến Trúc (Honest Limits Analysis)
-- **Đặc thù Functional Programming (FP):**  
-  UniPath 2.0 được phát triển trên hệ sinh thái hiện đại của **React 19** và **TypeScript**, ưu tiên triết lý hàm thuần túy, immutability và Custom Hooks hơn là lập trình hướng đối tượng cổ điển (Classical OOP).
-- **Áp dụng SOLID ở mức độ Triết lý Thiết kế:**  
-  Các nguyên tắc như *Open/Closed Principle (OCP)* hay *Interface Segregation (ISP)* được áp dụng thông qua việc chia nhỏ TypeScript Interfaces (`src/types/index.ts`) và cơ chế mở rộng hàm (Function Composition), thay vì ép buộc tạo các Class trừu tượng (`abstract class`) hay kế thừa đa tầng vốn làm tăng độ phức tạp không đáng có trong ứng dụng React frontend.
+  Hàm `pickReferenceCutoff` trong `MatchingService.ts` linh hoạt thay đổi chiến lược chọn ngành tham chiếu theo Khối thi, mã Holland RIASEC, hoặc độ lệch điểm số tiệm cận gần nhất.
